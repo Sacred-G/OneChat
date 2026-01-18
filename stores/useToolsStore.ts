@@ -40,6 +40,8 @@ export interface ToolsState {
   mcpEnabled: boolean;
   mcpConfig: McpConfig;
   googleIntegrationEnabled: boolean;
+  geminiImageEnabled: boolean;
+  voiceModeEnabled: boolean;
 }
 
 interface StoreState {
@@ -53,6 +55,8 @@ interface StoreState {
   setFunctionsEnabled: (enabled: boolean) => void;
   googleIntegrationEnabled: boolean;
   setGoogleIntegrationEnabled: (enabled: boolean) => void;
+  geminiImageEnabled: boolean;
+  setGeminiImageEnabled: (enabled: boolean) => void;
   codeInterpreterEnabled: boolean;
   setCodeInterpreterEnabled: (enabled: boolean) => void;
   vectorStore: VectorStore | null;
@@ -63,6 +67,8 @@ interface StoreState {
   setMcpEnabled: (enabled: boolean) => void;
   mcpConfig: McpConfig;
   setMcpConfig: (config: McpConfig) => void;
+  voiceModeEnabled: boolean;
+  setVoiceModeEnabled: (enabled: boolean) => void;
 }
 
 const useToolsStore = create<StoreState>()(
@@ -101,6 +107,10 @@ const useToolsStore = create<StoreState>()(
       setGoogleIntegrationEnabled: (enabled) => {
         set({ googleIntegrationEnabled: enabled });
       },
+      geminiImageEnabled: false,
+      setGeminiImageEnabled: (enabled) => {
+        set({ geminiImageEnabled: enabled });
+      },
       mcpEnabled: false,
       setMcpEnabled: (enabled) => {
         set({ mcpEnabled: enabled });
@@ -112,6 +122,10 @@ const useToolsStore = create<StoreState>()(
       setVectorStore: (store) => set({ vectorStore: store }),
       setWebSearchConfig: (config) => set({ webSearchConfig: config }),
       setMcpConfig: (config) => set({ mcpConfig: config }),
+      voiceModeEnabled: false,
+      setVoiceModeEnabled: (enabled) => {
+        set({ voiceModeEnabled: enabled });
+      },
     }),
     {
       name: "tools-store",

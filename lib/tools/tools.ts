@@ -39,11 +39,13 @@ export const getTools = async (toolsState: ToolsState) => {
   }
 
   if (fileSearchEnabled) {
-    const fileSearchTool = {
-      type: "file_search",
-      vector_store_ids: [vectorStore?.id],
-    };
-    tools.push(fileSearchTool);
+    if (vectorStore?.id) {
+      const fileSearchTool = {
+        type: "file_search",
+        vector_store_ids: [vectorStore.id],
+      };
+      tools.push(fileSearchTool);
+    }
   }
 
   if (codeInterpreterEnabled) {

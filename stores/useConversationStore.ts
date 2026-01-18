@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { Item } from "@/lib/assistant";
-import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
 import { INITIAL_MESSAGE } from "@/config/constants";
 
 interface ConversationState {
@@ -10,12 +9,16 @@ interface ConversationState {
   conversationItems: any[];
   // Whether we are waiting for the assistant response
   isAssistantLoading: boolean;
+  selectedSkill: string | null;
+  activeConversationId: string | null;
 
   setChatMessages: (items: Item[]) => void;
   setConversationItems: (messages: any[]) => void;
   addChatMessage: (item: Item) => void;
-  addConversationItem: (message: ChatCompletionMessageParam) => void;
+  addConversationItem: (message: any) => void;
   setAssistantLoading: (loading: boolean) => void;
+  setSelectedSkill: (skill: string | null) => void;
+  setActiveConversationId: (id: string | null) => void;
   rawSet: (state: any) => void;
   resetConversation: () => void;
 }
@@ -30,6 +33,8 @@ const useConversationStore = create<ConversationState>((set) => ({
   ],
   conversationItems: [],
   isAssistantLoading: false,
+  selectedSkill: null,
+  activeConversationId: null,
   setChatMessages: (items) => set({ chatMessages: items }),
   setConversationItems: (messages) => set({ conversationItems: messages }),
   addChatMessage: (item) =>
@@ -39,6 +44,8 @@ const useConversationStore = create<ConversationState>((set) => ({
       conversationItems: [...state.conversationItems, message],
     })),
   setAssistantLoading: (loading) => set({ isAssistantLoading: loading }),
+  setSelectedSkill: (skill) => set({ selectedSkill: skill }),
+  setActiveConversationId: (id) => set({ activeConversationId: id }),
   rawSet: set,
   resetConversation: () =>
     set(() => ({
@@ -50,6 +57,7 @@ const useConversationStore = create<ConversationState>((set) => ({
         },
       ],
       conversationItems: [],
+      selectedSkill: null,
     })),
 }));
 

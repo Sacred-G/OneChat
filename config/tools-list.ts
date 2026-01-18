@@ -23,4 +23,15 @@ export const toolsList = [
     description: "Get a programming joke",
     parameters: {},
   },
+  {
+    name: "generate_image",
+    description:
+      "Generate an image from a text prompt. Returns a data URL you can embed in markdown.",
+    parameters: {
+      prompt: {
+        type: "string",
+        description: "Text prompt describing the image to generate",
+      },
+    },
+  },
 ];

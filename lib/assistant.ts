@@ -12,9 +12,11 @@ const normalizeAnnotation = (annotation: any): Annotation => ({
 });
 
 export interface ContentItem {
-  type: "input_text" | "output_text" | "refusal" | "output_audio";
+  type: "input_text" | "output_text" | "refusal" | "output_audio" | "input_image";
   annotations?: Annotation[];
   text?: string;
+  image?: string; // base64 image data
+  detail?: "auto" | "low" | "high";
 }
 
 // Message items for storing conversation history matching API shape
@@ -78,6 +80,7 @@ export const handleTurn = async (
 ) => {
   try {
     const { googleIntegrationEnabled } = useToolsStore.getState();
+    const { selectedSkill } = useConversationStore.getState();
     // Get response from the API (defined in app/api/turn_response/route.ts)
     const response = await fetch("/api/turn_response", {
       method: "POST",
@@ -86,6 +89,7 @@ export const handleTurn = async (
         messages: messages,
         toolsState: toolsState,
         googleIntegrationEnabled,
+        selectedSkill,
       }),
     });
 
@@ -341,6 +345,24 @@ export const processMessages = async () => {
             });
             setConversationItems([...conversationItems]);
 
+            if (toolCallMessage.name === "generate_image") {
+              const dataUrl = (toolResult as any)?.dataUrl;
+              if (typeof dataUrl === "string" && dataUrl.trim()) {
+                const text = `![Generated image](${dataUrl})`;
+                chatMessages.push({
+                  type: "message",
+                  role: "assistant",
+                  content: [{ type: "output_text", text }],
+                } as MessageItem);
+                conversationItems.push({
+                  role: "assistant",
+                  content: [{ type: "output_text", text }],
+                });
+                setChatMessages([...chatMessages]);
+                setConversationItems([...conversationItems]);
+              }
+            }
+
             // Create another turn after tool output has been added
             await processMessages();
           }
@@ -540,6 +562,53 @@ export const processMessages = async () => {
               arguments: mcpApprovalRequestMessage.arguments,
             });
             setChatMessages([...chatMessages]);
+          }
+
+          try {
+            const {
+              chatMessages,
+              conversationItems,
+              selectedSkill,
+              activeConversationId,
+              setActiveConversationId,
+            } = useConversationStore.getState();
+
+            const firstUserMessage = chatMessages.find(
+              (m: any) => m?.type === "message" && m?.role === "user" && m?.content?.[0]?.text
+            ) as any;
+            const title =
+              typeof firstUserMessage?.content?.[0]?.text === "string"
+                ? String(firstUserMessage.content[0].text).slice(0, 60)
+                : undefined;
+
+            const res = await fetch("/api/conversation", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                id: activeConversationId,
+                title,
+                state: {
+                  chatMessages,
+                  conversationItems,
+                  selectedSkill,
+                },
+              }),
+            });
+
+            const data = await res.json().catch(() => null);
+            const returnedId = typeof data?.id === "string" ? data.id : null;
+            if (!activeConversationId && returnedId) {
+              setActiveConversationId(returnedId);
+              try {
+                if (typeof window !== "undefined") {
+                  localStorage.setItem("activeConversationId", returnedId);
+                }
+              } catch {
+                // ignore storage failures
+              }
+            }
+          } catch {
+            // ignore persistence failures
           }
 
           break;
