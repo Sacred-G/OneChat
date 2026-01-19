@@ -128,7 +128,7 @@ export default function ConversationHistory({ onNewConversation }: ConversationH
   };
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="flex flex-col h-full min-h-0">
       {!isClient ? (
         // Loading placeholder to avoid SSR mismatch
         <div className="flex-1 flex items-center justify-center">
@@ -139,7 +139,7 @@ export default function ConversationHistory({ onNewConversation }: ConversationH
       ) : (
         <>
           {/* Current conversation */}
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto min-h-0">
             <div className="py-2">
               <div className="px-3">
                 <button
@@ -222,7 +222,7 @@ export default function ConversationHistory({ onNewConversation }: ConversationH
           {/* Bottom section with model info */}
           <div className={`border-t ${theme === 'dark' ? 'border-[#2d2d30]' : 'border-[#e5e5e5]'} p-3`}>
             <div className={`text-xs ${theme === 'dark' ? 'text-gray-500' : 'text-gray-400'}`}>
-              ChatGPT • Model: GPT-4
+              Custom GPT built by SBouldin
             </div>
           </div>
         </>

@@ -79,7 +79,7 @@ export const handleTurn = async (
   onMessage: (data: any) => void
 ) => {
   try {
-    const { googleIntegrationEnabled } = useToolsStore.getState();
+    const { googleIntegrationEnabled, provider, apipieModel } = useToolsStore.getState();
     const { selectedSkill } = useConversationStore.getState();
     // Get response from the API (defined in app/api/turn_response/route.ts)
     const response = await fetch("/api/turn_response", {
@@ -90,6 +90,8 @@ export const handleTurn = async (
         toolsState: toolsState,
         googleIntegrationEnabled,
         selectedSkill,
+        provider,
+        apipieModel,
       }),
     });
 
@@ -323,6 +325,43 @@ export const processMessages = async () => {
           }
           conversationItems.push(item);
           setConversationItems([...conversationItems]);
+
+          if (
+            toolCallMessage &&
+            toolCallMessage.type === "tool_call" &&
+            toolCallMessage.tool_type === "code_interpreter_call"
+          ) {
+            // Attempt to extract generated files from various possible Shapes.
+            // Different SDK/event versions may nest this differently.
+            const rawFiles: any[] =
+              (Array.isArray((item as any)?.files) && (item as any).files) ||
+              (Array.isArray((item as any)?.output?.files) && (item as any).output.files) ||
+              (Array.isArray((item as any)?.outputs) && (item as any).outputs) ||
+              (Array.isArray((item as any)?.output) && (item as any).output) ||
+              [];
+
+            const files = rawFiles
+              .map((f: any) => {
+                const fileId = (f?.file_id ?? f?.fileId ?? f?.id) as any;
+                if (!fileId) return null;
+                const containerId = (f?.container_id ?? f?.containerId ?? f?.container?.id) as any;
+                const mime = ((f?.mime_type ?? f?.mimeType ?? f?.mime) || "application/octet-stream") as any;
+                const filename = (f?.filename ?? f?.name) as any;
+                return {
+                  file_id: String(fileId),
+                  mime_type: String(mime),
+                  ...(containerId ? { container_id: String(containerId) } : {}),
+                  ...(filename ? { filename: String(filename) } : {}),
+                };
+              })
+              .filter(Boolean);
+
+            if (files.length > 0) {
+              toolCallMessage.files = files as any;
+              setChatMessages([...chatMessages]);
+            }
+          }
+
           if (
             toolCallMessage &&
             toolCallMessage.type === "tool_call" &&

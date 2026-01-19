@@ -4,7 +4,7 @@ import ToolsPanel from "@/components/tools-panel";
 import ArtifactViewer from "@/components/artifact-viewer";
 import VoiceAgent from "@/components/voice-agent";
 import ConversationHistory from "@/components/conversation-history";
-import { X, Settings, Sun, Moon, Mic, Plus } from "lucide-react";
+import { X, Settings, Sun, Moon, Mic, Plus, Star, PanelLeft } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useConversationStore from "@/stores/useConversationStore";
@@ -15,6 +15,7 @@ import useToolsStore from "@/stores/useToolsStore";
 
 export default function Main() {
   const [showTools, setShowTools] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const router = useRouter();
   const {
     resetConversation,
@@ -27,8 +28,162 @@ export default function Main() {
   } = useConversationStore();
   const { currentArtifact, setCurrentArtifact } = useArtifactStore();
   const { theme, toggleTheme } = useThemeStore();
-  const { voiceModeEnabled } = useToolsStore();
+  const {
+    voiceModeEnabled,
+    selectedProjectId,
+    setSelectedProjectId,
+    setVectorStore,
+    provider,
+    setProvider,
+    apipieModel,
+    setApipieModel,
+    apipieImageModel,
+    setApipieImageModel,
+    apipieFavoriteModels,
+    toggleApipieFavoriteModel,
+    apipieFavoriteImageModels,
+    toggleApipieFavoriteImageModel,
+  } = useToolsStore();
   const [showVoiceAgent, setShowVoiceAgent] = useState(false);
+  const [apipieModels, setApipieModels] = useState<string[]>([]);
+  const [isLoadingApipieModels, setIsLoadingApipieModels] = useState(false);
+  const [apipieImageModels, setApipieImageModels] = useState<string[]>([]);
+  const [isLoadingApipieImageModels, setIsLoadingApipieImageModels] = useState(false);
+  const [projects, setProjects] = useState<Array<{ id: string; name: string; vectorStoreId?: string; vectorStoreName?: string }>>([]);
+  const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    document.documentElement.classList.toggle("dark", theme === "dark");
+  }, [theme]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    let cancelled = false;
+    const load = async () => {
+      setIsLoadingProjects(true);
+      try {
+        const res = await fetch("/api/projects?list=1");
+        if (!res.ok) return;
+        const data = await res.json().catch(() => null);
+        const list = Array.isArray(data?.projects) ? data.projects : [];
+        if (!cancelled) {
+          setProjects(
+            list
+              .filter((p: any) => typeof p?.id === "string" && typeof p?.name === "string")
+              .map((p: any) => ({
+                id: String(p.id),
+                name: String(p.name),
+                vectorStoreId: typeof p?.vectorStoreId === "string" ? p.vectorStoreId : "",
+                vectorStoreName: typeof p?.vectorStoreName === "string" ? p.vectorStoreName : "",
+              }))
+          );
+        }
+      } catch {
+        // ignore
+      } finally {
+        if (!cancelled) setIsLoadingProjects(false);
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!selectedProjectId) {
+      setVectorStore({ id: "", name: "" } as any);
+      return;
+    }
+    let cancelled = false;
+    fetch(`/api/projects?id=${encodeURIComponent(selectedProjectId)}`)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const p = d?.project;
+        const vsId = typeof p?.vectorStoreId === "string" ? p.vectorStoreId : "";
+        const vsName = typeof p?.vectorStoreName === "string" ? p.vectorStoreName : "";
+        if (vsId) {
+          setVectorStore({ id: vsId, name: vsName || "Project store" } as any);
+        } else {
+          setVectorStore({ id: "", name: "" } as any);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [selectedProjectId, setVectorStore]);
+
+  const handleCreateProject = async () => {
+    if (typeof window === "undefined") return;
+    const name = window.prompt("Project name?");
+    if (!name || !name.trim()) return;
+    try {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim() }),
+      });
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null);
+      const id = typeof data?.id === "string" ? data.id : "";
+      const listRes = await fetch("/api/projects?list=1");
+      if (listRes.ok) {
+        const listData = await listRes.json().catch(() => null);
+        const list = Array.isArray(listData?.projects) ? listData.projects : [];
+        setProjects(
+          list
+            .filter((p: any) => typeof p?.id === "string" && typeof p?.name === "string")
+            .map((p: any) => ({
+              id: String(p.id),
+              name: String(p.name),
+              vectorStoreId: typeof p?.vectorStoreId === "string" ? p.vectorStoreId : "",
+              vectorStoreName: typeof p?.vectorStoreName === "string" ? p.vectorStoreName : "",
+            }))
+        );
+      }
+      if (id) setSelectedProjectId(id);
+    } catch {
+      // ignore
+    }
+  };
+
+  const orderedApipieModels = (() => {
+    const fav = new Set(apipieFavoriteModels || []);
+    const favs = (apipieModels || []).filter((m) => fav.has(m));
+    const rest = (apipieModels || []).filter((m) => !fav.has(m));
+    return [...favs, ...rest];
+  })();
+
+  const favoriteApipieModels = (() => {
+    const fav = new Set(apipieFavoriteModels || []);
+    return (apipieModels || []).filter((m) => fav.has(m));
+  })();
+
+  const nonFavoriteApipieModels = (() => {
+    const fav = new Set(apipieFavoriteModels || []);
+    return (apipieModels || []).filter((m) => !fav.has(m));
+  })();
+
+  const orderedApipieImageModels = (() => {
+    const fav = new Set(apipieFavoriteImageModels || []);
+    const favs = (apipieImageModels || []).filter((m) => fav.has(m));
+    const rest = (apipieImageModels || []).filter((m) => !fav.has(m));
+    return [...favs, ...rest];
+  })();
+
+  const favoriteApipieImageModels = (() => {
+    const fav = new Set(apipieFavoriteImageModels || []);
+    return (apipieImageModels || []).filter((m) => fav.has(m));
+  })();
+
+  const nonFavoriteApipieImageModels = (() => {
+    const fav = new Set(apipieFavoriteImageModels || []);
+    return (apipieImageModels || []).filter((m) => !fav.has(m));
+  })();
 
   // After OAuth redirect, reinitialize the conversation so the next turn
   // uses the connector-enabled server configuration immediately
@@ -88,6 +243,109 @@ export default function Main() {
     load();
   }, [setAssistantLoading, setChatMessages, setConversationItems, setSelectedSkill]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (provider !== "apipie") return;
+
+    let cancelled = false;
+    const loadModels = async () => {
+      setIsLoadingApipieModels(true);
+      try {
+        const res = await fetch("/api/apipie/models?type=llm&enabled=1");
+        if (!res.ok) return;
+        const data = await res.json().catch(() => null);
+        const list = Array.isArray(data?.data) ? data.data : [];
+
+        const models = Array.from(
+          new Set(
+            list
+              .map((m: any) => {
+                const model =
+                  typeof m?.model === "string"
+                    ? m.model
+                    : typeof m?.id === "string"
+                      ? m.id
+                      : typeof m?.name === "string"
+                        ? m.name
+                        : "";
+                const provider = typeof m?.provider === "string" ? m.provider : "";
+                if (provider && model) return `${provider}::${model}`;
+                return model;
+              })
+              .filter((x: any) => typeof x === "string" && x.trim().length > 0)
+          )
+        ) as string[];
+
+        if (!cancelled) {
+          setApipieModels(models);
+          if (models.length > 0 && (!apipieModel || !models.includes(apipieModel))) {
+            setApipieModel(models[0]);
+          }
+        }
+      } catch {
+        // ignore failures
+      } finally {
+        if (!cancelled) setIsLoadingApipieModels(false);
+      }
+    };
+
+    loadModels();
+    return () => {
+      cancelled = true;
+    };
+  }, [provider, apipieModel, setApipieModel]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (provider !== "apipie") return;
+
+    let cancelled = false;
+    const loadImageModels = async () => {
+      setIsLoadingApipieImageModels(true);
+      try {
+        const res = await fetch("/api/apipie/models?type=image&enabled=1");
+        if (!res.ok) return;
+        const data = await res.json().catch(() => null);
+        const list = Array.isArray(data?.data) ? data.data : [];
+
+        const models = Array.from(
+          new Set(
+            list
+              .map((m: any) =>
+                typeof m?.model === "string"
+                  ? m.model
+                  : typeof m?.id === "string"
+                    ? m.id
+                    : typeof m?.name === "string"
+                      ? m.name
+                      : null
+              )
+              .filter((x: any) => typeof x === "string" && x.trim().length > 0)
+          )
+        ) as string[];
+
+        if (!cancelled) {
+          setApipieImageModels(models);
+          if (
+            models.length > 0 &&
+            (!apipieImageModel || !models.includes(apipieImageModel))
+          ) {
+            setApipieImageModel(models[0]);
+          }
+        }
+      } catch {
+        // ignore failures
+      } finally {
+        if (!cancelled) setIsLoadingApipieImageModels(false);
+      }
+    };
+
+    loadImageModels();
+    return () => {
+      cancelled = true;
+    };
+  }, [provider, apipieImageModel, setApipieImageModel]);
+
   const handleNewConversation = () => {
     try {
       const { chatMessages, conversationItems, selectedSkill, activeConversationId } =
@@ -129,12 +387,13 @@ export default function Main() {
   };
 
   return (
-    <div className={`flex h-screen w-full ${theme === "dark" ? "bg-[#0b0f19]" : "bg-white"}`}>
+    <div className="flex h-screen w-full bg-background">
       {/* Left sidebar - ChatGPT style */}
       <div
-        className={`hidden w-72 shrink-0 md:flex md:flex-col ${
-          theme === "dark" ? "bg-[#171717]" : "bg-[#f7f7f8]"
-        }`}
+        onMouseLeave={() => setSidebarCollapsed(true)}
+        className={`hidden shrink-0 md:flex md:flex-col transition-[width] duration-200 ${
+          sidebarCollapsed ? "w-0 overflow-hidden" : "w-72"
+        } ${theme === "dark" ? "bg-[#171717]" : "bg-[#f7f7f8]"}`}
       >
         <div
           className={`flex items-center justify-between px-3 py-3 border-b ${
@@ -163,21 +422,40 @@ export default function Main() {
           >
             <Settings size={16} />
           </button>
+          <button
+            onClick={() => setSidebarCollapsed(true)}
+            className={`p-2 rounded-lg transition-colors ml-1 ${
+              theme === 'dark'
+                ? 'hover:bg-[#2d2d30] text-gray-400'
+                : 'hover:bg-gray-100 text-gray-600'
+            }`}
+            title="Hide sidebar"
+          >
+            <X size={16} />
+          </button>
         </div>
         <ConversationHistory onNewConversation={handleNewConversation} />
       </div>
+
+      {/* Desktop hover trigger when sidebar is collapsed */}
+      {sidebarCollapsed && (
+        <div
+          className="hidden md:block fixed left-0 top-0 h-full w-2 z-50"
+          onMouseEnter={() => setSidebarCollapsed(false)}
+        />
+      )}
 
       {/* Main chat area */}
       <div
         className={`flex-1 flex flex-col ${
           currentArtifact ? "md:w-1/2" : "w-full"
-        } transition-all ${theme === "dark" ? "bg-[#0b0f19]" : "bg-white"}`}
+        } transition-all bg-background`}
       >
         <div
-          className={`sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b backdrop-blur ${
+          className={`sticky top-0 z-30 flex items-center justify-between px-4 py-3 border-b ${
             theme === "dark"
-              ? "border-white/10 bg-[#0b0f19]/80"
-              : "border-black/10 bg-white/80"
+              ? "border-white/10 bg-background"
+              : "border-black/10 bg-background"
           }`}
         >
           <h1
@@ -188,6 +466,195 @@ export default function Main() {
             ChatGPT
           </h1>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarCollapsed((v) => !v)}
+              className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+                theme === 'dark' ? 'hover:bg-[#2d2d30]' : 'hover:bg-gray-100'
+              }`}
+              title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+            >
+              <PanelLeft size={20} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} />
+            </button>
+            <button
+              onClick={() => setShowTools(true)}
+              className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+                theme === 'dark' ? 'hover:bg-[#2d2d30]' : 'hover:bg-gray-100'
+              }`}
+              title="Settings"
+            >
+              <Settings size={20} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} />
+            </button>
+            <div className="flex items-center gap-1">
+              <select
+                value={selectedProjectId}
+                onChange={(e) => setSelectedProjectId(e.target.value)}
+                className={`h-9 rounded-md border px-2 text-sm outline-none ${
+                  theme === "dark"
+                    ? "bg-transparent border-white/10 text-white"
+                    : "bg-white border-black/10 text-gray-900"
+                }`}
+                title="Project"
+              >
+                <option value="">No project</option>
+                {(projects || []).map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleCreateProject}
+                className={`h-9 px-2 rounded-md border text-sm ${
+                  theme === "dark"
+                    ? "bg-transparent border-white/10 text-white hover:bg-white/5"
+                    : "bg-white border-black/10 text-gray-900 hover:bg-gray-50"
+                }`}
+                title="Create project"
+                disabled={isLoadingProjects}
+              >
+                +
+              </button>
+            </div>
+            <select
+              value={provider}
+              onChange={(e) => setProvider(e.target.value as any)}
+              className={`h-9 rounded-md border px-2 text-sm outline-none ${
+                theme === "dark"
+                  ? "bg-transparent border-white/10 text-white"
+                  : "bg-white border-black/10 text-gray-900"
+              }`}
+              title="Provider"
+            >
+              <option value="openai">OpenAI</option>
+              <option value="apipie">apipie.ai</option>
+            </select>
+
+            {provider === "apipie" && (
+              <div className="flex items-center gap-1">
+                <select
+                  value={apipieModel}
+                  onChange={(e) => setApipieModel(e.target.value)}
+                  className={`h-9 max-w-[160px] sm:max-w-[220px] rounded-md border px-2 text-sm outline-none ${
+                    theme === "dark"
+                      ? "bg-transparent border-white/10 text-white"
+                      : "bg-white border-black/10 text-gray-900"
+                  }`}
+                  title="Model"
+                  disabled={isLoadingApipieModels || apipieModels.length === 0}
+                >
+                  {isLoadingApipieModels ? (
+                    <option value={apipieModel}>Loading models…</option>
+                  ) : apipieModels.length === 0 ? (
+                    <option value={apipieModel}>No models</option>
+                  ) : (
+                    <>
+                      {favoriteApipieModels.length > 0 && (
+                        <optgroup label="Favorites">
+                          {favoriteApipieModels.map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="All models">
+                        {nonFavoriteApipieModels.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => toggleApipieFavoriteModel(apipieModel)}
+                  className={`h-9 w-9 inline-flex items-center justify-center rounded-md border transition-colors ${
+                    theme === "dark"
+                      ? "border-white/10 hover:bg-white/10"
+                      : "border-black/10 hover:bg-black/5"
+                  }`}
+                  title={(apipieFavoriteModels || []).includes(apipieModel) ? "Unfavorite" : "Favorite"}
+                >
+                  <Star
+                    size={16}
+                    fill={(apipieFavoriteModels || []).includes(apipieModel) ? "currentColor" : "none"}
+                    className={
+                      (apipieFavoriteModels || []).includes(apipieModel)
+                        ? "text-yellow-400"
+                        : theme === "dark"
+                          ? "text-gray-400"
+                          : "text-gray-600"
+                    }
+                  />
+                </button>
+              </div>
+            )}
+
+            {provider === "apipie" && (
+              <div className="flex items-center gap-1">
+                <select
+                  value={apipieImageModel}
+                  onChange={(e) => setApipieImageModel(e.target.value)}
+                  className={`h-9 max-w-[160px] sm:max-w-[220px] rounded-md border px-2 text-sm outline-none ${
+                    theme === "dark"
+                      ? "bg-transparent border-white/10 text-white"
+                      : "bg-white border-black/10 text-gray-900"
+                  }`}
+                  title="Image model"
+                  disabled={isLoadingApipieImageModels || apipieImageModels.length === 0}
+                >
+                  {isLoadingApipieImageModels ? (
+                    <option value={apipieImageModel}>Loading image models…</option>
+                  ) : apipieImageModels.length === 0 ? (
+                    <option value={apipieImageModel}>No image models</option>
+                  ) : (
+                    <>
+                      {favoriteApipieImageModels.length > 0 && (
+                        <optgroup label="Favorites">
+                          {favoriteApipieImageModels.map((m) => (
+                            <option key={m} value={m}>
+                              {m}
+                            </option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="All image models">
+                        {nonFavoriteApipieImageModels.map((m) => (
+                          <option key={m} value={m}>
+                            {m}
+                          </option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => toggleApipieFavoriteImageModel(apipieImageModel)}
+                  className={`h-9 w-9 inline-flex items-center justify-center rounded-md border transition-colors ${
+                    theme === "dark"
+                      ? "border-white/10 hover:bg-white/10"
+                      : "border-black/10 hover:bg-black/5"
+                  }`}
+                  title={(apipieFavoriteImageModels || []).includes(apipieImageModel) ? "Unfavorite" : "Favorite"}
+                >
+                  <Star
+                    size={16}
+                    fill={(apipieFavoriteImageModels || []).includes(apipieImageModel) ? "currentColor" : "none"}
+                    className={
+                      (apipieFavoriteImageModels || []).includes(apipieImageModel)
+                        ? "text-yellow-400"
+                        : theme === "dark"
+                          ? "text-gray-400"
+                          : "text-gray-600"
+                    }
+                  />
+                </button>
+              </div>
+            )}
             <button
               onClick={() => setShowTools(true)}
               className={`p-2 rounded-lg transition-colors md:hidden ${

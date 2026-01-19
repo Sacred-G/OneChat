@@ -25,6 +25,7 @@ const Chat: React.FC<ChatProps> = ({
   onApprovalResponse,
 }) => {
   const itemsEndRef = useRef<HTMLDivElement>(null);
+  const uploadInputRef = useRef<HTMLInputElement>(null);
   const [inputMessageText, setinputMessageText] = useState<string>("");
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [availableSkills, setAvailableSkills] = useState<
@@ -41,6 +42,24 @@ const Chat: React.FC<ChatProps> = ({
     if (!inputMessageText) {
       setinputMessageText("What do you see in this screenshot?");
     }
+  };
+
+  const handleUploadClick = () => {
+    uploadInputRef.current?.click();
+  };
+
+  const handleUploadFile = (file: File) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : null;
+      if (result) {
+        setCapturedImage(result);
+        if (!inputMessageText) {
+          setinputMessageText("What do you see in this image?");
+        }
+      }
+    };
+    reader.readAsDataURL(file);
   };
 
   const handleSendWithImage = useCallback(() => {
@@ -94,7 +113,7 @@ const Chat: React.FC<ChatProps> = ({
     <div className="flex flex-col h-full">
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-3xl px-4">
+        <div className="mx-auto w-full max-w-5xl px-4">
           <div className="py-8 space-y-6">
             {items.map((item, index) => (
               <React.Fragment key={index}>
@@ -135,7 +154,7 @@ const Chat: React.FC<ChatProps> = ({
             : "border-black/10 bg-white/90"
         } backdrop-blur`}
       >
-        <div className="mx-auto w-full max-w-3xl px-4 py-4">
+        <div className="mx-auto w-full max-w-5xl px-4 py-4">
           {/* Screen capture preview */}
           {capturedImage && (
             <div className="mb-3 relative">
@@ -168,6 +187,28 @@ const Chat: React.FC<ChatProps> = ({
             {/* Screen capture button row */}
             <div className="flex items-center gap-2 px-3 pt-2">
               <ScreenCapture onCapture={handleScreenCapture} />
+              <button
+                type="button"
+                onClick={handleUploadClick}
+                className={`h-9 rounded-md border px-2 text-sm outline-none transition-colors ${
+                  theme === "dark"
+                    ? "bg-transparent border-white/10 text-white hover:bg-white/10"
+                    : "bg-white border-black/10 text-gray-900 hover:bg-gray-50"
+                }`}
+              >
+                Upload
+              </button>
+              <input
+                ref={uploadInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  if (file) handleUploadFile(file);
+                  e.currentTarget.value = "";
+                }}
+              />
               <select
                 value={selectedSkill ?? ""}
                 onChange={(e) => {
@@ -219,7 +260,7 @@ const Chat: React.FC<ChatProps> = ({
                 />
               </div>
               <button
-                disabled={!inputMessageText.trim()}
+                disabled={!inputMessageText.trim() && !capturedImage}
                 data-testid="send-button"
                 className={`mb-1 flex size-8 items-center justify-center rounded-full transition-colors hover:opacity-70 focus-visible:outline-none disabled:hover:opacity-100 ${
                   theme === 'dark' 

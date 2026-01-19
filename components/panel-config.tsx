@@ -4,6 +4,7 @@ import React from "react";
 import { Switch } from "./ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "./ui/tooltip";
 import { TooltipProvider } from "./ui/tooltip";
+import useThemeStore from "@/stores/useThemeStore";
 
 export default function PanelConfig({
   title,
@@ -20,6 +21,7 @@ export default function PanelConfig({
   disabled?: boolean;
   children?: React.ReactNode;
 }) {
+  const { theme } = useThemeStore();
   const handleToggle = () => {
     setEnabled(!enabled);
   };
@@ -30,7 +32,9 @@ export default function PanelConfig({
         <TooltipProvider>
           <Tooltip>
             <TooltipTrigger asChild>
-              <h1 className="text-black font-medium">{title}</h1>
+              <h1 className={`font-medium ${theme === "dark" ? "text-white" : "text-stone-900"}`}>
+                {title}
+              </h1>
             </TooltipTrigger>
             <TooltipContent>
               <p>{tooltip}</p>

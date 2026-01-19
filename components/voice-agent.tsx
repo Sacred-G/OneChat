@@ -9,6 +9,7 @@ import useToolsStore from "@/stores/useToolsStore";
 import useConversationStore from "@/stores/useConversationStore";
 import ScreenCapture from "@/components/screen-capture";
 import { z } from "zod";
+import { getDeveloperPrompt } from "@/config/constants";
 
 type VoiceStatus = "idle" | "connecting" | "connected" | "error";
 
@@ -104,6 +105,119 @@ export default function VoiceAgent({ onClose, onTranscript }: VoiceAgentProps) {
     [webSearchConfig, webSearchEnabled]
   );
 
+  const generateArtifactTool = useMemo(
+    () =>
+      tool({
+        name: "generate_artifact",
+        description:
+          "Generate a complete HTML artifact via the app's standard chat pipeline and post it into the chat UI. Use this for code-heavy outputs (landing pages, components) so you don't read code aloud.",
+        parameters: z.object({
+          prompt: z.string(),
+        }),
+        execute: async ({ prompt }) => {
+          const trimmed = typeof prompt === "string" ? prompt.trim() : "";
+          if (!trimmed) return "Please provide a prompt.";
+
+          const state = useToolsStore.getState();
+          const toolsState = {
+            webSearchEnabled: state.webSearchEnabled,
+            fileSearchEnabled: state.fileSearchEnabled,
+            functionsEnabled: state.functionsEnabled,
+            codeInterpreterEnabled: state.codeInterpreterEnabled,
+            vectorStore: state.vectorStore,
+            selectedProjectId: state.selectedProjectId,
+            webSearchConfig: state.webSearchConfig,
+            mcpEnabled: state.mcpEnabled,
+            mcpConfig: state.mcpConfig,
+            googleIntegrationEnabled: state.googleIntegrationEnabled,
+            geminiImageEnabled: state.geminiImageEnabled,
+            voiceModeEnabled: state.voiceModeEnabled,
+            provider: state.provider,
+            apipieModel: state.apipieModel,
+            apipieImageModel: state.apipieImageModel,
+            apipieFavoriteModels: state.apipieFavoriteModels,
+            apipieFavoriteImageModels: state.apipieFavoriteImageModels,
+          } as any;
+
+          const messages = [
+            {
+              role: "user",
+              content: [{ type: "input_text", text: trimmed }],
+            },
+          ];
+
+          try {
+            const res = await fetch("/api/turn_response", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                messages,
+                toolsState,
+                googleIntegrationEnabled: state.googleIntegrationEnabled,
+                selectedSkill: useConversationStore.getState().selectedSkill,
+                provider: state.provider,
+                apipieModel: state.apipieModel,
+              }),
+            });
+
+            if (!res.ok || !res.body) {
+              const t = await res.text().catch(() => "");
+              return `Failed to generate artifact: ${t || res.statusText}`;
+            }
+
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let buffer = "";
+            let done = false;
+            let output = "";
+
+            while (!done) {
+              const { value, done: doneReading } = await reader.read();
+              done = doneReading;
+              buffer += decoder.decode(value);
+              const chunks = buffer.split("\n\n");
+              buffer = chunks.pop() || "";
+
+              for (const chunk of chunks) {
+                if (!chunk.startsWith("data: ")) continue;
+                const dataStr = chunk.slice(6);
+                if (dataStr === "[DONE]") {
+                  done = true;
+                  break;
+                }
+
+                const payload = JSON.parse(dataStr);
+                const event = payload?.event;
+                const data = payload?.data;
+                if (
+                  (event === "response.output_text.delta" || event === "response.output_text.annotation.added") &&
+                  typeof data?.delta === "string"
+                ) {
+                  output += data.delta;
+                }
+              }
+            }
+
+            if (!output.trim()) return "I didn't get any artifact content back.";
+
+            if (onTranscript) {
+              const item: Item = {
+                type: "message",
+                role: "assistant",
+                content: [{ type: "output_text", text: output } as any],
+              };
+              onTranscript(item);
+            }
+
+            return "Done. I posted the artifact in the chat.";
+          } catch (e) {
+            return `Failed to generate artifact: ${e instanceof Error ? e.message : "unknown error"}`;
+          }
+        },
+      }),
+    [onTranscript]
+  );
+
   const handleVoiceScreenCapture = useCallback(
     async (imageData: string) => {
       lastCapturedImageRef.current = imageData;
@@ -141,10 +255,28 @@ export default function VoiceAgent({ onClose, onTranscript }: VoiceAgentProps) {
     setTranscripts(prev => [...(prev || []).slice(-19), { role, text }]);
     
     if (onTranscript) {
+      const looksLikeHtml = (t: string) => {
+        const s = t.trim();
+        if (!s) return false;
+        if (s.includes("```")) return false;
+        if (/<!doctype\s+html/i.test(s)) return true;
+        if (/<html[\s>]/i.test(s)) return true;
+        if (/<head[\s>]/i.test(s)) return true;
+        if (/<body[\s>]/i.test(s)) return true;
+        if (/<style[\s>]/i.test(s)) return true;
+        if (/<div[\s>]/i.test(s)) return true;
+        return false;
+      };
+
+      const displayText = (() => {
+        if (role === "user") return `🎤 ${text}`;
+        if (looksLikeHtml(text)) return `\n\n\`\`\`html\n${text.trim()}\n\`\`\`\n`;
+        return text;
+      })();
       const item: Item = {
         type: "message",
         role: role === "user" ? "user" : "assistant",
-        content: [{ type: "output_text", text: `🎤 ${text}` }],
+        content: [{ type: "output_text", text: displayText }],
       };
       onTranscript(item);
     }
@@ -267,9 +399,16 @@ export default function VoiceAgent({ onClose, onTranscript }: VoiceAgentProps) {
       const agent = new RealtimeAgent({
         name: "VoiceAssistant",
         instructions:
-          "You are a helpful voice assistant. Be concise and conversational. Respond naturally to the user. Start by greeting the user warmly. If the user asks about their uploaded documents, use the search_vector_store tool to retrieve relevant passages. If the user asks for up-to-date information or anything that may require current events, use the web_search tool." +
-          skillInstructions,
-        tools: [searchVectorStoreTool, webSearchTool],
+          `${getDeveloperPrompt()}
+
+You are operating in Voice Mode.
+
+When the user asks you to create a landing page, UI, or any code-heavy output, DO NOT read code aloud. Instead, call the generate_artifact tool with the user's request (include any design requirements) and then respond briefly with a confirmation.
+
+If you are not calling generate_artifact, keep responses natural and concise.
+
+${skillInstructions}`,
+        tools: [generateArtifactTool, searchVectorStoreTool, webSearchTool],
       });
 
       // Create the RealtimeSession with custom transport and input config

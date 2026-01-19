@@ -40,9 +40,158 @@ function sanitizeMessages(messages: any[]): any[] {
   });
 }
 
+function toApipieChatMessages(messages: any[]): Array<{ role: string; content: any }> {
+  const out: Array<{ role: string; content: any }> = [];
+  for (const msg of messages ?? []) {
+    if (!msg || typeof msg !== "object") continue;
+    const role = typeof msg.role === "string" ? msg.role : "user";
+
+    if (typeof msg.content === "string") {
+      out.push({ role, content: msg.content });
+      continue;
+    }
+
+    if (Array.isArray(msg.content)) {
+      const parts: any[] = [];
+      for (const c of msg.content) {
+        if (!c || typeof c !== "object") continue;
+
+        if ((c.type === "input_text" || c.type === "output_text" || c.type === "text") && typeof c.text === "string") {
+          const t = c.text.trim();
+          if (t) parts.push({ type: "text", text: t });
+          continue;
+        }
+
+        if (c.type === "input_image") {
+          const url =
+            (typeof c.image_url === "object" && typeof c.image_url?.url === "string" && c.image_url.url) ||
+            (typeof c.image_url === "string" && c.image_url) ||
+            (typeof c.image === "string" && c.image) ||
+            (typeof c.url === "string" && c.url) ||
+            "";
+          if (url) {
+            parts.push({ type: "image_url", image_url: { url } });
+          }
+          continue;
+        }
+
+        if (c.type === "image_url") {
+          const url =
+            (typeof c.image_url === "object" && typeof c.image_url?.url === "string" && c.image_url.url) ||
+            (typeof c.image_url === "string" && c.image_url) ||
+            "";
+          if (url) {
+            parts.push({ type: "image_url", image_url: { url } });
+          }
+          continue;
+        }
+      }
+
+      out.push({ role, content: parts.length ? parts : "" });
+      continue;
+    }
+
+    out.push({ role, content: "" });
+  }
+  return out;
+}
+
 export async function POST(request: Request) {
   try {
-    const { messages, toolsState, selectedSkill } = await request.json();
+    const { messages, toolsState, selectedSkill, provider, apipieModel } = await request.json();
+
+    if (provider === "apipie") {
+      const apiKey = process.env.APIPIE_API_KEY;
+      if (!apiKey) {
+        return new Response(
+          JSON.stringify({ error: "Missing APIPIE_API_KEY" }),
+          { status: 500 }
+        );
+      }
+
+      let instructions = getDeveloperPrompt();
+      if (selectedSkill && typeof selectedSkill === "string") {
+        try {
+          const skill = await getSkill(selectedSkill);
+          if (skill?.content) {
+            instructions = `${instructions}\n\n# Skill: ${skill.name}\n\n${skill.content}`;
+          }
+        } catch (e) {
+          console.error("Failed to load selected skill", e);
+        }
+      }
+
+      // Prepend developer instructions as a system message
+      const apipieMessages = [
+        { role: "system", content: instructions },
+        ...toApipieChatMessages(messages),
+      ];
+
+      const apipieRes = await fetch("https://apipie.ai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          messages: apipieMessages,
+          model: typeof apipieModel === "string" && apipieModel.trim() ? apipieModel.trim() : "gpt-3.5-turbo",
+          provider: "openai",
+          stream: false,
+          temperature: 1,
+          top_p: 1,
+          max_tokens: 800,
+        }),
+      });
+
+      if (!apipieRes.ok) {
+        const errText = await apipieRes.text().catch(() => "");
+        return new Response(errText || "apipie.ai request failed", {
+          status: 502,
+          headers: { "Content-Type": "application/json" },
+        });
+      }
+
+      const completion = await apipieRes.json().catch(() => null);
+      const assistantText =
+        typeof completion?.choices?.[0]?.message?.content === "string"
+          ? completion.choices[0].message.content
+          : "";
+
+      const stream = new ReadableStream({
+        start(controller) {
+          const itemId = completion?.id ?? "apipie-message";
+          const deltaPayload = JSON.stringify({
+            event: "response.output_text.delta",
+            data: {
+              delta: assistantText,
+              item_id: itemId,
+            },
+          });
+          controller.enqueue(`data: ${deltaPayload}\n\n`);
+
+          const completedPayload = JSON.stringify({
+            event: "response.completed",
+            data: {
+              response: {
+                output: [],
+              },
+            },
+          });
+          controller.enqueue(`data: ${completedPayload}\n\n`);
+          controller.enqueue("data: [DONE]\n\n");
+          controller.close();
+        },
+      });
+
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+        },
+      });
+    }
 
     const tools = await getTools(toolsState);
 
@@ -69,27 +218,103 @@ export async function POST(request: Request) {
       }
     }
 
-    const events = await openai.responses.create({
-      model: MODEL,
-      input: sanitizedMessages,
-      instructions,
-      tools,
-      stream: true,
-      parallel_tool_calls: false,
-    });
+    const createEvents = async (toolsForCall: any[]) => {
+      return openai.responses.create({
+        model: MODEL,
+        input: sanitizedMessages,
+        instructions,
+        tools: toolsForCall,
+        stream: true,
+        parallel_tool_calls: false,
+      });
+    };
+
+    const isMcpToolsFailure = (error: any) => {
+      const msg =
+        (typeof error?.message === "string" && error.message) ||
+        (typeof error?.error?.message === "string" && error.error.message) ||
+        "";
+      const param = error?.param || error?.error?.param;
+      return (
+        param === "tools" &&
+        typeof msg === "string" &&
+        msg.toLowerCase().includes("mcp") &&
+        msg.toLowerCase().includes("retrieving tool list")
+      );
+    };
+
+    // Preflight the stream by reading the first event. If MCP tool listing fails,
+    // retry automatically without MCP tools (keeps local function tools working).
+    let events = await createEvents(tools);
+    let iterator = events[Symbol.asyncIterator]();
+    let firstResult: IteratorResult<any> | null = null;
+    let retriedWithoutMcp = false;
+
+    try {
+      firstResult = await iterator.next();
+    } catch (error) {
+      if (isMcpToolsFailure(error)) {
+        console.error("MCP tool listing failed; retrying without MCP tools", error);
+        const toolsWithoutMcp = tools.filter((t: any) => t?.type !== "mcp");
+        events = await createEvents(toolsWithoutMcp);
+        iterator = events[Symbol.asyncIterator]();
+        firstResult = await iterator.next();
+        retriedWithoutMcp = true;
+      } else {
+        throw error;
+      }
+    }
 
     // Create a ReadableStream that emits SSE data
     const stream = new ReadableStream({
       async start(controller) {
         try {
-          for await (const event of events) {
-            // Sending all events to the client
-            const data = JSON.stringify({
-              event: event.type,
-              data: event,
+          if (firstResult && !firstResult.done) {
+            const firstEvent = firstResult.value;
+            const firstData = JSON.stringify({
+              event: firstEvent.type,
+              data: firstEvent,
             });
-            controller.enqueue(`data: ${data}\n\n`);
+            controller.enqueue(`data: ${firstData}\n\n`);
           }
+
+          if (!firstResult?.done) {
+            // Stream the remaining events. If MCP listing fails mid-stream, retry once without MCP tools.
+            while (true) {
+              let next: IteratorResult<any>;
+              try {
+                next = await iterator.next();
+              } catch (error) {
+                if (!retriedWithoutMcp && isMcpToolsFailure(error)) {
+                  console.error("MCP tool listing failed mid-stream; retrying without MCP tools", error);
+                  const toolsWithoutMcp = tools.filter((t: any) => t?.type !== "mcp");
+                  events = await createEvents(toolsWithoutMcp);
+                  iterator = events[Symbol.asyncIterator]();
+                  retriedWithoutMcp = true;
+                  firstResult = await iterator.next();
+                  if (firstResult && !firstResult.done) {
+                    const firstEvent = firstResult.value;
+                    const firstData = JSON.stringify({
+                      event: firstEvent.type,
+                      data: firstEvent,
+                    });
+                    controller.enqueue(`data: ${firstData}\n\n`);
+                  }
+                  continue;
+                }
+                throw error;
+              }
+
+              if (next.done) break;
+              const event = next.value;
+              const data = JSON.stringify({
+                event: event.type,
+                data: event,
+              });
+              controller.enqueue(`data: ${data}\n\n`);
+            }
+          }
+
           // End of stream
           controller.close();
         } catch (error) {

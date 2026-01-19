@@ -52,41 +52,59 @@ async function existsFile(p: string) {
 }
 
 export async function listSkills(): Promise<SkillMeta[]> {
-  const skillsRoot = path.join(process.cwd(), "skills");
+  const candidates: Array<{ absRoot: string; relRoot: string }> = [
+    // App-local skills directory
+    { absRoot: path.join(process.cwd(), "skills"), relRoot: "skills" },
+    // Repo-root skills library (common layout in this repo)
+    {
+      absRoot: path.join(process.cwd(), "..", "skills", "skills"),
+      relRoot: path.join("..", "skills", "skills"),
+    },
+  ];
 
-  let dirents: Awaited<ReturnType<typeof readdir>>;
-  try {
-    dirents = await readdir(skillsRoot, { withFileTypes: true });
-  } catch {
-    return [];
-  }
+  const skillsByName = new Map<string, SkillMeta>();
 
-  const skills: SkillMeta[] = [];
-
-  for (const d of dirents) {
-    if (!d.isDirectory()) continue;
-    const dirName = d.name;
-    const relSkillPath = path.join("skills", dirName, "SKILL.md");
-    const absSkillPath = path.join(process.cwd(), relSkillPath);
-
-    if (!(await existsFile(absSkillPath))) continue;
-
-    let content = "";
+  for (const { absRoot, relRoot } of candidates) {
+    let dirents: Awaited<ReturnType<typeof readdir>>;
     try {
-      content = await readFile(absSkillPath, "utf8");
+      dirents = await readdir(absRoot, { withFileTypes: true });
     } catch {
       continue;
     }
 
-    const fm = parseFrontmatter(content);
+    for (const d of dirents) {
+      if (!d.isDirectory()) continue;
+      const dirName = d.name;
+      const relSkillPath = path.join(relRoot, dirName, "SKILL.md");
+      const absSkillPath = path.join(process.cwd(), relSkillPath);
 
-    const name = fm.name || dirName;
-    const description = fm.description || "";
-    const license = fm.license;
+      if (!(await existsFile(absSkillPath))) continue;
 
-    skills.push({ name, description, license, path: `/${relSkillPath.replace(/\\/g, "/")}` });
+      let content = "";
+      try {
+        content = await readFile(absSkillPath, "utf8");
+      } catch {
+        continue;
+      }
+
+      const fm = parseFrontmatter(content);
+
+      const name = fm.name || dirName;
+      const description = fm.description || "";
+      const license = fm.license;
+
+      if (!skillsByName.has(name)) {
+        skillsByName.set(name, {
+          name,
+          description,
+          license,
+          path: `/${relSkillPath.replace(/\\/g, "/")}`,
+        });
+      }
+    }
   }
 
+  const skills = Array.from(skillsByName.values());
   skills.sort((a, b) => a.name.localeCompare(b.name));
   return skills;
 }

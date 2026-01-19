@@ -9,9 +9,11 @@ import useToolsStore from "@/stores/useToolsStore";
 import GoogleIntegrationPanel from "@/components/google-integration";
 import { Mic, Trash2 } from "lucide-react";
 import useConversationStore from "@/stores/useConversationStore";
+import useThemeStore from "@/stores/useThemeStore";
 
 export default function ContextPanel() {
   const { resetConversation, setAssistantLoading } = useConversationStore();
+  const { theme } = useThemeStore();
   const {
     fileSearchEnabled,
     setFileSearchEnabled,
@@ -58,8 +60,14 @@ export default function ContextPanel() {
   };
 
   return (
-    <div className="h-full p-8 w-full bg-[#f9f9f9] rounded-t-xl md:rounded-none border-l-1 border-stone-100">
-      <div className="flex flex-col overflow-y-scroll h-full">
+    <div
+      className={`h-full w-full rounded-t-xl md:rounded-none border-l p-6 md:p-8 ${
+        theme === "dark"
+          ? "bg-[#212121] border-stone-700"
+          : "bg-white border-stone-200"
+      }`}
+    >
+      <div className="flex flex-col overflow-y-auto h-full">
         <PanelConfig
           title="File Search"
           tooltip="Allows to search a knowledge base (vector store)"
@@ -130,14 +138,20 @@ export default function ContextPanel() {
 
         <div className="space-y-4 mb-6">
           <div className="flex justify-between items-center">
-            <h1 className="text-black font-medium">Conversation</h1>
+            <h1 className={`font-medium ${theme === "dark" ? "text-white" : "text-stone-900"}`}>
+              Conversation
+            </h1>
           </div>
           <div className="mt-1">
             <button
               type="button"
               onClick={handleClearHistory}
               disabled={isClearingHistory}
-              className="inline-flex items-center gap-2 rounded-md border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 hover:bg-stone-50 disabled:opacity-50"
+              className={`inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm disabled:opacity-50 ${
+                theme === "dark"
+                  ? "border-white/10 bg-transparent text-white hover:bg-white/10"
+                  : "border-stone-300 bg-white text-stone-900 hover:bg-stone-50"
+              }`}
             >
               <Trash2 size={16} />
               Clear history

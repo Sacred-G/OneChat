@@ -109,11 +109,18 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    @apply bg-background text-foreground;
+    height: 100%;
+    overscroll-behavior-y: none;
+  }
   body {
     @apply bg-background text-foreground;
+    min-height: 100%;
     text-rendering: optimizeLegibility;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    overscroll-behavior-y: none;
   }
 }
 

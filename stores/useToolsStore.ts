@@ -36,22 +36,28 @@ export interface ToolsState {
   functionsEnabled: boolean;
   codeInterpreterEnabled: boolean;
   vectorStore: VectorStore;
+  selectedProjectId?: string;
   webSearchConfig: WebSearchConfig;
   mcpEnabled: boolean;
   mcpConfig: McpConfig;
   googleIntegrationEnabled: boolean;
   geminiImageEnabled: boolean;
   voiceModeEnabled: boolean;
+  provider: "openai" | "apipie";
+  apipieModel: string;
+  apipieImageModel: string;
+  apipieFavoriteModels: string[];
+  apipieFavoriteImageModels: string[];
 }
 
 interface StoreState {
   fileSearchEnabled: boolean;
-  //previousFileSearchEnabled: boolean;
+  previousFileSearchEnabled: boolean;
   setFileSearchEnabled: (enabled: boolean) => void;
   webSearchEnabled: boolean;
   setWebSearchEnabled: (enabled: boolean) => void;
   functionsEnabled: boolean;
-  //previousFunctionsEnabled: boolean;
+  previousFunctionsEnabled: boolean;
   setFunctionsEnabled: (enabled: boolean) => void;
   googleIntegrationEnabled: boolean;
   setGoogleIntegrationEnabled: (enabled: boolean) => void;
@@ -61,6 +67,8 @@ interface StoreState {
   setCodeInterpreterEnabled: (enabled: boolean) => void;
   vectorStore: VectorStore | null;
   setVectorStore: (store: VectorStore) => void;
+  selectedProjectId: string;
+  setSelectedProjectId: (projectId: string) => void;
   webSearchConfig: WebSearchConfig;
   setWebSearchConfig: (config: WebSearchConfig) => void;
   mcpEnabled: boolean;
@@ -69,12 +77,24 @@ interface StoreState {
   setMcpConfig: (config: McpConfig) => void;
   voiceModeEnabled: boolean;
   setVoiceModeEnabled: (enabled: boolean) => void;
+  provider: "openai" | "apipie";
+  setProvider: (provider: "openai" | "apipie") => void;
+  apipieModel: string;
+  setApipieModel: (model: string) => void;
+  apipieImageModel: string;
+  setApipieImageModel: (model: string) => void;
+  apipieFavoriteModels: string[];
+  toggleApipieFavoriteModel: (model: string) => void;
+  apipieFavoriteImageModels: string[];
+  toggleApipieFavoriteImageModel: (model: string) => void;
 }
 
 const useToolsStore = create<StoreState>()(
   persist(
     (set) => ({
       vectorStore: defaultVectorStore.id !== "" ? defaultVectorStore : null,
+      selectedProjectId: "",
+      setSelectedProjectId: (projectId) => set({ selectedProjectId: projectId }),
       webSearchConfig: {
         user_location: {
           type: "approximate",
@@ -88,6 +108,36 @@ const useToolsStore = create<StoreState>()(
         server_url: "",
         allowed_tools: "",
         skip_approval: true,
+      },
+      provider: "openai",
+      setProvider: (provider) => {
+        set({ provider });
+      },
+      apipieModel: "gpt-3.5-turbo",
+      setApipieModel: (model) => {
+        set({ apipieModel: model });
+      },
+      apipieImageModel: "dall-e-3",
+      setApipieImageModel: (model) => {
+        set({ apipieImageModel: model });
+      },
+      apipieFavoriteModels: [],
+      toggleApipieFavoriteModel: (model) => {
+        set((state) => {
+          const next = new Set(state.apipieFavoriteModels || []);
+          if (next.has(model)) next.delete(model);
+          else next.add(model);
+          return { apipieFavoriteModels: Array.from(next) };
+        });
+      },
+      apipieFavoriteImageModels: [],
+      toggleApipieFavoriteImageModel: (model) => {
+        set((state) => {
+          const next = new Set(state.apipieFavoriteImageModels || []);
+          if (next.has(model)) next.delete(model);
+          else next.add(model);
+          return { apipieFavoriteImageModels: Array.from(next) };
+        });
       },
       fileSearchEnabled: false,
       previousFileSearchEnabled: false,
