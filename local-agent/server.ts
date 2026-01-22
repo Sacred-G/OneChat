@@ -1,0 +1,221 @@
+import http from "node:http";
+import { URL } from "node:url";
+import path from "node:path";
+import { promises as fs } from "node:fs";
+import { spawn } from "node:child_process";
+
+type Json = Record<string, any>;
+
+const PORT = Number(process.env.LOCAL_AGENT_PORT || 4001);
+const ROOT = process.env.LOCAL_AGENT_ROOT || "/Volumes/Development";
+const TOKEN = process.env.LOCAL_AGENT_TOKEN || "";
+
+const ALLOWED_COMMANDS = new Set(
+  (process.env.LOCAL_AGENT_ALLOWED_COMMANDS || "ls,pwd,cat,head,tail,grep,rg,git,node,npm,pnpm,yarn,bun,python,python3,pytest")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+);
+
+function sendJson(res: http.ServerResponse, status: number, body: Json) {
+  const payload = JSON.stringify(body);
+  res.statusCode = status;
+  res.setHeader("Content-Type", "application/json");
+  res.setHeader("Cache-Control", "no-store");
+  res.end(payload);
+}
+
+function unauthorized(res: http.ServerResponse) {
+  sendJson(res, 401, { ok: false, error: "Unauthorized" });
+}
+
+function badRequest(res: http.ServerResponse, message: string) {
+  sendJson(res, 400, { ok: false, error: message });
+}
+
+function normalizeWithinRoot(userPath: string): string {
+  // Treat empty or "/" as root.
+  const rel = userPath && userPath !== "/" ? userPath : "";
+  const resolved = path.resolve(ROOT, rel.replace(/^\/+/, ""));
+  if (resolved !== ROOT && !resolved.startsWith(ROOT + path.sep)) {
+    throw new Error("Path escapes workspace root");
+  }
+  return resolved;
+}
+
+async function readJsonBody(req: http.IncomingMessage): Promise<any> {
+  const chunks: Buffer[] = [];
+  for await (const chunk of req) {
+    chunks.push(typeof chunk === "string" ? Buffer.from(chunk) : chunk);
+  }
+  const raw = Buffer.concat(chunks).toString("utf8");
+  if (!raw.trim()) return null;
+  return JSON.parse(raw);
+}
+
+async function handleList(res: http.ServerResponse, url: URL) {
+  const p = url.searchParams.get("path") || "";
+  let full: string;
+  try {
+    full = normalizeWithinRoot(p);
+  } catch (e) {
+    return badRequest(res, e instanceof Error ? e.message : "Invalid path");
+  }
+
+  try {
+    const entries = await fs.readdir(full, { withFileTypes: true });
+    const out = entries
+      .map((d) => ({
+        name: d.name,
+        type: d.isDirectory() ? "directory" : d.isFile() ? "file" : "other",
+      }))
+      .sort((a, b) => {
+        if (a.type !== b.type) return a.type === "directory" ? -1 : 1;
+        return a.name.localeCompare(b.name);
+      });
+    return sendJson(res, 200, { ok: true, root: ROOT, path: p || "/", entries: out });
+  } catch (e) {
+    return sendJson(res, 500, { ok: false, error: e instanceof Error ? e.message : "List failed" });
+  }
+}
+
+async function handleRead(res: http.ServerResponse, url: URL) {
+  const p = url.searchParams.get("path") || "";
+  let full: string;
+  try {
+    full = normalizeWithinRoot(p);
+  } catch (e) {
+    return badRequest(res, e instanceof Error ? e.message : "Invalid path");
+  }
+
+  try {
+    const stat = await fs.stat(full);
+    if (!stat.isFile()) return badRequest(res, "Not a file");
+    const content = await fs.readFile(full, "utf8");
+    return sendJson(res, 200, { ok: true, path: p, content });
+  } catch (e) {
+    return sendJson(res, 500, { ok: false, error: e instanceof Error ? e.message : "Read failed" });
+  }
+}
+
+async function handleWrite(req: http.IncomingMessage, res: http.ServerResponse) {
+  const body = await readJsonBody(req).catch(() => null);
+  const p = typeof body?.path === "string" ? body.path : "";
+  const content = typeof body?.content === "string" ? body.content : null;
+  if (!p) return badRequest(res, "Missing path");
+  if (content === null) return badRequest(res, "Missing content");
+
+  let full: string;
+  try {
+    full = normalizeWithinRoot(p);
+  } catch (e) {
+    return badRequest(res, e instanceof Error ? e.message : "Invalid path");
+  }
+
+  try {
+    await fs.mkdir(path.dirname(full), { recursive: true });
+    await fs.writeFile(full, content, "utf8");
+    return sendJson(res, 200, { ok: true, path: p });
+  } catch (e) {
+    return sendJson(res, 500, { ok: false, error: e instanceof Error ? e.message : "Write failed" });
+  }
+}
+
+async function handleRun(req: http.IncomingMessage, res: http.ServerResponse) {
+  const body = await readJsonBody(req).catch(() => null);
+  const command = typeof body?.command === "string" ? body.command.trim() : "";
+  const cwd = typeof body?.cwd === "string" ? body.cwd : "/";
+
+  if (!command) return badRequest(res, "Missing command");
+
+  const [bin, ...args] = command.split(/\s+/);
+  if (!bin || !ALLOWED_COMMANDS.has(bin)) {
+    return badRequest(res, `Command not allowed: ${bin || ""}`);
+  }
+
+  let fullCwd: string;
+  try {
+    fullCwd = normalizeWithinRoot(cwd);
+  } catch (e) {
+    return badRequest(res, e instanceof Error ? e.message : "Invalid cwd");
+  }
+
+  const timeoutMs = Math.min(Math.max(Number(body?.timeoutMs) || 15000, 1000), 60000);
+  const maxOutput = Math.min(Math.max(Number(body?.maxOutputBytes) || 200000, 1000), 2_000_000);
+
+  try {
+    const child = spawn(bin, args, {
+      cwd: fullCwd,
+      env: process.env,
+      shell: false,
+    });
+
+    const bufs: Buffer[] = [];
+    const push = (b: Buffer) => {
+      if (bufs.reduce((acc, x) => acc + x.length, 0) >= maxOutput) return;
+      bufs.push(b);
+    };
+
+    child.stdout.on("data", (d: Buffer) => push(d));
+    child.stderr.on("data", (d: Buffer) => push(d));
+
+    const exitCode: number = await new Promise((resolve) => {
+      const t = setTimeout(() => {
+        try {
+          child.kill("SIGKILL");
+        } catch {
+          // ignore
+        }
+        resolve(124);
+      }, timeoutMs);
+
+      child.on("close", (code) => {
+        clearTimeout(t);
+        resolve(typeof code === "number" ? code : 0);
+      });
+    });
+
+    const output = Buffer.concat(bufs).toString("utf8");
+    return sendJson(res, 200, {
+      ok: true,
+      cwd,
+      command,
+      exitCode,
+      output,
+      truncated: Buffer.byteLength(output, "utf8") >= maxOutput,
+      timeoutMs,
+    });
+  } catch (e) {
+    return sendJson(res, 500, { ok: false, error: e instanceof Error ? e.message : "Command failed" });
+  }
+}
+
+const server = http.createServer(async (req, res) => {
+  try {
+    const method = (req.method || "GET").toUpperCase();
+    const url = new URL(req.url || "/", `http://${req.headers.host || "localhost"}`);
+
+    if (TOKEN) {
+      const auth = String(req.headers.authorization || "");
+      if (auth !== `Bearer ${TOKEN}`) return unauthorized(res);
+    }
+
+    if (method === "GET" && url.pathname === "/health") {
+      return sendJson(res, 200, { ok: true, root: ROOT });
+    }
+
+    if (method === "GET" && url.pathname === "/fs/list") return handleList(res, url);
+    if (method === "GET" && url.pathname === "/fs/read") return handleRead(res, url);
+    if (method === "POST" && url.pathname === "/fs/write") return handleWrite(req, res);
+    if (method === "POST" && url.pathname === "/cmd/run") return handleRun(req, res);
+
+    return sendJson(res, 404, { ok: false, error: "Not found" });
+  } catch (e) {
+    return sendJson(res, 500, { ok: false, error: e instanceof Error ? e.message : "Server error" });
+  }
+});
+
+server.listen(PORT, "127.0.0.1", () => {
+  // eslint-disable-next-line no-console
+  console.log(`[local-agent] listening on http://127.0.0.1:${PORT} (root=${ROOT})`);
+});

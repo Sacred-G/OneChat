@@ -63,19 +63,19 @@ export function MongoDbAdapter() {
         emailVerified: user.emailVerified ?? null,
         image: user.image ?? null,
       };
-      await db.collection(USERS).insertOne(doc);
+      await db.collection<any>(USERS).insertOne(doc);
       return normalizeUser(doc);
     },
 
     async getUser(id: string) {
       const db = await getMongoDb();
-      const doc = await db.collection(USERS).findOne({ _id: id });
+      const doc = await db.collection<any>(USERS).findOne({ _id: id });
       return doc ? normalizeUser(doc) : null;
     },
 
     async getUserByEmail(email: string) {
       const db = await getMongoDb();
-      const doc = await db.collection(USERS).findOne({ email });
+      const doc = await db.collection<any>(USERS).findOne({ email });
       return doc ? normalizeUser(doc) : null;
     },
 
@@ -86,7 +86,7 @@ export function MongoDbAdapter() {
         providerAccountId: account.providerAccountId,
       });
       if (!acc?.userId) return null;
-      const user = await db.collection(USERS).findOne({ _id: String(acc.userId) });
+      const user = await db.collection<any>(USERS).findOne({ _id: String(acc.userId) });
       return user ? normalizeUser(user) : null;
     },
 
@@ -97,14 +97,14 @@ export function MongoDbAdapter() {
       if ("email" in user) update.email = user.email ?? null;
       if ("emailVerified" in user) update.emailVerified = user.emailVerified ?? null;
       if ("image" in user) update.image = user.image ?? null;
-      await db.collection(USERS).updateOne({ _id: user.id }, { $set: update });
-      const next = await db.collection(USERS).findOne({ _id: user.id });
+      await db.collection<any>(USERS).updateOne({ _id: user.id }, { $set: update });
+      const next = await db.collection<any>(USERS).findOne({ _id: user.id });
       return normalizeUser(next);
     },
 
     async deleteUser(userId: string) {
       const db = await getMongoDb();
-      await db.collection(USERS).deleteOne({ _id: userId });
+      await db.collection<any>(USERS).deleteOne({ _id: userId });
       await db.collection(ACCOUNTS).deleteMany({ userId });
       await db.collection(SESSIONS).deleteMany({ userId });
     },
@@ -138,15 +138,15 @@ export function MongoDbAdapter() {
         userId: session.userId,
         expires: session.expires,
       };
-      await db.collection(SESSIONS).insertOne(doc);
+      await db.collection<any>(SESSIONS).insertOne(doc);
       return session;
     },
 
     async getSessionAndUser(sessionToken: string) {
       const db = await getMongoDb();
-      const s = await db.collection(SESSIONS).findOne({ sessionToken });
+      const s = await db.collection<any>(SESSIONS).findOne({ sessionToken });
       if (!s?.userId) return null;
-      const u = await db.collection(USERS).findOne({ _id: String(s.userId) });
+      const u = await db.collection<any>(USERS).findOne({ _id: String(s.userId) });
       if (!u) return null;
       return {
         session: {
@@ -163,8 +163,8 @@ export function MongoDbAdapter() {
       const update: any = {};
       if ("userId" in session) update.userId = session.userId;
       if ("expires" in session) update.expires = session.expires;
-      await db.collection(SESSIONS).updateOne({ sessionToken: session.sessionToken }, { $set: update });
-      const next = await db.collection(SESSIONS).findOne({ sessionToken: session.sessionToken });
+      await db.collection<any>(SESSIONS).updateOne({ sessionToken: session.sessionToken }, { $set: update });
+      const next = await db.collection<any>(SESSIONS).findOne({ sessionToken: session.sessionToken });
       if (!next) return null;
       return {
         sessionToken: String(next.sessionToken),
@@ -175,12 +175,12 @@ export function MongoDbAdapter() {
 
     async deleteSession(sessionToken: string) {
       const db = await getMongoDb();
-      await db.collection(SESSIONS).deleteOne({ sessionToken });
+      await db.collection<any>(SESSIONS).deleteOne({ sessionToken });
     },
 
     async createVerificationToken(token: VerificationToken) {
       const db = await getMongoDb();
-      await db.collection(VERIFICATION_TOKENS).insertOne({
+      await db.collection<any>(VERIFICATION_TOKENS).insertOne({
         _id: token.token,
         identifier: token.identifier,
         token: token.token,

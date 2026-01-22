@@ -385,9 +385,35 @@ export const processMessages = async () => {
             setConversationItems([...conversationItems]);
 
             if (toolCallMessage.name === "generate_image") {
+              const url = (toolResult as any)?.url;
               const dataUrl = (toolResult as any)?.dataUrl;
-              if (typeof dataUrl === "string" && dataUrl.trim()) {
-                const text = `![Generated image](${dataUrl})`;
+              const src =
+                (typeof url === "string" && url.trim())
+                  ? url
+                  : (typeof dataUrl === "string" && dataUrl.trim() ? dataUrl : "");
+              if (src) {
+                const text = `![Generated image](${src})`;
+                chatMessages.push({
+                  type: "message",
+                  role: "assistant",
+                  content: [{ type: "output_text", text }],
+                } as MessageItem);
+                conversationItems.push({
+                  role: "assistant",
+                  content: [{ type: "output_text", text }],
+                });
+                setChatMessages([...chatMessages]);
+                setConversationItems([...conversationItems]);
+              }
+            }
+
+            if (toolCallMessage.name === "generate_images") {
+              const urls = (toolResult as any)?.urls;
+              const list = Array.isArray(urls)
+                ? urls.filter((u: any) => typeof u === "string" && u.trim())
+                : [];
+              if (list.length > 0) {
+                const text = list.map((u: string) => `![Generated image](${u})`).join("\n\n");
                 chatMessages.push({
                   type: "message",
                   role: "assistant",

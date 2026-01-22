@@ -21,9 +21,21 @@ const Message: React.FC<MessageProps> = ({ message }) => {
   const { theme } = useThemeStore();
   const [messageArtifacts, setMessageArtifacts] = useState<any[]>([]);
 
+  const messageText = message.content
+    .map((c: any) => (c && typeof c.text === "string" ? c.text : ""))
+    .join("")
+    .replace(/\bfilecite\s*:\s*\S+/gi, "")
+    .replace(/\bturn\d+file\b\s*:?\s*\S*/gi, "")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+
   useEffect(() => {
-    if (message.role === "assistant" && message.content[0]?.text) {
-      const { artifacts } = extractArtifacts(message.content[0].text as string);
+    const text = message.content
+      .map((c: any) => (c && typeof c.text === "string" ? c.text : ""))
+      .join("");
+
+    if (message.role === "assistant" && text) {
+      const { artifacts } = extractArtifacts(text);
       if (artifacts.length > 0) {
         setMessageArtifacts(artifacts);
         artifacts.forEach((artifact) => addArtifact(artifact));
@@ -32,8 +44,7 @@ const Message: React.FC<MessageProps> = ({ message }) => {
   }, [message, addArtifact]);
 
   const renderContent = () => {
-    const text = message.content[0].text as string;
-    const { cleanedContent } = extractArtifacts(text);
+    const { cleanedContent } = extractArtifacts(messageText);
     
     return (
       <ReactMarkdown
@@ -89,7 +100,7 @@ const Message: React.FC<MessageProps> = ({ message }) => {
               <div>
                 <div>
                   <ReactMarkdown>
-                    {message.content[0].text as string}
+                    {messageText}
                   </ReactMarkdown>
                 </div>
                 {/* Display image if present */}

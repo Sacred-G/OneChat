@@ -18,25 +18,90 @@ function sanitizeMessages(messages: any[]): any[] {
               detail: contentItem.detail || "high",
             };
           }
-          
-          // Handle annotations
-          if (contentItem.annotations && Array.isArray(contentItem.annotations)) {
-            return {
-              ...contentItem,
-              annotations: contentItem.annotations.map((annotation: any, idx: number) => {
-                // Ensure each annotation has an index field
-                return {
-                  ...annotation,
-                  index: annotation.index ?? idx,
-                };
-              }),
-            };
+
+          // Strip annotations from content items before sending to the Responses API.
+          // The client may include fields (e.g. container_id) that are not accepted in input.
+          if (contentItem && typeof contentItem === "object" && "annotations" in contentItem) {
+            const rest = { ...contentItem };
+            delete (rest as any).annotations;
+            return rest;
           }
+
+          // Strip very large base64 data URLs from text content to avoid blowing the model context window.
+          // The UI may persist generated images as data: URLs inside markdown.
+          if (
+            contentItem &&
+            typeof contentItem === "object" &&
+            typeof (contentItem as any).text === "string"
+          ) {
+            const text = String((contentItem as any).text);
+            const next = text.replace(
+              /data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g,
+              (m) => (m.length > 2048 ? "data:image/*;base64,<omitted>" : m)
+            );
+            if (next !== text) {
+              return { ...contentItem, text: next };
+            }
+          }
+
           return contentItem;
         }),
       };
     }
     return msg;
+  });
+}
+
+function sanitizeToolOutputs(items: any[]): any[] {
+  return (items ?? []).map((item: any) => {
+    if (!item || typeof item !== "object") return item;
+
+    if (item.type === "function_call_output" && typeof item.output === "string") {
+      const raw = item.output;
+      // Attempt JSON parse so we can surgically replace dataUrl fields.
+      try {
+        const parsed = JSON.parse(raw);
+        if (parsed && typeof parsed === "object" && typeof (parsed as any).dataUrl === "string") {
+          const dataUrl = String((parsed as any).dataUrl);
+          if (dataUrl.startsWith("data:image/") && dataUrl.length > 2048) {
+            (parsed as any).dataUrl = "data:image/*;base64,<omitted>";
+            return { ...item, output: JSON.stringify(parsed) };
+          }
+        }
+      } catch {
+        // ignore
+      }
+
+      const compacted = raw.replace(
+        /data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g,
+        (m: string) => (m.length > 2048 ? "data:image/*;base64,<omitted>" : m)
+      );
+      if (compacted !== raw) {
+        return { ...item, output: compacted };
+      }
+    }
+
+    return item;
+  });
+}
+
+function removeDanglingFunctionCalls(items: any[]): any[] {
+  const callIdsWithOutput = new Set<string>();
+  for (const item of items ?? []) {
+    if (!item || typeof item !== "object") continue;
+    if (item.type === "function_call_output" && typeof item.call_id === "string") {
+      callIdsWithOutput.add(item.call_id);
+    }
+  }
+
+  return (items ?? []).filter((item: any) => {
+    if (!item || typeof item !== "object") return false;
+    if (item.type === "function_call") {
+      const callId = item.call_id;
+      if (typeof callId !== "string" || !callId.trim()) return false;
+      return callIdsWithOutput.has(callId);
+    }
+    return true;
   });
 }
 
@@ -200,7 +265,9 @@ export async function POST(request: Request) {
     console.log("Received messages:", JSON.stringify(messages, null, 2));
 
     // Sanitize messages to ensure annotations have required fields
-    const sanitizedMessages = sanitizeMessages(messages);
+    const sanitizedMessages = sanitizeToolOutputs(
+      removeDanglingFunctionCalls(sanitizeMessages(messages))
+    );
     
     console.log("Sanitized messages:", JSON.stringify(sanitizedMessages, null, 2));
 

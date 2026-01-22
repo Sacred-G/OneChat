@@ -151,13 +151,6 @@ export default function Main() {
     }
   };
 
-  const orderedApipieModels = (() => {
-    const fav = new Set(apipieFavoriteModels || []);
-    const favs = (apipieModels || []).filter((m) => fav.has(m));
-    const rest = (apipieModels || []).filter((m) => !fav.has(m));
-    return [...favs, ...rest];
-  })();
-
   const favoriteApipieModels = (() => {
     const fav = new Set(apipieFavoriteModels || []);
     return (apipieModels || []).filter((m) => fav.has(m));
@@ -166,13 +159,6 @@ export default function Main() {
   const nonFavoriteApipieModels = (() => {
     const fav = new Set(apipieFavoriteModels || []);
     return (apipieModels || []).filter((m) => !fav.has(m));
-  })();
-
-  const orderedApipieImageModels = (() => {
-    const fav = new Set(apipieFavoriteImageModels || []);
-    const favs = (apipieImageModels || []).filter((m) => fav.has(m));
-    const rest = (apipieImageModels || []).filter((m) => !fav.has(m));
-    return [...favs, ...rest];
   })();
 
   const favoriteApipieImageModels = (() => {

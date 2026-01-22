@@ -40,6 +40,9 @@ export interface ToolsState {
   webSearchConfig: WebSearchConfig;
   mcpEnabled: boolean;
   mcpConfig: McpConfig;
+  localAgentEnabled: boolean;
+  localAgentUrl: string;
+  localAgentCwd: string;
   googleIntegrationEnabled: boolean;
   geminiImageEnabled: boolean;
   voiceModeEnabled: boolean;
@@ -75,8 +78,15 @@ interface StoreState {
   setMcpEnabled: (enabled: boolean) => void;
   mcpConfig: McpConfig;
   setMcpConfig: (config: McpConfig) => void;
+  hydrateMcpConfigFromFile: () => Promise<void>;
   voiceModeEnabled: boolean;
   setVoiceModeEnabled: (enabled: boolean) => void;
+  localAgentEnabled: boolean;
+  setLocalAgentEnabled: (enabled: boolean) => void;
+  localAgentUrl: string;
+  setLocalAgentUrl: (url: string) => void;
+  localAgentCwd: string;
+  setLocalAgentCwd: (cwd: string) => void;
   provider: "openai" | "apipie";
   setProvider: (provider: "openai" | "apipie") => void;
   apipieModel: string;
@@ -164,6 +174,48 @@ const useToolsStore = create<StoreState>()(
       mcpEnabled: false,
       setMcpEnabled: (enabled) => {
         set({ mcpEnabled: enabled });
+      },
+      hydrateMcpConfigFromFile: async () => {
+        try {
+          const res = await fetch("/api/mcp_config");
+          const data = await res.json().catch(() => null);
+          if (!res.ok) return;
+          const cfg = data?.config;
+          if (!cfg || typeof cfg !== "object") return;
+          const server_label = typeof cfg.server_label === "string" ? cfg.server_label : "";
+          const server_url = typeof cfg.server_url === "string" ? cfg.server_url : "";
+          const allowed_tools =
+            typeof cfg.allowed_tools === "string"
+              ? cfg.allowed_tools
+              : Array.isArray(cfg.allowed_tools)
+                ? cfg.allowed_tools.filter((t: any) => typeof t === "string").join(",")
+                : "";
+          const skip_approval = typeof cfg.skip_approval === "boolean" ? cfg.skip_approval : false;
+          if (!server_label || !server_url) return;
+          set({
+            mcpEnabled: true,
+            mcpConfig: {
+              server_label,
+              server_url,
+              allowed_tools,
+              skip_approval,
+            },
+          });
+        } catch {
+          // ignore
+        }
+      },
+      localAgentEnabled: false,
+      setLocalAgentEnabled: (enabled) => {
+        set({ localAgentEnabled: enabled });
+      },
+      localAgentUrl: "http://127.0.0.1:4001",
+      setLocalAgentUrl: (url) => {
+        set({ localAgentUrl: url });
+      },
+      localAgentCwd: "/",
+      setLocalAgentCwd: (cwd) => {
+        set({ localAgentCwd: cwd });
       },
       codeInterpreterEnabled: false,
       setCodeInterpreterEnabled: (enabled) => {

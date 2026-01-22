@@ -5,6 +5,8 @@ import WebSearchConfig from "./websearch-config";
 import FunctionsView from "./functions-view";
 import McpConfig from "./mcp-config";
 import PanelConfig from "./panel-config";
+import DestinationsPanel from "./destinations-panel";
+import LocalAgentPanel from "./local-agent-panel";
 import useToolsStore from "@/stores/useToolsStore";
 import GoogleIntegrationPanel from "@/components/google-integration";
 import { Mic, Trash2 } from "lucide-react";
@@ -14,6 +16,7 @@ import useThemeStore from "@/stores/useThemeStore";
 export default function ContextPanel() {
   const { resetConversation, setAssistantLoading } = useConversationStore();
   const { theme } = useThemeStore();
+  const [destinationsEnabled, setDestinationsEnabled] = React.useState(true);
   const {
     fileSearchEnabled,
     setFileSearchEnabled,
@@ -27,6 +30,9 @@ export default function ContextPanel() {
     setGeminiImageEnabled,
     mcpEnabled,
     setMcpEnabled,
+    localAgentEnabled,
+    setLocalAgentEnabled,
+    hydrateMcpConfigFromFile,
     codeInterpreterEnabled,
     setCodeInterpreterEnabled,
     voiceModeEnabled,
@@ -41,6 +47,10 @@ export default function ContextPanel() {
       .then((d) => setOauthConfigured(Boolean(d.oauthConfigured)))
       .catch(() => setOauthConfigured(false));
   }, []);
+
+  React.useEffect(() => {
+    hydrateMcpConfigFromFile();
+  }, [hydrateMcpConfigFromFile]);
 
   const handleClearHistory = async () => {
     if (isClearingHistory) return;
@@ -97,12 +107,28 @@ export default function ContextPanel() {
           setEnabled={setGeminiImageEnabled}
         />
         <PanelConfig
+          title="Destinations"
+          tooltip="Pick a destination + style prompt and generate 6 images using gpt-image-1.5"
+          enabled={destinationsEnabled}
+          setEnabled={setDestinationsEnabled}
+        >
+          {destinationsEnabled ? <DestinationsPanel /> : null}
+        </PanelConfig>
+        <PanelConfig
           title="Functions"
           tooltip="Allows to use locally defined functions"
           enabled={functionsEnabled}
           setEnabled={setFunctionsEnabled}
         >
           <FunctionsView />
+        </PanelConfig>
+        <PanelConfig
+          title="Local Agent"
+          tooltip="Local-only filesystem + command execution (dev mode). Requires running: npm run local-agent"
+          enabled={localAgentEnabled}
+          setEnabled={setLocalAgentEnabled}
+        >
+          {localAgentEnabled ? <LocalAgentPanel /> : null}
         </PanelConfig>
         <PanelConfig
           title="MCP"

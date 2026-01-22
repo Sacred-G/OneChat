@@ -77,7 +77,11 @@ export async function GET(request: Request) {
     });
   } catch (error) {
     console.error("[conversation] GET failed", error);
-    return new Response("Failed to load conversation", { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to load conversation";
+    return new Response(JSON.stringify({ ok: false, error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
 
@@ -91,19 +95,31 @@ export async function POST(request: Request) {
     id = body?.id;
     title = body?.title;
   } catch {
-    return new Response("Invalid JSON", { status: 400 });
+    return new Response(JSON.stringify({ ok: false, error: "Invalid JSON" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   if (!state || typeof state !== "object") {
-    return new Response("Missing state", { status: 400 });
+    return new Response(JSON.stringify({ ok: false, error: "Missing state" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const s = state as Partial<ConversationState>;
   if (!Array.isArray(s.chatMessages) || !Array.isArray(s.conversationItems)) {
-    return new Response("Invalid state", { status: 400 });
+    return new Response(JSON.stringify({ ok: false, error: "Invalid state" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
   if (!(typeof s.selectedSkill === "string" || s.selectedSkill === null)) {
-    return new Response("Invalid state", { status: 400 });
+    return new Response(JSON.stringify({ ok: false, error: "Invalid state" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const conversationState: ConversationState = {
@@ -140,7 +156,11 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("[conversation] POST failed", error);
-    return new Response("Failed to save conversation", { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to save conversation";
+    return new Response(JSON.stringify({ ok: false, error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
 
@@ -161,6 +181,10 @@ export async function DELETE(request: Request) {
     });
   } catch (error) {
     console.error("[conversation] DELETE failed", error);
-    return new Response("Failed to clear conversation", { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to clear conversation";
+    return new Response(JSON.stringify({ ok: false, error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

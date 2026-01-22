@@ -1,11 +1,17 @@
 import { MongoClient } from "mongodb";
 
-const uri =
-  process.env.MONGODB_URI || "mongodb://127.0.0.1:27017/responses_starter_app";
+const isHosted = Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production";
+const uri = process.env.MONGODB_URI || "";
+
+if (!uri && isHosted) {
+  throw new Error("Missing MONGODB_URI environment variable");
+}
+
+const effectiveUri = uri || "mongodb://127.0.0.1:27017/responses_starter_app";
 
 const dbNameFromUri = (() => {
   try {
-    const url = new URL(uri);
+    const url = new URL(effectiveUri);
     const pathname = url.pathname || "";
     const name = pathname.startsWith("/") ? pathname.slice(1) : pathname;
     return name || undefined;
@@ -21,7 +27,9 @@ const globalForMongo = globalThis as unknown as {
 };
 
 if (!globalForMongo._mongoClientPromise) {
-  const client = new MongoClient(uri);
+  const client = new MongoClient(effectiveUri, {
+    serverSelectionTimeoutMS: 5_000,
+  });
   globalForMongo._mongoClientPromise = client.connect();
 }
 

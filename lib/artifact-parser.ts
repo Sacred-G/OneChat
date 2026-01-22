@@ -34,7 +34,7 @@ export function extractArtifacts(content: string): {
       language === "react" ||
       (code.includes("import React") && code.includes("export default"));
 
-    const isMarkedArtifact = metadata !== undefined;
+    const isMarkedArtifact = metadata !== undefined || language === "artifact";
 
     if (isHtmlArtifact || isReactArtifact || isMarkedArtifact) {
       artifactIndex++;
@@ -62,6 +62,16 @@ ${code}
         artifactType = "react";
         // Convert React component to standalone HTML
         processedCode = convertReactToHtml(code);
+      } else if (language === "artifact") {
+        // Heuristic: most "artifact" blocks are full HTML pages.
+        const trimmed = code.trim();
+        if (
+          trimmed.startsWith("<!DOCTYPE") ||
+          trimmed.toLowerCase().startsWith("<!doctype") ||
+          trimmed.toLowerCase().startsWith("<html")
+        ) {
+          artifactType = "html";
+        }
       }
 
       const artifact: Artifact = {
@@ -120,6 +130,6 @@ ${reactCode}
  * Detects if content contains potential artifacts
  */
 export function hasArtifacts(content: string): boolean {
-  const codeBlockPattern = /```(html|jsx|tsx|react|xml)/;
+  const codeBlockPattern = /```(html|jsx|tsx|react|xml|artifact)/;
   return codeBlockPattern.test(content);
 }
