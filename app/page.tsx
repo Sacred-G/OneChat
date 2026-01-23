@@ -4,7 +4,8 @@ import ToolsPanel from "@/components/tools-panel";
 import ArtifactViewer from "@/components/artifact-viewer";
 import VoiceAgent from "@/components/voice-agent";
 import ConversationHistory from "@/components/conversation-history";
-import { X, Settings, Sun, Moon, Mic, Plus, Star, PanelLeft } from "lucide-react";
+import ImagesLibrary from "@/components/images-library";
+import { X, Settings, Sun, Moon, Mic, Plus, Star, PanelLeft, Images } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import useConversationStore from "@/stores/useConversationStore";
@@ -15,6 +16,7 @@ import useToolsStore from "@/stores/useToolsStore";
 
 export default function Main() {
   const [showTools, setShowTools] = useState(false);
+  const [showImagesLibrary, setShowImagesLibrary] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const router = useRouter();
   const {
@@ -379,7 +381,7 @@ export default function Main() {
         onMouseLeave={() => setSidebarCollapsed(true)}
         className={`hidden shrink-0 md:flex md:flex-col transition-[width] duration-200 ${
           sidebarCollapsed ? "w-0 overflow-hidden" : "w-72"
-        } ${theme === "dark" ? "bg-[#171717]" : "bg-[#f7f7f8]"}`}
+        } ${theme === "dark" ? "bg-[#141414]" : "bg-[#f7f7f8]"}`}
       >
         <div
           className={`flex items-center justify-between px-3 py-3 border-b ${
@@ -401,7 +403,7 @@ export default function Main() {
             onClick={() => setShowTools(!showTools)}
             className={`p-2 rounded-lg transition-colors ml-2 ${
               theme === 'dark' 
-                ? 'hover:bg-[#2d2d30] text-gray-400' 
+                ? 'hover:bg-white/5 text-gray-400' 
                 : 'hover:bg-gray-100 text-gray-600'
             }`}
             title="Settings"
@@ -412,7 +414,7 @@ export default function Main() {
             onClick={() => setSidebarCollapsed(true)}
             className={`p-2 rounded-lg transition-colors ml-1 ${
               theme === 'dark'
-                ? 'hover:bg-[#2d2d30] text-gray-400'
+                ? 'hover:bg-white/5 text-gray-400'
                 : 'hover:bg-gray-100 text-gray-600'
             }`}
             title="Hide sidebar"
@@ -449,7 +451,7 @@ export default function Main() {
               theme === "dark" ? "text-white" : "text-gray-900"
             }`}
           >
-            ChatGPT
+            OneChatAI
           </h1>
           <div className="flex items-center gap-2">
             <button
@@ -460,6 +462,15 @@ export default function Main() {
               title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
             >
               <PanelLeft size={20} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} />
+            </button>
+            <button
+              onClick={() => setShowImagesLibrary(true)}
+              className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+                theme === 'dark' ? 'hover:bg-[#2d2d30]' : 'hover:bg-gray-100'
+              }`}
+              title="Images"
+            >
+              <Images size={20} className={theme === 'dark' ? 'text-gray-400' : 'text-gray-600'} />
             </button>
             <button
               onClick={() => setShowTools(true)}
@@ -650,6 +661,15 @@ export default function Main() {
             >
               <Settings size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
             </button>
+            <button
+              onClick={() => setShowImagesLibrary(true)}
+              className={`p-2 rounded-lg transition-colors md:hidden ${
+                theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+              }`}
+              title="Images"
+            >
+              <Images size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+            </button>
             {voiceModeEnabled && (
               <button
                 onClick={() => setShowVoiceAgent(!showVoiceAgent)}
@@ -677,7 +697,7 @@ export default function Main() {
 
       {/* Artifact viewer - shows when artifact is present */}
       {currentArtifact && (
-        <div className={`hidden md:block md:w-1/2 border-l ${theme === 'dark' ? 'border-stone-700' : 'border-stone-200'}`}>
+        <div className={`hidden md:block md:w-1/2 border-l ${theme === 'dark' ? 'border-white/10' : 'border-stone-200'}`}>
           <ArtifactViewer
             artifact={currentArtifact}
             onClose={() => setCurrentArtifact(null)}
@@ -687,13 +707,13 @@ export default function Main() {
 
       {/* Tools panel - desktop (overlay on left sidebar) */}
       {showTools && !currentArtifact && (
-        <div className={`hidden md:block w-[350px] border-r overflow-y-auto absolute left-0 top-0 h-full z-40 ${theme === 'dark' ? 'border-stone-700 bg-[#212121]' : 'border-stone-200 bg-white'}`}>
+        <div className={`hidden md:block w-[350px] border-r overflow-y-auto absolute left-0 top-0 h-full z-40 ${theme === 'dark' ? 'border-white/10 bg-[#141414]' : 'border-stone-200 bg-white'}`}>
           <div className="p-4">
             <div className="flex items-center justify-between mb-4">
               <h2 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-stone-900'}`}>Settings</h2>
               <button
                 onClick={() => setShowTools(false)}
-                className={`p-1 rounded transition-colors ${theme === 'dark' ? 'hover:bg-stone-700' : 'hover:bg-stone-100'}`}
+                className={`p-1 rounded transition-colors ${theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-stone-100'}`}
               >
                 <X size={20} className={theme === 'dark' ? 'text-stone-400' : 'text-stone-600'} />
               </button>
@@ -703,16 +723,40 @@ export default function Main() {
         </div>
       )}
 
+      {showImagesLibrary && (
+        <div className="fixed inset-0 z-50 flex bg-black bg-opacity-30">
+          <div
+            className={
+              "w-full max-w-3xl h-full overflow-y-auto border-l ml-auto " +
+              (theme === "dark" ? "border-white/10 bg-[#141414]" : "border-stone-200 bg-white")
+            }
+          >
+            <div className="p-4">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-stone-900'}`}>Images</h2>
+                <button
+                  onClick={() => setShowImagesLibrary(false)}
+                  className={`p-1 rounded transition-colors ${theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-stone-100'}`}
+                >
+                  <X size={20} className={theme === 'dark' ? 'text-stone-400' : 'text-stone-600'} />
+                </button>
+              </div>
+              <ImagesLibrary />
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Mobile tools panel (overlay from left) */}
       {showTools && (
         <div className="fixed inset-0 z-50 flex bg-black bg-opacity-30 md:hidden">
-          <div className={`w-full max-w-md h-full overflow-y-auto ${theme === 'dark' ? 'bg-[#212121]' : 'bg-white'}`}>
+          <div className={`w-full max-w-md h-full overflow-y-auto ${theme === 'dark' ? 'bg-[#141414]' : 'bg-white'}`}>
             <div className="p-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className={`text-lg font-semibold ${theme === 'dark' ? 'text-white' : 'text-stone-900'}`}>Settings</h2>
                 <button
                   onClick={() => setShowTools(false)}
-                  className={`p-1 rounded transition-colors ${theme === 'dark' ? 'hover:bg-stone-700' : 'hover:bg-stone-100'}`}
+                  className={`p-1 rounded transition-colors ${theme === 'dark' ? 'hover:bg-white/10' : 'hover:bg-stone-100'}`}
                 >
                   <X size={24} className={theme === 'dark' ? 'text-stone-400' : 'text-stone-600'} />
                 </button>

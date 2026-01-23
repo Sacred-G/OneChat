@@ -7,6 +7,27 @@ export const dynamic = "force-dynamic";
 const COLLECTION = "conversations";
 const DEFAULT_ID = "default";
 
+const isHosted = Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production";
+
+const globalForConversations = globalThis as unknown as {
+  _conversationMemory?: Map<string, ConversationDoc>;
+};
+
+function getMemoryStore() {
+  if (!globalForConversations._conversationMemory) {
+    globalForConversations._conversationMemory = new Map();
+  }
+  return globalForConversations._conversationMemory;
+}
+
+async function getDbOrNull() {
+  try {
+    return await getMongoDb();
+  } catch {
+    return null;
+  }
+}
+
 type ConversationState = {
   chatMessages: unknown[];
   conversationItems: unknown[];
@@ -34,7 +55,39 @@ function shouldList(request: Request) {
 
 export async function GET(request: Request) {
   try {
-    const db = await getMongoDb();
+    const db = await getDbOrNull();
+    if (!db) {
+      if (isHosted) throw new Error("MongoDB unavailable");
+      const store = getMemoryStore();
+
+      if (shouldList(request)) {
+        const docs = Array.from(store.values())
+          .sort((a, b) => (b.updatedAt?.getTime?.() || 0) - (a.updatedAt?.getTime?.() || 0))
+          .slice(0, 50);
+        return new Response(
+          JSON.stringify({
+            ok: true,
+            conversations: docs.map((d) => ({
+              id: d._id,
+              title: d.title ?? null,
+              updatedAt: d.updatedAt,
+              createdAt: d.createdAt,
+            })),
+          }),
+          {
+            status: 200,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
+      }
+
+      const id = getIdFromRequest(request) ?? DEFAULT_ID;
+      const doc = store.get(id);
+      return new Response(JSON.stringify({ ok: true, state: doc ? doc.state : null }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     if (shouldList(request)) {
       const docs = await db
@@ -134,7 +187,24 @@ export async function POST(request: Request) {
   const conversationTitle = typeof title === "string" ? title : undefined;
 
   try {
-    const db = await getMongoDb();
+    const db = await getDbOrNull();
+    if (!db) {
+      if (isHosted) throw new Error("MongoDB unavailable");
+      const store = getMemoryStore();
+      const existing = store.get(conversationId);
+      const createdAt = existing?.createdAt || new Date();
+      store.set(conversationId, {
+        _id: conversationId,
+        state: conversationState,
+        ...(conversationTitle ? { title: conversationTitle } : {}),
+        createdAt,
+        updatedAt: new Date(),
+      });
+      return new Response(JSON.stringify({ ok: true, id: conversationId }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
     await db.collection<ConversationDoc>(COLLECTION).updateOne(
       { _id: conversationId },
       {
@@ -166,7 +236,21 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
-    const db = await getMongoDb();
+    const db = await getDbOrNull();
+    if (!db) {
+      if (isHosted) throw new Error("MongoDB unavailable");
+      const store = getMemoryStore();
+      const id = getIdFromRequest(request);
+      if (id) {
+        store.delete(id);
+      } else {
+        store.clear();
+      }
+      return new Response(JSON.stringify({ ok: true }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    }
 
     const id = getIdFromRequest(request);
     if (id) {

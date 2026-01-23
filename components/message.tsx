@@ -65,7 +65,11 @@ const Message: React.FC<MessageProps> = ({ message }) => {
             return !inline && match ? (
               <SyntaxHighlighter
                 style={SYNTAX_HIGHLIGHTER_STYLE}
-                customStyle={codeStyle}
+                customStyle={{
+                  ...(codeStyle || {}),
+                  backgroundColor: "transparent",
+                  margin: 0,
+                }}
                 language={match[1]}
                 PreTag="div"
                 {...props}
@@ -86,22 +90,26 @@ const Message: React.FC<MessageProps> = ({ message }) => {
   };
 
   return (
-    <div className="text-sm leading-relaxed">
+    <div className="text-[14px] leading-[1.6]">
       {message.role === "user" ? (
         <div className="flex justify-end">
           <div className="w-full max-w-[85%] sm:max-w-[75%] md:max-w-[70%]">
             <div
-              className={`ml-auto rounded-2xl px-4 py-3 shadow-sm ${
+              className={`ml-auto rounded-2xl px-4 py-3 shadow-sm border ${
                 theme === "dark"
-                  ? "bg-white/10 text-white"
-                  : "bg-black/5 text-stone-900"
+                  ? "bg-white/[0.06] border-white/10 text-stone-50"
+                  : "bg-black/5 border-black/10 text-stone-900"
               }`}
             >
               <div>
                 <div>
-                  <ReactMarkdown>
-                    {messageText}
-                  </ReactMarkdown>
+                  <div
+                    className={`prose prose-sm max-w-none prose-p:my-2 prose-li:my-1 prose-headings:my-3 prose-headings:font-semibold ${
+                      theme === "dark" ? "prose-invert" : ""
+                    }`}
+                  >
+                    <ReactMarkdown>{messageText}</ReactMarkdown>
+                  </div>
                 </div>
                 {/* Display image if present */}
                 {message.content.find((c) => c.type === "input_image" && c.image) && (
@@ -127,10 +135,12 @@ const Message: React.FC<MessageProps> = ({ message }) => {
       ) : (
         <div className="flex flex-col">
           <div className="flex">
-            <div className={`px-1 py-2 max-w-full ${theme === 'dark' ? 'text-stone-200' : 'text-stone-800'}`}>
+            <div className={`px-0 py-2 max-w-full ${theme === 'dark' ? 'text-stone-200' : 'text-stone-800'}`}>
               <div
-                className={`prose prose-sm max-w-none prose-p:leading-relaxed prose-pre:rounded-xl prose-pre:border ${
-                  theme === "dark" ? "prose-invert prose-pre:border-white/10" : "prose-pre:border-black/10"
+                className={`prose prose-sm max-w-none prose-p:leading-relaxed prose-p:my-2.5 prose-li:my-1 prose-headings:my-3 prose-headings:font-semibold prose-pre:rounded-xl prose-pre:border prose-pre:my-3 prose-pre:px-4 prose-pre:py-3 prose-code:px-1 prose-code:py-0.5 prose-code:rounded-md prose-code:before:content-[''] prose-code:after:content-[''] ${
+                  theme === "dark"
+                    ? "prose-invert prose-pre:border-white/10 prose-pre:bg-white/[0.04] prose-code:bg-white/10"
+                    : "prose-pre:border-black/10 prose-pre:bg-black/[0.02] prose-code:bg-black/5"
                 }`}
               >
                 {renderContent()}

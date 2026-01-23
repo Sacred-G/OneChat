@@ -36,7 +36,8 @@ export function extractArtifacts(content: string): {
 
     const isMarkedArtifact = metadata !== undefined || language === "artifact";
 
-    if (isHtmlArtifact || isReactArtifact || isMarkedArtifact) {
+    // Treat any fenced code block as an artifact so users can open it in the ArtifactViewer.
+    if (code && typeof code === "string") {
       artifactIndex++;
       
       let artifactType: "html" | "react" | "code" = "code";
@@ -77,7 +78,7 @@ ${code}
       const artifact: Artifact = {
         id: `artifact-${Date.now()}-${artifactIndex}`,
         type: artifactType,
-        title: metadata || `Artifact ${artifactIndex}`,
+        title: metadata || (isHtmlArtifact || isReactArtifact || isMarkedArtifact ? `Artifact ${artifactIndex}` : `Code ${artifactIndex}`),
         code: processedCode,
         language,
       };
@@ -130,6 +131,6 @@ ${reactCode}
  * Detects if content contains potential artifacts
  */
 export function hasArtifacts(content: string): boolean {
-  const codeBlockPattern = /```(html|jsx|tsx|react|xml|artifact)/;
+  const codeBlockPattern = /```/;
   return codeBlockPattern.test(content);
 }

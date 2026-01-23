@@ -632,14 +632,14 @@ ${skillInstructions}`,
     };
   }, []);
 
-  const bgColor = theme === "dark" ? "bg-[#2f2f2f]" : "bg-stone-100";
+  const bgColor = theme === "dark" ? "bg-white/[0.04]" : "bg-stone-100";
   const textColor = theme === "dark" ? "text-white" : "text-stone-900";
   const mutedTextColor = theme === "dark" ? "text-stone-400" : "text-stone-500";
 
   return (
-    <div className={`flex flex-col h-full ${theme === "dark" ? "bg-[#212121]" : "bg-white"}`}>
+    <div className={`flex flex-col h-full ${theme === "dark" ? "bg-[#121212]" : "bg-white"}`}>
       {/* Header */}
-      <div className={`flex items-center justify-between px-4 py-3 border-b ${theme === "dark" ? "border-stone-700" : "border-stone-200"}`}>
+      <div className={`flex items-center justify-between px-4 py-3 border-b ${theme === "dark" ? "border-white/10" : "border-stone-200"}`}>
         <h2 className={`text-lg font-semibold ${textColor}`}>Voice Mode</h2>
         {onClose && (
           <button
@@ -647,7 +647,7 @@ ${skillInstructions}`,
               disconnect();
               onClose();
             }}
-            className={`p-2 rounded-lg transition-colors ${theme === "dark" ? "hover:bg-stone-700" : "hover:bg-stone-100"}`}
+            className={`p-2 rounded-lg transition-colors ${theme === "dark" ? "hover:bg-white/5" : "hover:bg-stone-100"}`}
           >
             <PhoneOff size={20} className={mutedTextColor} />
           </button>
@@ -742,7 +742,7 @@ ${skillInstructions}`,
       </div>
 
       {/* Footer info */}
-      <div className={`px-4 py-3 border-t ${theme === "dark" ? "border-stone-700" : "border-stone-200"}`}>
+      <div className={`px-4 py-3 border-t ${theme === "dark" ? "border-white/10" : "border-stone-200"}`}>
         <p className={`text-xs text-center ${mutedTextColor}`}>
           Voice chat uses OpenAI Realtime API. Speak naturally and the assistant will respond.
         </p>

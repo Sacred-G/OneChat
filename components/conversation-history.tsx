@@ -146,7 +146,7 @@ export default function ConversationHistory({ onNewConversation }: ConversationH
                   onClick={onNewConversation}
                   className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
                     theme === "dark"
-                      ? "hover:bg-[#2d2d30] text-gray-100"
+                      ? "hover:bg-white/5 text-gray-100"
                       : "hover:bg-gray-100 text-gray-900"
                   }`}
                 >
@@ -178,7 +178,7 @@ export default function ConversationHistory({ onNewConversation }: ConversationH
                                 ? 'bg-white/10 text-white'
                                 : 'bg-black/5 text-gray-900'
                               : theme === 'dark'
-                                ? 'hover:bg-[#2d2d30] text-gray-100'
+                                ? 'hover:bg-white/5 text-gray-100'
                                 : 'hover:bg-gray-100 text-gray-900'
                           }`}
                         >
@@ -208,7 +208,7 @@ export default function ConversationHistory({ onNewConversation }: ConversationH
                   onClick={handleClearHistory}
                   className={`mt-3 w-full flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                     theme === 'dark'
-                      ? 'hover:bg-[#2d2d30] text-gray-300'
+                      ? 'hover:bg-white/5 text-gray-300'
                       : 'hover:bg-gray-100 text-gray-700'
                   }`}
                 >

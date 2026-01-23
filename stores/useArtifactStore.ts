@@ -8,11 +8,28 @@ export interface Artifact {
   language?: string;
 }
 
+export interface FileArtifact {
+  id: string;
+  type: "file";
+  title?: string;
+  file_id: string;
+  container_id?: string;
+  filename?: string;
+  mime_type: string;
+  url: string;
+}
+
+export type AnyArtifact = Artifact | FileArtifact;
+
 interface ArtifactStore {
-  currentArtifact: Artifact | null;
-  artifactHistory: Artifact[];
-  setCurrentArtifact: (artifact: Artifact | null) => void;
-  addArtifact: (artifact: Artifact) => void;
+  currentArtifact: AnyArtifact | null;
+  artifactHistory: AnyArtifact[];
+  setCurrentArtifact: (artifact: AnyArtifact | null) => void;
+  addArtifact: (artifact: AnyArtifact) => void;
+  upsertArtifact: (
+    artifact: AnyArtifact,
+    options?: { onlyIfExists?: boolean }
+  ) => void;
   clearArtifacts: () => void;
 }
 
@@ -25,6 +42,36 @@ const useArtifactStore = create<ArtifactStore>((set) => ({
       currentArtifact: artifact,
       artifactHistory: [...state.artifactHistory, artifact],
     })),
+  upsertArtifact: (artifact, options) =>
+    set((state) => {
+      const onlyIfExists = Boolean(options?.onlyIfExists);
+      const currentId = state.currentArtifact?.id;
+      const exists =
+        state.artifactHistory.some((a) => a.id === artifact.id) ||
+        (typeof currentId === "string" && currentId === artifact.id);
+
+      if (onlyIfExists && !exists) {
+        return state;
+      }
+
+      const nextHistory = (() => {
+        const idx = state.artifactHistory.findIndex((a) => a.id === artifact.id);
+        if (idx === -1) return [...state.artifactHistory, artifact];
+        const copy = [...state.artifactHistory];
+        copy[idx] = artifact;
+        return copy;
+      })();
+
+      const nextCurrent =
+        state.currentArtifact && state.currentArtifact.id === artifact.id
+          ? artifact
+          : state.currentArtifact;
+
+      return {
+        currentArtifact: nextCurrent,
+        artifactHistory: nextHistory,
+      };
+    }),
   clearArtifacts: () =>
     set({ currentArtifact: null, artifactHistory: [] }),
 }));

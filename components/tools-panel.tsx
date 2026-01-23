@@ -73,7 +73,7 @@ export default function ContextPanel() {
     <div
       className={`h-full w-full rounded-t-xl md:rounded-none border-l p-6 md:p-8 ${
         theme === "dark"
-          ? "bg-[#212121] border-stone-700"
+          ? "bg-[#141414] border-white/10"
           : "bg-white border-stone-200"
       }`}
     >

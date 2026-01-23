@@ -12,6 +12,10 @@ import LoadingMessage from "./loading-message";
 import useConversationStore from "@/stores/useConversationStore";
 import useThemeStore from "@/stores/useThemeStore";
 import ScreenCapture from "./screen-capture";
+import useToolsStore from "@/stores/useToolsStore";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Switch } from "./ui/switch";
+import { Plus, Settings2 } from "lucide-react";
 
 interface ChatProps {
   items: Item[];
@@ -35,6 +39,22 @@ const Chat: React.FC<ChatProps> = ({
   const [isComposing, setIsComposing] = useState(false);
   const { isAssistantLoading, selectedSkill, setSelectedSkill } = useConversationStore();
   const { theme } = useThemeStore();
+  const {
+    webSearchEnabled,
+    setWebSearchEnabled,
+    fileSearchEnabled,
+    setFileSearchEnabled,
+    functionsEnabled,
+    setFunctionsEnabled,
+    codeInterpreterEnabled,
+    setCodeInterpreterEnabled,
+    mcpEnabled,
+    setMcpEnabled,
+    localAgentEnabled,
+    setLocalAgentEnabled,
+    googleIntegrationEnabled,
+    setGoogleIntegrationEnabled,
+  } = useToolsStore();
 
   const handleScreenCapture = (imageData: string) => {
     setCapturedImage(imageData);
@@ -113,8 +133,8 @@ const Chat: React.FC<ChatProps> = ({
     <div className="flex flex-col h-full">
       {/* Messages area */}
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-5xl px-4">
-          <div className="py-8 space-y-6">
+        <div className="mx-auto w-full max-w-3xl px-4">
+          <div className="py-6 space-y-5">
             {items.map((item, index) => (
               <React.Fragment key={index}>
                 {item.type === "tool_call" ? (
@@ -150,11 +170,11 @@ const Chat: React.FC<ChatProps> = ({
       <div
         className={`sticky bottom-0 border-t ${
           theme === "dark"
-            ? "border-white/10 bg-[#0b0f19]/90"
+            ? "border-white/10 bg-[#121212]/90"
             : "border-black/10 bg-white/90"
         } backdrop-blur`}
       >
-        <div className="mx-auto w-full max-w-5xl px-4 py-4">
+        <div className="mx-auto w-full max-w-3xl px-4 py-4">
           {/* Screen capture preview */}
           {capturedImage && (
             <div className="mb-3 relative">
@@ -180,12 +200,113 @@ const Chat: React.FC<ChatProps> = ({
           <div
             className={`flex w-full flex-col gap-1.5 rounded-[26px] p-1.5 transition-colors border shadow-sm focus-within:shadow-md ${
               theme === "dark"
-                ? "bg-[#1a1f2e] border-white/10 focus-within:border-white/20"
+                ? "bg-[#1b1b1b] border-white/10 focus-within:border-white/20"
                 : "bg-white border-black/10 focus-within:border-black/20"
             }`}
           >
             {/* Screen capture button row */}
             <div className="flex items-center gap-2 px-3 pt-2">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    className={`h-9 w-9 inline-flex items-center justify-center rounded-md border text-sm outline-none transition-colors ${
+                      theme === "dark"
+                        ? "bg-transparent border-white/10 text-white hover:bg-white/10"
+                        : "bg-white border-black/10 text-gray-900 hover:bg-gray-50"
+                    }`}
+                    title="Tools"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent
+                  align="start"
+                  className={`w-[320px] p-3 ${
+                    theme === "dark"
+                      ? "bg-[#1b1b1b] border-white/10 text-white"
+                      : "bg-white border-black/10 text-gray-900"
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-2">
+                    <Settings2 size={16} className={theme === "dark" ? "text-stone-300" : "text-stone-700"} />
+                    <div className={`text-sm font-medium ${theme === "dark" ? "text-stone-100" : "text-stone-900"}`}>Tools</div>
+                  </div>
+
+                  <div className="space-y-3">
+                    <div>
+                      <div className={`text-xs mb-2 ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Search</div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm">Web search</div>
+                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Use web results</div>
+                          </div>
+                          <Switch checked={webSearchEnabled} onCheckedChange={(v) => setWebSearchEnabled(Boolean(v))} />
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm">File search</div>
+                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Search your vector store</div>
+                          </div>
+                          <Switch checked={fileSearchEnabled} onCheckedChange={(v) => setFileSearchEnabled(Boolean(v))} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className={`text-xs mb-2 ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Execution</div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm">Functions</div>
+                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Locally defined tools</div>
+                          </div>
+                          <Switch checked={functionsEnabled} onCheckedChange={(v) => setFunctionsEnabled(Boolean(v))} />
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm">Code interpreter</div>
+                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Run Python code</div>
+                          </div>
+                          <Switch checked={codeInterpreterEnabled} onCheckedChange={(v) => setCodeInterpreterEnabled(Boolean(v))} />
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm">Local agent</div>
+                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Dev-only filesystem + commands</div>
+                          </div>
+                          <Switch checked={localAgentEnabled} onCheckedChange={(v) => setLocalAgentEnabled(Boolean(v))} />
+                        </div>
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm">MCP</div>
+                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Remote MCP server tools</div>
+                          </div>
+                          <Switch checked={mcpEnabled} onCheckedChange={(v) => setMcpEnabled(Boolean(v))} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className={`text-xs mb-2 ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Connectors</div>
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-sm">Google</div>
+                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Gmail + Calendar</div>
+                          </div>
+                          <Switch
+                            checked={googleIntegrationEnabled}
+                            onCheckedChange={(v) => setGoogleIntegrationEnabled(Boolean(v))}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
+
               <ScreenCapture onCapture={handleScreenCapture} />
               <button
                 type="button"
@@ -237,7 +358,7 @@ const Chat: React.FC<ChatProps> = ({
                   tabIndex={0}
                   dir="auto"
                   rows={1}
-                  placeholder="Message ChatGPT"
+                  placeholder="Message OneChatAI"
                   className={`max-h-52 resize-none border-0 focus:outline-none text-base bg-transparent px-0 py-3 ${
                     theme === 'dark' 
                       ? 'text-white placeholder:text-gray-400' 
@@ -294,7 +415,7 @@ const Chat: React.FC<ChatProps> = ({
             </div>
           </div>
           <p className={`text-xs text-center mt-2 ${theme === 'dark' ? 'text-gray-500' : 'text-gray-500'}`}>
-            ChatGPT can make mistakes. Check important info.
+            OneChatAI can make mistakes. Check important info.
           </p>
         </div>
       </div>

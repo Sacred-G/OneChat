@@ -30,7 +30,10 @@ if (!globalForMongo._mongoClientPromise) {
   const client = new MongoClient(effectiveUri, {
     serverSelectionTimeoutMS: 5_000,
   });
-  globalForMongo._mongoClientPromise = client.connect();
+  globalForMongo._mongoClientPromise = client.connect().catch((err) => {
+    globalForMongo._mongoClientPromise = undefined;
+    throw err;
+  });
 }
 
 const clientPromise = globalForMongo._mongoClientPromise;

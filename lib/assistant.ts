@@ -2,6 +2,7 @@ import { parse } from "partial-json";
 import { handleTool } from "@/lib/tools/tools-handling";
 import useConversationStore from "@/stores/useConversationStore";
 import useToolsStore, { ToolsState } from "@/stores/useToolsStore";
+import useArtifactStore from "@/stores/useArtifactStore";
 import { Annotation } from "@/components/annotations";
 import { functionsMap } from "@/config/functions";
 
@@ -359,6 +360,29 @@ export const processMessages = async () => {
             if (files.length > 0) {
               toolCallMessage.files = files as any;
               setChatMessages([...chatMessages]);
+
+              try {
+                const { currentArtifact, addArtifact } = useArtifactStore.getState() as any;
+                if (!currentArtifact && typeof addArtifact === "function") {
+                  const first = (files as any[])[0];
+                  if (first?.file_id) {
+                    const url = `/api/container_files/content?file_id=${encodeURIComponent(first.file_id)}${
+                      first.container_id ? `&container_id=${encodeURIComponent(first.container_id)}` : ""
+                    }${first.filename ? `&filename=${encodeURIComponent(first.filename)}` : ""}`;
+                    addArtifact({
+                      id: `file-${first.file_id}`,
+                      type: "file",
+                      title: first.filename || "File",
+                      file_id: String(first.file_id),
+                      ...(first.container_id ? { container_id: String(first.container_id) } : {}),
+                      ...(first.filename ? { filename: String(first.filename) } : {}),
+                      mime_type: String(first.mime_type || "application/octet-stream"),
+                      url,
+                    } as any);
+                  }
+                }
+              } catch {
+              }
             }
           }
 
@@ -383,50 +407,6 @@ export const processMessages = async () => {
               output: JSON.stringify(toolResult),
             });
             setConversationItems([...conversationItems]);
-
-            if (toolCallMessage.name === "generate_image") {
-              const url = (toolResult as any)?.url;
-              const dataUrl = (toolResult as any)?.dataUrl;
-              const src =
-                (typeof url === "string" && url.trim())
-                  ? url
-                  : (typeof dataUrl === "string" && dataUrl.trim() ? dataUrl : "");
-              if (src) {
-                const text = `![Generated image](${src})`;
-                chatMessages.push({
-                  type: "message",
-                  role: "assistant",
-                  content: [{ type: "output_text", text }],
-                } as MessageItem);
-                conversationItems.push({
-                  role: "assistant",
-                  content: [{ type: "output_text", text }],
-                });
-                setChatMessages([...chatMessages]);
-                setConversationItems([...conversationItems]);
-              }
-            }
-
-            if (toolCallMessage.name === "generate_images") {
-              const urls = (toolResult as any)?.urls;
-              const list = Array.isArray(urls)
-                ? urls.filter((u: any) => typeof u === "string" && u.trim())
-                : [];
-              if (list.length > 0) {
-                const text = list.map((u: string) => `![Generated image](${u})`).join("\n\n");
-                chatMessages.push({
-                  type: "message",
-                  role: "assistant",
-                  content: [{ type: "output_text", text }],
-                } as MessageItem);
-                conversationItems.push({
-                  role: "assistant",
-                  content: [{ type: "output_text", text }],
-                });
-                setChatMessages([...chatMessages]);
-                setConversationItems([...conversationItems]);
-              }
-            }
 
             // Create another turn after tool output has been added
             await processMessages();
@@ -555,6 +535,22 @@ export const processMessages = async () => {
           if (toolCallMessage) {
             toolCallMessage.code = (toolCallMessage.code || "") + delta;
             setChatMessages([...chatMessages]);
+            try {
+              const { upsertArtifact } = useArtifactStore.getState() as any;
+              if (typeof upsertArtifact === "function") {
+                upsertArtifact(
+                  {
+                    id: `code-interpreter-${item_id}`,
+                    type: "code",
+                    title: "Code interpreter",
+                    code: toolCallMessage.code || "",
+                    language: "python",
+                  } as any,
+                  { onlyIfExists: true }
+                );
+              }
+            } catch {
+            }
           }
           break;
         }
@@ -576,6 +572,24 @@ export const processMessages = async () => {
             toolCallMessage.code = code;
             toolCallMessage.status = "completed";
             setChatMessages([...chatMessages]);
+
+            try {
+              const { upsertArtifact } = useArtifactStore.getState() as any;
+              if (typeof upsertArtifact === "function") {
+                upsertArtifact(
+                  {
+                    id: `code-interpreter-${item_id}`,
+                    type: "code",
+                    title: "Code interpreter",
+                    code: toolCallMessage.code || "",
+                    language: "python",
+                  } as any,
+                  { onlyIfExists: true }
+                );
+              }
+            } catch {
+              // ignore
+            }
           }
           break;
         }

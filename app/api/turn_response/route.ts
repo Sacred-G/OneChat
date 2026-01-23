@@ -1,7 +1,120 @@
 import { getDeveloperPrompt, MODEL } from "@/config/constants";
 import { getTools } from "@/lib/tools/tools";
-import { getSkill } from "@/lib/skills-registry";
+import { getSkill, listSkills } from "@/lib/skills-registry";
 import OpenAI from "openai";
+
+function extractTextFromMessages(messages: any[]): string {
+  const arr = Array.isArray(messages) ? messages : [];
+  for (let i = arr.length - 1; i >= 0; i--) {
+    const m = arr[i];
+    if (!m || typeof m !== "object") continue;
+    if (m.role !== "user") continue;
+
+    const content = (m as any).content;
+    if (typeof content === "string") return content;
+
+    if (Array.isArray(content)) {
+      const texts: string[] = [];
+      for (const part of content) {
+        if (!part || typeof part !== "object") continue;
+        if (typeof (part as any).text === "string") texts.push(String((part as any).text));
+      }
+      if (texts.length) return texts.join("\n");
+    }
+  }
+  return "";
+}
+
+function normalizeTokens(s: string): string[] {
+  return String(s)
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, " ")
+    .split(/[\s-]+/g)
+    .map((t) => t.trim())
+    .filter((t) => t.length >= 3);
+}
+
+async function inferSkillName(messages: any[]): Promise<string | null> {
+  const query = extractTextFromMessages(messages).toLowerCase();
+  if (!query.trim()) return null;
+
+  const skills = await listSkills();
+  if (!skills.length) return null;
+
+  // Targeted aliases for common intents.
+  const aliasBoosts: Array<{ name: string; patterns: RegExp[] }> = [
+    {
+      name: "hr-supported-living",
+      patterns: [
+        /\bhr\b/i,
+        /human\s+resources/i,
+        /supported\s+living/i,
+        /title\s*17/i,
+      ],
+    },
+    {
+      name: "web-artifacts-builder",
+      patterns: [
+        /\bshadcn\b/i,
+        /shadcn\/ui/i,
+        /\btailwind\b/i,
+        /\bradix\b/i,
+        /\breact\b/i,
+        /\bvite\b/i,
+        /\bartifact\b/i,
+      ],
+    },
+    {
+      name: "frontend-design",
+      patterns: [
+        /\bfrontend\b/i,
+        /\bui\b/i,
+        /\blanding\s+page\b/i,
+        /\bweb\s*page\b/i,
+        /\bwebsite\b/i,
+        /\bhtml\b/i,
+        /\bcss\b/i,
+        /\bjavascript\b/i,
+        /\bsingle\s*file\b/i,
+        /\bone\s+file\b/i,
+        /\bone\s+html\b/i,
+        /single\s+html\s+file/i,
+        /html\s*\+\s*css\s*\+\s*js/i,
+      ],
+    },
+  ];
+
+  const queryTokens = new Set(normalizeTokens(query));
+
+  let best: { name: string; score: number } | null = null;
+  for (const s of skills) {
+    let score = 0;
+
+    const nameLc = String(s.name || "").toLowerCase();
+    const descLc = String(s.description || "").toLowerCase();
+
+    for (const alias of aliasBoosts) {
+      if (alias.name === nameLc && alias.patterns.some((p) => p.test(query))) {
+        score += 50;
+      }
+    }
+
+    // Direct name mention.
+    if (nameLc && query.includes(nameLc.replace(/-/g, " "))) score += 20;
+
+    // Token overlap with name/description.
+    const skillTokens = new Set([...normalizeTokens(nameLc), ...normalizeTokens(descLc)]);
+    for (const t of queryTokens) {
+      if (skillTokens.has(t)) score += 2;
+    }
+
+    if (!best || score > best.score) best = { name: s.name, score };
+  }
+
+  // Require at least a small signal to avoid injecting unrelated skills.
+  if (!best || best.score < 6) return null;
+  return best.name;
+}
 
 // Sanitize messages to ensure all annotations have required fields and images are properly formatted
 function sanitizeMessages(messages: any[]): any[] {
@@ -175,9 +288,13 @@ export async function POST(request: Request) {
       }
 
       let instructions = getDeveloperPrompt();
-      if (selectedSkill && typeof selectedSkill === "string") {
+      const effectiveSkill =
+        selectedSkill && typeof selectedSkill === "string"
+          ? selectedSkill
+          : await inferSkillName(messages);
+      if (effectiveSkill && typeof effectiveSkill === "string") {
         try {
-          const skill = await getSkill(selectedSkill);
+          const skill = await getSkill(effectiveSkill);
           if (skill?.content) {
             instructions = `${instructions}\n\n# Skill: ${skill.name}\n\n${skill.content}`;
           }
@@ -274,9 +391,13 @@ export async function POST(request: Request) {
     const openai = new OpenAI();
 
     let instructions = getDeveloperPrompt();
-    if (selectedSkill && typeof selectedSkill === "string") {
+    const effectiveSkill =
+      selectedSkill && typeof selectedSkill === "string"
+        ? selectedSkill
+        : await inferSkillName(messages);
+    if (effectiveSkill && typeof effectiveSkill === "string") {
       try {
-        const skill = await getSkill(selectedSkill);
+        const skill = await getSkill(effectiveSkill);
         if (skill?.content) {
           instructions = `${instructions}\n\n# Skill: ${skill.name}\n\n${skill.content}`;
         }
