@@ -2,10 +2,25 @@
 import React from "react";
 import Chat from "./chat";
 import useConversationStore from "@/stores/useConversationStore";
-import { Item, processMessages } from "@/lib/assistant";
+import {
+  FunctionApprovalAction,
+  handleFunctionApprovalResponse,
+  Item,
+  processMessages,
+} from "@/lib/assistant";
 import useToolsStore from "@/stores/useToolsStore";
 
-export default function Assistant() {
+interface AssistantProps {
+  voiceModeEnabled?: boolean;
+  showVoiceAgent?: boolean;
+  setShowVoiceAgent?: (show: boolean) => void;
+}
+
+export default function Assistant({
+  voiceModeEnabled = false,
+  showVoiceAgent = false,
+  setShowVoiceAgent,
+}: AssistantProps = {}) {
   const {
     chatMessages,
     addConversationItem,
@@ -53,6 +68,18 @@ export default function Assistant() {
       }
     } catch {
       // ignore save failures
+    }
+  };
+
+  const handleFunctionApproval = async (
+    action: FunctionApprovalAction,
+    id: string
+  ) => {
+    try {
+      await handleFunctionApprovalResponse(action, id);
+      await persistConversation();
+    } catch (error) {
+      console.error("Error sending function approval response:", error);
     }
   };
 
@@ -235,6 +262,10 @@ export default function Assistant() {
         items={chatMessages}
         onSendMessage={handleSendMessage}
         onApprovalResponse={handleApprovalResponse}
+        onFunctionApprovalResponse={handleFunctionApproval}
+        voiceModeEnabled={voiceModeEnabled}
+        showVoiceAgent={showVoiceAgent}
+        setShowVoiceAgent={setShowVoiceAgent}
       />
     </div>
   );

@@ -7,7 +7,13 @@ import Message from "./message";
 import Annotations from "./annotations";
 import McpToolsList from "./mcp-tools-list";
 import McpApproval from "./mcp-approval";
-import { Item, McpApprovalRequestItem } from "@/lib/assistant";
+import FunctionApproval from "./function-approval";
+import {
+  FunctionApprovalAction,
+  FunctionApprovalRequestItem,
+  Item,
+  McpApprovalRequestItem,
+} from "@/lib/assistant";
 import LoadingMessage from "./loading-message";
 import useConversationStore from "@/stores/useConversationStore";
 import useThemeStore from "@/stores/useThemeStore";
@@ -15,19 +21,28 @@ import ScreenCapture from "./screen-capture";
 import useToolsStore from "@/stores/useToolsStore";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Switch } from "./ui/switch";
-import { Plus, Settings2 } from "lucide-react";
+import { Plus, Settings2, Mic } from "lucide-react";
 
 interface ChatProps {
   items: Item[];
   onSendMessage: (message: string, imageData?: string) => void;
   onApprovalResponse: (approve: boolean, id: string) => void;
+  onFunctionApprovalResponse: (action: FunctionApprovalAction, id: string) => void;
+  voiceModeEnabled?: boolean;
+  showVoiceAgent?: boolean;
+  setShowVoiceAgent?: (show: boolean) => void;
 }
 
 const Chat: React.FC<ChatProps> = ({
   items,
   onSendMessage,
   onApprovalResponse,
+  onFunctionApprovalResponse,
+  voiceModeEnabled = false,
+  showVoiceAgent = false,
+  setShowVoiceAgent,
 }) => {
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
   const itemsEndRef = useRef<HTMLDivElement>(null);
   const uploadInputRef = useRef<HTMLInputElement>(null);
   const [inputMessageText, setinputMessageText] = useState<string>("");
@@ -35,6 +50,7 @@ const Chat: React.FC<ChatProps> = ({
   const [availableSkills, setAvailableSkills] = useState<
     Array<{ name: string; description: string }>
   >([]);
+  const [isNearBottom, setIsNearBottom] = useState(true);
   // This state is used to provide better user experience for non-English IMEs such as Japanese
   const [isComposing, setIsComposing] = useState(false);
   const { isAssistantLoading, selectedSkill, setSelectedSkill } = useConversationStore();
@@ -95,7 +111,9 @@ const Chat: React.FC<ChatProps> = ({
   }, [capturedImage, inputMessageText, onSendMessage]);
 
   const scrollToBottom = () => {
-    itemsEndRef.current?.scrollIntoView({ behavior: "instant" });
+    requestAnimationFrame(() => {
+      itemsEndRef.current?.scrollIntoView({ behavior: "auto" });
+    });
   };
 
   const handleKeyDown = useCallback(
@@ -109,8 +127,25 @@ const Chat: React.FC<ChatProps> = ({
   );
 
   useEffect(() => {
-    scrollToBottom();
-  }, [items]);
+    const el = scrollContainerRef.current;
+    if (!el) return;
+
+    const update = () => {
+      const thresholdPx = 140;
+      const remaining = el.scrollHeight - el.scrollTop - el.clientHeight;
+      setIsNearBottom(remaining <= thresholdPx);
+    };
+
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    return () => {
+      el.removeEventListener("scroll", update);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isNearBottom) scrollToBottom();
+  }, [items, isNearBottom]);
 
   useEffect(() => {
     fetch("/api/skills/list")
@@ -132,15 +167,15 @@ const Chat: React.FC<ChatProps> = ({
   return (
     <div className="flex flex-col h-full">
       {/* Messages area */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto w-full max-w-3xl px-4">
+      <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden overscroll-contain">
+        <div className="mx-auto w-full max-w-3xl px-4 min-w-0">
           <div className="py-6 space-y-5">
             {items.map((item, index) => (
               <React.Fragment key={index}>
                 {item.type === "tool_call" ? (
                   <ToolCall toolCall={item} />
                 ) : item.type === "message" ? (
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col gap-2 min-w-0">
                     <Message message={item} />
                     {item.content &&
                       item.content[0].annotations &&
@@ -156,6 +191,11 @@ const Chat: React.FC<ChatProps> = ({
                   <McpApproval
                     item={item as McpApprovalRequestItem}
                     onRespond={onApprovalResponse}
+                  />
+                ) : item.type === "function_approval_request" ? (
+                  <FunctionApproval
+                    item={item as FunctionApprovalRequestItem}
+                    onRespond={onFunctionApprovalResponse}
                   />
                 ) : null}
               </React.Fragment>
@@ -205,7 +245,7 @@ const Chat: React.FC<ChatProps> = ({
             }`}
           >
             {/* Screen capture button row */}
-            <div className="flex items-center gap-2 px-3 pt-2">
+            <div className="flex items-center gap-1 px-3 pt-2">
               <Popover>
                 <PopoverTrigger asChild>
                   <button
@@ -311,13 +351,14 @@ const Chat: React.FC<ChatProps> = ({
               <button
                 type="button"
                 onClick={handleUploadClick}
-                className={`h-9 rounded-md border px-2 text-sm outline-none transition-colors ${
+                className={`h-9 rounded-md border px-1 text-xs outline-none transition-colors sm:px-2 sm:text-sm ${
                   theme === "dark"
                     ? "bg-transparent border-white/10 text-white hover:bg-white/10"
                     : "bg-white border-black/10 text-gray-900 hover:bg-gray-50"
                 }`}
               >
-                Upload
+                <span className="hidden sm:inline">Upload</span>
+                <span className="sm:hidden">📎</span>
               </button>
               <input
                 ref={uploadInputRef}
@@ -336,19 +377,35 @@ const Chat: React.FC<ChatProps> = ({
                   const v = e.target.value;
                   setSelectedSkill(v ? v : null);
                 }}
-                className={`h-9 rounded-md border px-2 text-sm outline-none ${
+                className={`h-9 rounded-md border px-1 text-xs outline-none sm:px-2 sm:text-sm ${
                   theme === "dark"
                     ? "bg-transparent border-white/10 text-white"
                     : "bg-white border-black/10 text-gray-900"
                 }`}
               >
-                <option value="">Skill: Default</option>
+                <option value="">Default</option>
                 {availableSkills.map((s) => (
                   <option key={s.name} value={s.name}>
-                    {`Skill: ${s.name}`}
+                    {s.name}
                   </option>
                 ))}
               </select>
+              {voiceModeEnabled && (
+                <button
+                  type="button"
+                  onClick={() => setShowVoiceAgent?.(!showVoiceAgent)}
+                  className={`h-9 w-9 inline-flex items-center justify-center rounded-md border text-sm outline-none transition-colors ${
+                    showVoiceAgent
+                      ? "bg-green-500 hover:bg-green-600 text-white border-green-600"
+                      : theme === "dark"
+                        ? "bg-transparent border-white/10 text-white hover:bg-white/10"
+                        : "bg-white border-black/10 text-gray-900 hover:bg-gray-50"
+                  }`}
+                  title="Voice Mode"
+                >
+                  <Mic size={16} />
+                </button>
+              )}
             </div>
             
             <div className="flex items-end gap-2 px-3">
