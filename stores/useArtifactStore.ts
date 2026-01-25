@@ -2,10 +2,12 @@ import { create } from "zustand";
 
 export interface Artifact {
   id: string;
-  type: "html" | "react" | "code";
+  type: "html" | "react" | "code" | "docx";
   title?: string;
   code: string;
   language?: string;
+  // For document types that need to be fetched
+  fileUrl?: string;
 }
 
 interface ArtifactStore {

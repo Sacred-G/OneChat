@@ -1,16 +1,18 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { X, Code2, Eye, Download, Maximize2, Minimize2 } from "lucide-react";
+import { X, Code2, Eye, Download, Maximize2, Minimize2, FileText, Loader2 } from "lucide-react";
 import useThemeStore from "@/stores/useThemeStore";
+import mammoth from "mammoth";
 
 interface ArtifactViewerProps {
   artifact: {
     id: string;
-    type: "html" | "react" | "code";
+    type: "html" | "react" | "code" | "docx";
     title?: string;
     code: string;
     language?: string;
+    fileUrl?: string;
   } | null;
   onClose: () => void;
 }
@@ -18,6 +20,9 @@ interface ArtifactViewerProps {
 const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) => {
   const [viewMode, setViewMode] = useState<"preview" | "code">("preview");
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [docxHtml, setDocxHtml] = useState<string | null>(null);
+  const [docxLoading, setDocxLoading] = useState(false);
+  const [docxError, setDocxError] = useState<string | null>(null);
   const { theme } = useThemeStore();
 
   useEffect(() => {
@@ -28,11 +33,74 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
     }
   }, [artifact]);
 
+  // Load and convert DOCX files
+  useEffect(() => {
+    if (artifact?.type === "docx" && artifact.fileUrl) {
+      setDocxLoading(true);
+      setDocxError(null);
+      setDocxHtml(null);
+
+      fetch(artifact.fileUrl)
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to fetch document");
+          return res.arrayBuffer();
+        })
+        .then((arrayBuffer) => mammoth.convertToHtml({ arrayBuffer }))
+        .then((result) => {
+          // Wrap in styled HTML document
+          const styledHtml = `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      line-height: 1.6;
+      padding: 2rem;
+      max-width: 800px;
+      margin: 0 auto;
+      color: #333;
+    }
+    h1, h2, h3, h4, h5, h6 { margin-top: 1.5em; margin-bottom: 0.5em; }
+    p { margin: 1em 0; }
+    table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+    td, th { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background: #f5f5f5; }
+    ul, ol { margin: 1em 0; padding-left: 2em; }
+    img { max-width: 100%; height: auto; }
+  </style>
+</head>
+<body>
+${result.value}
+</body>
+</html>`;
+          setDocxHtml(styledHtml);
+          setDocxLoading(false);
+        })
+        .catch((err) => {
+          console.error("DOCX conversion error:", err);
+          setDocxError(err.message || "Failed to load document");
+          setDocxLoading(false);
+        });
+    }
+  }, [artifact?.type, artifact?.fileUrl]);
+
   if (!artifact) return null;
 
   const handleDownload = () => {
     const rawTitle = (artifact.title || "artifact").trim();
     const safeTitle = rawTitle.replace(/[\\/:*?"<>|]+/g, "-").slice(0, 120) || "artifact";
+
+    // For DOCX files, download the original file
+    if (artifact.type === "docx" && artifact.fileUrl) {
+      const a = document.createElement("a");
+      a.href = artifact.fileUrl;
+      a.download = safeTitle.endsWith(".docx") ? safeTitle : `${safeTitle}.docx`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      return;
+    }
 
     const language = (artifact.language || "").toLowerCase();
 
@@ -80,13 +148,17 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
       {/* Header */}
       <div className={`flex items-center justify-between px-4 py-3 border-b ${theme === 'dark' ? 'border-stone-700 bg-[#2f2f2f]' : 'border-stone-200 bg-stone-50'}`}>
         <div className="flex items-center gap-2">
-          <Code2 size={18} className={theme === 'dark' ? 'text-stone-400' : 'text-stone-600'} />
+          {artifact.type === "docx" ? (
+            <FileText size={18} className={theme === 'dark' ? 'text-stone-400' : 'text-stone-600'} />
+          ) : (
+            <Code2 size={18} className={theme === 'dark' ? 'text-stone-400' : 'text-stone-600'} />
+          )}
           <span className={`font-medium text-sm ${theme === 'dark' ? 'text-white' : 'text-stone-900'}`}>
             {artifact.title || "Artifact"}
           </span>
         </div>
         <div className="flex items-center gap-2">
-          {artifact.type !== "code" && (
+          {(artifact.type !== "code" || artifact.type === "docx") && (
             <button
               onClick={() =>
                 setViewMode(viewMode === "preview" ? "code" : "preview")
@@ -131,7 +203,37 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        {viewMode === "preview" && artifact.type !== "code" ? (
+        {artifact.type === "docx" ? (
+          // DOCX document preview
+          docxLoading ? (
+            <div className={`flex items-center justify-center h-full ${theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-white'}`}>
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 size={32} className={`animate-spin ${theme === 'dark' ? 'text-stone-400' : 'text-stone-600'}`} />
+                <span className={theme === 'dark' ? 'text-stone-400' : 'text-stone-600'}>Loading document...</span>
+              </div>
+            </div>
+          ) : docxError ? (
+            <div className={`flex items-center justify-center h-full ${theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-white'}`}>
+              <div className="flex flex-col items-center gap-3 text-red-500">
+                <FileText size={32} />
+                <span>Error: {docxError}</span>
+              </div>
+            </div>
+          ) : viewMode === "preview" && docxHtml ? (
+            <iframe
+              srcDoc={docxHtml}
+              className="w-full h-full border-0 bg-white"
+              sandbox="allow-same-origin"
+              title={artifact.title || "Document Preview"}
+            />
+          ) : (
+            <div className={`h-full overflow-auto p-4 ${theme === 'dark' ? 'bg-[#1a1a1a]' : 'bg-stone-900'}`}>
+              <pre className="text-sm text-stone-100 font-mono whitespace-pre-wrap">
+                <code>{docxHtml || artifact.code}</code>
+              </pre>
+            </div>
+          )
+        ) : viewMode === "preview" && artifact.type !== "code" ? (
           <iframe
             srcDoc={artifact.code}
             className="w-full h-full border-0"

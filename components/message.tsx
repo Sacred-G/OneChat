@@ -7,7 +7,7 @@ import useThemeStore from "@/stores/useThemeStore";
 import Image from "next/image";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
-import { Eye, Download, ExternalLink } from "lucide-react";
+import { Eye, Download, ExternalLink, FileText } from "lucide-react";
 
 interface MessageProps {
   message: MessageItem;
@@ -22,12 +22,41 @@ const Message: React.FC<MessageProps> = ({ message }) => {
   const [messageArtifacts, setMessageArtifacts] = useState<any[]>([]);
 
   useEffect(() => {
+    const allArtifacts: any[] = [];
+
+    // Extract code artifacts from text
     if (message.role === "assistant" && message.content[0]?.text) {
       const { artifacts } = extractArtifacts(message.content[0].text as string);
-      if (artifacts.length > 0) {
-        setMessageArtifacts(artifacts);
-        artifacts.forEach((artifact) => addArtifact(artifact));
-      }
+      allArtifacts.push(...artifacts);
+    }
+
+    // Extract document artifacts from annotations (DOCX, XLSX, PPTX, PDF)
+    if (message.role === "assistant" && message.content[0]?.annotations) {
+      const docAnnotations = message.content[0].annotations.filter(
+        (a: any) =>
+          a.type === "container_file_citation" &&
+          a.filename &&
+          /\.(docx|xlsx|pptx)$/i.test(a.filename)
+      );
+
+      docAnnotations.forEach((a: any, idx: number) => {
+        const fileUrl = `/api/container_files/content?file_id=${a.fileId}${a.containerId ? `&container_id=${a.containerId}` : ""}${a.filename ? `&filename=${encodeURIComponent(a.filename)}` : ""}`;
+        const ext = a.filename.split('.').pop()?.toLowerCase();
+
+        allArtifacts.push({
+          id: `doc-artifact-${Date.now()}-${idx}`,
+          type: ext === "docx" ? "docx" : "code", // For now only DOCX has preview support
+          title: a.filename,
+          code: "", // Will be loaded from fileUrl
+          fileUrl,
+          language: ext,
+        });
+      });
+    }
+
+    if (allArtifacts.length > 0) {
+      setMessageArtifacts(allArtifacts);
+      allArtifacts.forEach((artifact) => addArtifact(artifact));
     }
   }, [message, addArtifact]);
 
@@ -202,7 +231,7 @@ const Message: React.FC<MessageProps> = ({ message }) => {
               {/* Artifact buttons */}
               {messageArtifacts.length > 0 && (
                 <div className="mt-3 flex flex-wrap gap-2">
-                  {messageArtifacts.map((artifact, idx) => (
+                  {messageArtifacts.map((artifact) => (
                     <button
                       key={artifact.id}
                       onClick={() => setCurrentArtifact(artifact)}
@@ -212,8 +241,8 @@ const Message: React.FC<MessageProps> = ({ message }) => {
                           : "bg-black/5 hover:bg-black/10 text-stone-900 border-black/10"
                       }`}
                     >
-                      <Eye size={16} />
-                      View Artifact{messageArtifacts.length > 1 ? ` ${idx + 1}` : ''}
+                      {artifact.type === "docx" ? <FileText size={16} /> : <Eye size={16} />}
+                      {artifact.type === "docx" ? `View ${artifact.title || "Document"}` : `View Artifact`}
                     </button>
                   ))}
                 </div>

@@ -26,6 +26,7 @@
     "highlight.js": "^11.11.1",
     "katex": "^0.16.22",
     "lucide-react": "^0.441.0",
+    "mammoth": "^1.8.0",
     "mongodb": "^7.0.0",
     "next": "^15.2.3",
     "next-auth": "^4.24.13",
