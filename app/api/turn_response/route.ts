@@ -1,6 +1,7 @@
 import { getDeveloperPrompt, MODEL } from "@/config/constants";
 import { getTools } from "@/lib/tools/tools";
 import { getSkill } from "@/lib/skills-registry";
+import { getSkillsEnhancedPrompt } from "@/lib/skills-integration";
 import OpenAI from "openai";
 
 // Sanitize messages to ensure all annotations have required fields and images are properly formatted
@@ -111,10 +112,12 @@ export async function POST(request: Request) {
 
       let instructions = getDeveloperPrompt();
       if (selectedSkill && typeof selectedSkill === "string") {
+        // Add general skills/artifact guidance
+        instructions = `${instructions}\n\n${getSkillsEnhancedPrompt()}`;
         try {
           const skill = await getSkill(selectedSkill);
           if (skill?.content) {
-            instructions = `${instructions}\n\n# Skill: ${skill.name}\n\n${skill.content}`;
+            instructions = `${instructions}\n\n# Active Skill: ${skill.name}\n\nYou MUST follow the instructions in this skill. Create artifacts as specified.\n\n${skill.content}`;
           }
         } catch (e) {
           console.error("Failed to load selected skill", e);
@@ -208,10 +211,12 @@ export async function POST(request: Request) {
 
     let instructions = getDeveloperPrompt();
     if (selectedSkill && typeof selectedSkill === "string") {
+      // Add general skills/artifact guidance
+      instructions = `${instructions}\n\n${getSkillsEnhancedPrompt()}`;
       try {
         const skill = await getSkill(selectedSkill);
         if (skill?.content) {
-          instructions = `${instructions}\n\n# Skill: ${skill.name}\n\n${skill.content}`;
+          instructions = `${instructions}\n\n# Active Skill: ${skill.name}\n\nYou MUST follow the instructions in this skill. Create artifacts as specified.\n\n${skill.content}`;
         }
       } catch (e) {
         console.error("Failed to load selected skill", e);
