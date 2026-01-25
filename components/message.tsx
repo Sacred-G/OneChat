@@ -7,7 +7,7 @@ import useThemeStore from "@/stores/useThemeStore";
 import Image from "next/image";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
-import { Eye } from "lucide-react";
+import { Eye, Download, ExternalLink } from "lucide-react";
 
 interface MessageProps {
   message: MessageItem;
@@ -34,10 +34,66 @@ const Message: React.FC<MessageProps> = ({ message }) => {
   const renderContent = () => {
     const text = message.content[0].text as string;
     const { cleanedContent } = extractArtifacts(text);
-    
+
     return (
       <ReactMarkdown
         components={{
+          a({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { children?: React.ReactNode }) {
+            // Check if this is a file download link (API endpoint or sandbox URL)
+            const isDownloadLink = href && (
+              href.includes('/api/container_files/') ||
+              href.includes('/api/files/') ||
+              href.startsWith('sandbox:') ||
+              /\.(docx|xlsx|pptx|pdf|zip|txt|csv|json)$/i.test(href)
+            );
+
+            // Check if external link
+            const isExternal = href && (href.startsWith('http://') || href.startsWith('https://'));
+
+            if (isDownloadLink) {
+              // Convert sandbox: URLs to API endpoints if needed
+              let downloadHref = href || '';
+              if (downloadHref.startsWith('sandbox:')) {
+                // Extract file path from sandbox URL and convert to API endpoint
+                const filePath = downloadHref.replace('sandbox:', '');
+                downloadHref = `/api/container_files/content?filename=${encodeURIComponent(filePath)}`;
+              }
+
+              return (
+                <a
+                  href={downloadHref}
+                  download
+                  className={`inline-flex items-center gap-1 px-2 py-1 rounded text-sm font-medium transition-colors ${
+                    theme === "dark"
+                      ? "bg-white/10 hover:bg-white/20 text-blue-400"
+                      : "bg-black/5 hover:bg-black/10 text-blue-600"
+                  }`}
+                  {...props}
+                >
+                  <Download size={14} />
+                  {children}
+                </a>
+              );
+            }
+
+            if (isExternal) {
+              return (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-blue-500 hover:text-blue-600 underline"
+                  {...props}
+                >
+                  {children}
+                  <ExternalLink size={12} />
+                </a>
+              );
+            }
+
+            // Default link behavior for internal navigation
+            return <a href={href} {...props}>{children}</a>;
+          },
           code(
             {
               inline,
