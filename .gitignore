@@ -23,6 +23,8 @@
 # misc
 .DS_Store
 *.pem
+*.docx
+*.doc
 
 # debug
 npm-debug.log*
@@ -44,7 +46,14 @@ next-env.d.ts
 # Extensions (Claude Desktop-style DXT extensions)
 /Extensions/
 
+/mcp_config.json
+/mcp-config.json
+
 /documentation
+/documentation/*
+!/documentation/veo_video
+!/documentation/tts
+!/documentation/imagen
 /occuapational_variants.txt
 /ratinginstructions.md
 /pdrs.md

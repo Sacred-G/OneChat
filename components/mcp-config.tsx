@@ -5,14 +5,34 @@ import { Input } from "./ui/input";
 import { Switch } from "./ui/switch";
 
 export default function McpConfig() {
-  const { mcpConfig, setMcpConfig } = useToolsStore();
-
-  const handleClear = () => {
-    setMcpConfig({
+  const { mcpConfigs, setMcpConfigs } = useToolsStore();
+  const mcpConfig =
+    mcpConfigs[0] ||
+    ({
+      id: "",
       server_label: "",
       server_url: "",
       allowed_tools: "",
       skip_approval: false,
+      enabled: true,
+    } as any);
+
+  const upsertConfig = (next: any) => {
+    if (mcpConfigs.length === 0) {
+      const id = typeof crypto?.randomUUID === "function" ? crypto.randomUUID() : "default";
+      setMcpConfigs([{ ...next, id, enabled: true }]);
+      return;
+    }
+    setMcpConfigs([{ ...mcpConfigs[0], ...next }, ...mcpConfigs.slice(1)]);
+  };
+
+  const handleClear = () => {
+    upsertConfig({
+      server_label: "",
+      server_url: "",
+      allowed_tools: "",
+      skip_approval: false,
+      enabled: true,
     });
   };
 
@@ -39,7 +59,7 @@ export default function McpConfig() {
             className="bg-white border text-sm flex-1 text-zinc-900 placeholder:text-zinc-400"
             value={mcpConfig.server_label}
             onChange={(e) =>
-              setMcpConfig({ ...mcpConfig, server_label: e.target.value })
+              upsertConfig({ server_label: e.target.value })
             }
           />
         </div>
@@ -54,7 +74,7 @@ export default function McpConfig() {
             className="bg-white border text-sm flex-1 text-zinc-900 placeholder:text-zinc-400"
             value={mcpConfig.server_url}
             onChange={(e) =>
-              setMcpConfig({ ...mcpConfig, server_url: e.target.value })
+              upsertConfig({ server_url: e.target.value })
             }
           />
         </div>
@@ -69,7 +89,7 @@ export default function McpConfig() {
             className="bg-white border text-sm flex-1 text-zinc-900 placeholder:text-zinc-400"
             value={mcpConfig.allowed_tools}
             onChange={(e) =>
-              setMcpConfig({ ...mcpConfig, allowed_tools: e.target.value })
+              upsertConfig({ allowed_tools: e.target.value })
             }
           />
         </div>
@@ -81,7 +101,7 @@ export default function McpConfig() {
             id="skip_approval"
             checked={mcpConfig.skip_approval}
             onCheckedChange={(checked) =>
-              setMcpConfig({ ...mcpConfig, skip_approval: checked })
+              upsertConfig({ skip_approval: checked })
             }
           />
         </div>

@@ -17,6 +17,7 @@ import {
   ExternalLink,
   Image as ImageIcon,
   Pencil,
+  Video,
 } from "lucide-react";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { coy, vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -95,6 +96,7 @@ function getToolSummary(toolCall: ToolCallItem) {
   const args = toolCall.parsedArguments || {};
   const path = typeof (args as any)?.path === "string" ? String((args as any).path) : "";
   const url = typeof (args as any)?.url === "string" ? String((args as any).url) : "";
+  const prompt = typeof (args as any)?.prompt === "string" ? String((args as any).prompt) : "";
 
   if (name === "read_file" && path) return `Reading ${path}`;
   if (name === "read_multiple_files") return "Reading multiple files";
@@ -103,6 +105,9 @@ function getToolSummary(toolCall: ToolCallItem) {
   if (name === "open_document" && path) return `Opening ${path}`;
   if (name === "get_document_text" && path) return `Reading ${path}`;
   if (name === "get_page_content" && url) return `Reading ${url}`;
+  if (name === "generate_video") {
+    return toolCall.status === "completed" ? "Generated video" : "Generating video";
+  }
 
   if (toolCall.tool_type === "file_search_call") return toolCall.status === "completed" ? "Searched files" : "Searching files";
   if (toolCall.tool_type === "web_search_call") return toolCall.status === "completed" ? "Searched the web" : "Searching the web";
@@ -235,6 +240,16 @@ function ToolCard({
                 >
                   Done
                 </span>
+              ) : toolCall.status === "pending_approval" ? (
+                <span
+                  className={`rounded-full px-2 py-0.5 text-xs ${
+                    theme === "dark"
+                      ? "bg-amber-500/20 text-amber-200"
+                      : "bg-amber-500/10 text-amber-700"
+                  }`}
+                >
+                  Pending
+                </span>
               ) : (
                 <span className="inline-flex items-center gap-2">
                   <Loader2
@@ -301,6 +316,16 @@ function ApiCallCell({ toolCall }: ToolCallProps) {
     return [];
   }, [parsedOutput, toolCall.name]);
 
+  const videoData = useMemo(() => {
+    if (!parsedOutput || toolCall.name !== "generate_video") return null;
+    
+    return {
+      id: (parsedOutput as any)?.id,
+      status: (parsedOutput as any)?.status,
+      error: (parsedOutput as any)?.error,
+    };
+  }, [parsedOutput, toolCall.name]);
+
   const [editOpen, setEditOpen] = useState(false);
   const [editPrompt, setEditPrompt] = useState("");
   const [editing, setEditing] = useState(false);
@@ -308,7 +333,14 @@ function ApiCallCell({ toolCall }: ToolCallProps) {
   const [editResults, setEditResults] = useState<string[]>([]);
 
   return (
-    <ToolCard toolCall={toolCall} icon={<Zap size={16} className={theme === "dark" ? "text-stone-200" : "text-stone-800"} />}>
+    <ToolCard 
+      toolCall={toolCall} 
+      icon={
+        toolCall.name === "generate_video" 
+          ? <Video size={16} className={theme === "dark" ? "text-stone-200" : "text-stone-800"} />
+          : <Zap size={16} className={theme === "dark" ? "text-stone-200" : "text-stone-800"} />
+      }
+    >
       <div className="space-y-3">
         {imageUrls.length > 0 && (
           <div>
@@ -513,6 +545,82 @@ function ApiCallCell({ toolCall }: ToolCallProps) {
                 )}
               </div>
             )}
+          </div>
+        )}
+
+        {videoData && (
+          <div>
+            <div className={`text-xs mb-2 flex items-center gap-2 ${theme === "dark" ? "text-stone-400" : "text-stone-500"}`}>
+              <Video size={14} />
+              Video Result
+            </div>
+            <div className={`rounded-xl border p-4 ${theme === "dark" ? "border-white/10 bg-white/[0.03]" : "border-black/10 bg-black/[0.02]"}`}>
+              {videoData.error ? (
+                <div className={`text-sm ${theme === "dark" ? "text-red-300" : "text-red-700"}`}>
+                  Error: {videoData.error}
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className={`text-sm font-medium ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`}>
+                        Video Generated
+                      </div>
+                      <div className={`text-xs ${theme === "dark" ? "text-stone-400" : "text-stone-500"}`}>
+                        ID: {videoData.id}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {videoData.status === "completed" && (
+                        <>
+                          <a
+                            href={`/api/videos/download/${videoData.id}`}
+                            download={`video_${videoData.id}.mp4`}
+                            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors ${
+                              theme === "dark"
+                                ? "border-white/10 bg-white/[0.04] text-stone-200 hover:bg-white/10"
+                                : "border-black/10 bg-black/[0.02] text-stone-700 hover:bg-black/5"
+                            }`}
+                            title="Download video"
+                          >
+                            <Download size={12} />
+                            Download
+                          </a>
+                          <a
+                            href={`/api/videos/download/${videoData.id}?variant=thumbnail`}
+                            download={`thumbnail_${videoData.id}.webp`}
+                            className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors ${
+                              theme === "dark"
+                                ? "border-white/10 bg-white/[0.04] text-stone-200 hover:bg-white/10"
+                                : "border-black/10 bg-black/[0.02] text-stone-700 hover:bg-black/5"
+                            }`}
+                            title="Download thumbnail"
+                          >
+                            <ImageIcon size={12} />
+                            Thumbnail
+                          </a>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  {videoData.status === "queued" && (
+                    <div className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-700"}`}>
+                      Video is queued for generation...
+                    </div>
+                  )}
+                  {videoData.status === "in_progress" && (
+                    <div className={`text-sm ${theme === "dark" ? "text-stone-300" : "text-stone-700"}`}>
+                      Video is being generated...
+                    </div>
+                  )}
+                  {videoData.status === "completed" && (
+                    <div className={`text-sm ${theme === "dark" ? "text-green-300" : "text-green-700"}`}>
+                      ✓ Video generation completed! Download your video above.
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 

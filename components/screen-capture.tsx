@@ -69,7 +69,7 @@ const ScreenCapture: React.FC<ScreenCaptureProps> = ({ onCapture }) => {
     <button
       onClick={handleScreenCapture}
       disabled={isCapturing}
-      className={`inline-flex items-center gap-1 px-2 py-2 rounded-lg text-xs font-medium transition-colors sm:gap-2 sm:px-3 sm:text-sm ${
+      className={`inline-flex items-center gap-1 px-1.5 py-1.5 rounded-lg text-[11px] font-medium transition-colors sm:gap-1.5 sm:px-2 sm:py-2 sm:text-xs ${
         theme === "dark"
           ? "bg-white/[0.04] hover:bg-white/10 text-white border border-white/10"
           : "bg-stone-100 hover:bg-stone-200 text-stone-900 border border-stone-300"
@@ -78,13 +78,13 @@ const ScreenCapture: React.FC<ScreenCaptureProps> = ({ onCapture }) => {
     >
       {isCapturing ? (
         <>
-          <Camera size={14} className="animate-pulse sm:size-16" />
-          <span className="hidden sm:inline">Capturing...</span>
+          <Camera size={12} className="animate-pulse sm:size-4" />
+          <span className="hidden md:inline">Capturing...</span>
         </>
       ) : (
         <>
-          <Monitor size={14} className="sm:size-16" />
-          <span className="hidden sm:inline">Share Screen</span>
+          <Monitor size={12} className="sm:size-4" />
+          <span className="hidden md:inline">Share Screen</span>
         </>
       )}
     </button>

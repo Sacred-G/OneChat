@@ -15,7 +15,7 @@ function extractTextFromMessages(messages: any[]): string {
 
     if (Array.isArray(content)) {
       const texts: string[] = [];
-      for (const part of content) {
+      for (const part of content ) {
         if (!part || typeof part !== "object") continue;
         if (typeof (part as any).text === "string") texts.push(String((part as any).text));
       }
@@ -222,6 +222,39 @@ function toApipieChatMessages(messages: any[]): Array<{ role: string; content: a
   const out: Array<{ role: string; content: any }> = [];
   for (const msg of messages ?? []) {
     if (!msg || typeof msg !== "object") continue;
+
+    if (msg.type === "function_call") {
+      const name = typeof msg.name === "string" ? msg.name : "";
+      const rawArgs = typeof msg.arguments === "string" ? msg.arguments : "";
+      const id = typeof msg.call_id === "string" && msg.call_id.trim() ? msg.call_id.trim() : (typeof msg.id === "string" ? msg.id : "");
+      if (name && id) {
+        out.push({
+          role: "assistant",
+          content: "",
+          tool_calls: [
+            {
+              id,
+              type: "function",
+              function: {
+                name,
+                arguments: rawArgs || "{}",
+              },
+            },
+          ],
+        } as any);
+      }
+      continue;
+    }
+
+    if (msg.type === "function_call_output") {
+      const toolCallId = typeof msg.call_id === "string" ? msg.call_id : "";
+      const content = typeof msg.output === "string" ? msg.output : "";
+      if (toolCallId) {
+        out.push({ role: "tool", content, tool_call_id: toolCallId } as any);
+      }
+      continue;
+    }
+
     const role = typeof msg.role === "string" ? msg.role : "user";
 
     if (typeof msg.content === "string") {
@@ -287,6 +320,26 @@ export async function POST(request: Request) {
         );
       }
 
+      const toolsForApipie = await (async () => {
+        try {
+          const tools = await getTools(toolsState);
+          const functionTools = (tools ?? [])
+            .filter((t: any) => t && typeof t === "object" && t.type === "function")
+            .map((t: any) => ({
+              type: "function",
+              function: {
+                name: t.name,
+                description: t.description,
+                parameters: t.parameters,
+              },
+            }))
+            .filter((t: any) => t?.function?.name);
+          return functionTools;
+        } catch {
+          return [];
+        }
+      })();
+
       let instructions = getDeveloperPrompt();
       const effectiveSkill =
         selectedSkill && typeof selectedSkill === "string"
@@ -324,34 +377,108 @@ export async function POST(request: Request) {
           temperature: 1,
           top_p: 1,
           max_tokens: 800,
+          ...(toolsForApipie.length > 0 ? { tools: toolsForApipie, tool_choice: "auto" } : {}),
         }),
       });
 
       if (!apipieRes.ok) {
         const errText = await apipieRes.text().catch(() => "");
-        return new Response(errText || "apipie.ai request failed", {
-          status: 502,
-          headers: { "Content-Type": "application/json" },
-        });
+        const status = typeof apipieRes.status === "number" && apipieRes.status >= 400 ? apipieRes.status : 502;
+        return new Response(
+          JSON.stringify({
+            error: "apipie.ai request failed",
+            upstream_status: apipieRes.status,
+            upstream_body: errText || null,
+          }),
+          {
+            status,
+            headers: { "Content-Type": "application/json" },
+          }
+        );
       }
 
       const completion = await apipieRes.json().catch(() => null);
-      const assistantText =
-        typeof completion?.choices?.[0]?.message?.content === "string"
-          ? completion.choices[0].message.content
-          : "";
+      const apipieMessage = completion?.choices?.[0]?.message;
+      const assistantText = typeof apipieMessage?.content === "string" ? apipieMessage.content : "";
+
+      const toolCalls = Array.isArray(apipieMessage?.tool_calls)
+        ? apipieMessage.tool_calls
+        : apipieMessage?.function_call
+          ? [
+              {
+                id: completion?.id ? String(completion.id) : `apipie-toolcall-${Date.now()}`,
+                type: "function",
+                function: apipieMessage.function_call,
+              },
+            ]
+          : [];
 
       const stream = new ReadableStream({
         start(controller) {
           const itemId = completion?.id ?? "apipie-message";
-          const deltaPayload = JSON.stringify({
-            event: "response.output_text.delta",
-            data: {
-              delta: assistantText,
-              item_id: itemId,
-            },
-          });
-          controller.enqueue(`data: ${deltaPayload}\n\n`);
+
+          if (assistantText) {
+            const deltaPayload = JSON.stringify({
+              event: "response.output_text.delta",
+              data: {
+                delta: assistantText,
+                item_id: itemId,
+              },
+            });
+            controller.enqueue(`data: ${deltaPayload}\n\n`);
+          }
+
+          for (let i = 0; i < toolCalls.length; i++) {
+            const tc = toolCalls[i];
+            const name = typeof tc?.function?.name === "string" ? tc.function.name : "";
+            const args = typeof tc?.function?.arguments === "string" ? tc.function.arguments : "";
+            const callId = typeof tc?.id === "string" && tc.id.trim()
+              ? tc.id.trim()
+              : `apipie-call-${Date.now()}-${i + 1}`;
+            const toolItemId = callId;
+
+            if (!name) continue;
+
+            controller.enqueue(
+              `data: ${JSON.stringify({
+                event: "response.output_item.added",
+                data: {
+                  item: {
+                    type: "function_call",
+                    id: toolItemId,
+                    call_id: callId,
+                    name,
+                    arguments: args,
+                  },
+                },
+              })}\n\n`
+            );
+
+            controller.enqueue(
+              `data: ${JSON.stringify({
+                event: "response.function_call_arguments.done",
+                data: {
+                  item_id: toolItemId,
+                  arguments: args,
+                },
+              })}\n\n`
+            );
+
+            controller.enqueue(
+              `data: ${JSON.stringify({
+                event: "response.output_item.done",
+                data: {
+                  item: {
+                    type: "function_call",
+                    id: toolItemId,
+                    call_id: callId,
+                    name,
+                    arguments: args,
+                  },
+                },
+              })}\n\n`
+            );
+          }
 
           const completedPayload = JSON.stringify({
             event: "response.completed",

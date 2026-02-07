@@ -416,7 +416,7 @@ const Chat: React.FC<ChatProps> = ({
                   dir="auto"
                   rows={1}
                   placeholder="Message OneChatAI"
-                  className={`max-h-52 resize-none border-0 focus:outline-none text-base bg-transparent px-0 py-3 ${
+                  className={`max-h-52 resize-none border-0 focus:outline-none text-sm leading-5 bg-transparent px-0 py-2 ${
                     theme === 'dark' 
                       ? 'text-white placeholder:text-gray-400' 
                       : 'text-gray-900 placeholder:text-gray-400'
@@ -428,7 +428,7 @@ const Chat: React.FC<ChatProps> = ({
                   onCompositionEnd={() => setIsComposing(false)}
                   style={{
                     height: 'auto',
-                    minHeight: '24px',
+                    minHeight: '20px',
                   }}
                   onInput={(e) => {
                     const target = e.target as HTMLTextAreaElement;

@@ -37,7 +37,7 @@ export interface ToolCallItem {
     | "function_call"
     | "mcp_call"
     | "code_interpreter_call";
-  status: "in_progress" | "completed" | "failed" | "searching";
+  status: "in_progress" | "completed" | "failed" | "searching" | "pending_approval";
   id: string;
   name?: string | null;
   call_id?: string;
@@ -68,11 +68,30 @@ export interface McpApprovalRequestItem {
   arguments?: string;
 }
 
+export interface FunctionApprovalRequestItem {
+  type: "function_approval_request";
+  id: string;
+  tool_call_id: string;
+  name: string;
+  arguments?: string;
+}
+
 export type Item =
   | MessageItem
   | ToolCallItem
   | McpListToolsItem
-  | McpApprovalRequestItem;
+  | McpApprovalRequestItem
+  | FunctionApprovalRequestItem;
+
+const shouldRequireFunctionApproval = (toolName: string, parameters: any) => {
+  if (!toolName) return false;
+  if (toolName === "local_write_file") return true;
+  if (toolName === "local_run_command") return true;
+  if (toolName === "send_email") {
+    return (parameters as any)?.dry_run === false;
+  }
+  return false;
+};
 
 export const handleTurn = async (
   messages: any[],
@@ -80,15 +99,45 @@ export const handleTurn = async (
   onMessage: (data: any) => void
 ) => {
   try {
-    const { googleIntegrationEnabled, provider, apipieModel } = useToolsStore.getState();
+    const storeState = useToolsStore.getState() as any;
+    const { googleIntegrationEnabled, provider, apipieModel } = storeState;
     const { selectedSkill } = useConversationStore.getState();
+
+    let effectiveToolsState: ToolsState = toolsState;
+    if (
+      (!effectiveToolsState?.mcpEnabled &&
+        Array.isArray(storeState?.mcpConfigs) &&
+        storeState.mcpConfigs.length > 0) ||
+      (!effectiveToolsState?.mcpEnabled &&
+        Array.isArray(storeState?.commandMcpConfigs) &&
+        storeState.commandMcpConfigs.some((c: any) => c && c.disabled !== true))
+    ) {
+      effectiveToolsState = storeState as ToolsState;
+    }
+
+    if (
+      !effectiveToolsState?.mcpEnabled &&
+      Array.isArray((effectiveToolsState as any)?.mcpConfigs) &&
+      (effectiveToolsState as any).mcpConfigs.length === 0 &&
+      Array.isArray((effectiveToolsState as any)?.commandMcpConfigs) &&
+      (effectiveToolsState as any).commandMcpConfigs.length === 0 &&
+      typeof storeState?.hydrateMcpConfigFromFile === "function"
+    ) {
+      try {
+        await storeState.hydrateMcpConfigFromFile();
+        effectiveToolsState = useToolsStore.getState() as ToolsState;
+      } catch {
+        // ignore
+      }
+    }
+
     // Get response from the API (defined in app/api/turn_response/route.ts)
     const response = await fetch("/api/turn_response", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         messages: messages,
-        toolsState: toolsState,
+        toolsState: effectiveToolsState,
         googleIntegrationEnabled,
         selectedSkill,
         provider,
@@ -391,15 +440,71 @@ export const processMessages = async () => {
             toolCallMessage.type === "tool_call" &&
             toolCallMessage.tool_type === "function_call"
           ) {
+            const toolName = typeof toolCallMessage.name === "string" ? toolCallMessage.name : "";
+            const { approvedFunctionTools } = useToolsStore.getState();
+            const alwaysApproved =
+              Array.isArray(approvedFunctionTools) &&
+              toolName &&
+              approvedFunctionTools.includes(toolName);
+            const needsApproval = shouldRequireFunctionApproval(toolName, toolCallMessage.parsedArguments);
+
+            if (needsApproval && !alwaysApproved) {
+              toolCallMessage.status = "pending_approval" as any;
+              setChatMessages([...chatMessages]);
+              chatMessages.push({
+                type: "function_approval_request",
+                id: `function-approval-${toolCallMessage.id}`,
+                tool_call_id: toolCallMessage.id,
+                name: toolName,
+                arguments:
+                  typeof toolCallMessage.arguments === "string" && toolCallMessage.arguments.trim()
+                    ? toolCallMessage.arguments
+                    : (() => {
+                        try {
+                          return JSON.stringify(toolCallMessage.parsedArguments ?? {}, null, 2);
+                        } catch {
+                          return "";
+                        }
+                      })(),
+              });
+              setChatMessages([...chatMessages]);
+              break;
+            }
+
             // Handle tool call (execute function)
+            toolCallMessage.status = "in_progress";
+            setChatMessages([...chatMessages]);
             const toolResult = await handleTool(
               toolCallMessage.name as keyof typeof functionsMap,
               toolCallMessage.parsedArguments
             );
 
             // Record tool output
+            toolCallMessage.status = "completed";
             toolCallMessage.output = JSON.stringify(toolResult);
             setChatMessages([...chatMessages]);
+
+            if (toolName === "launch_streamlit_app" || toolName === "deploy_streamlit_app") {
+              try {
+                const ok = (toolResult as any)?.ok === true;
+                const baseUrl = typeof (toolResult as any)?.url === "string" ? String((toolResult as any).url) : "";
+                if (ok && baseUrl) {
+                  const url = `${baseUrl}${baseUrl.includes("?") ? "&" : "?"}v=${Date.now()}`;
+                  const artifact = {
+                    id: `url-${url}`,
+                    type: "url",
+                    title: "Streamlit App",
+                    url,
+                  } as any;
+                  const { addArtifact, setCurrentArtifact } = useArtifactStore.getState() as any;
+                  if (typeof addArtifact === "function") addArtifact(artifact);
+                  if (typeof setCurrentArtifact === "function") setCurrentArtifact(artifact);
+                }
+              } catch {
+                // ignore
+              }
+            }
+
             conversationItems.push({
               type: "function_call_output",
               call_id: toolCallMessage.call_id,
@@ -644,13 +749,8 @@ export const processMessages = async () => {
           }
 
           try {
-            const {
-              chatMessages,
-              conversationItems,
-              selectedSkill,
-              activeConversationId,
-              setActiveConversationId,
-            } = useConversationStore.getState();
+            const { selectedSkill, activeConversationId, setActiveConversationId } =
+              useConversationStore.getState();
 
             const firstUserMessage = chatMessages.find(
               (m: any) => m?.type === "message" && m?.role === "user" && m?.content?.[0]?.text
@@ -674,8 +774,8 @@ export const processMessages = async () => {
               }),
             });
 
-            const data = await res.json().catch(() => null);
-            const returnedId = typeof data?.id === "string" ? data.id : null;
+            const saved = await res.json().catch(() => null);
+            const returnedId = typeof saved?.id === "string" ? saved.id : null;
             if (!activeConversationId && returnedId) {
               setActiveConversationId(returnedId);
               try {
@@ -697,4 +797,104 @@ export const processMessages = async () => {
       }
     }
   );
+};
+
+export type FunctionApprovalAction = "deny" | "allow_once" | "always_allow";
+
+export const handleFunctionApprovalResponse = async (
+  action: FunctionApprovalAction,
+  approvalRequestId: string
+) => {
+  const {
+    chatMessages,
+    conversationItems,
+    setChatMessages,
+    setConversationItems,
+  } = useConversationStore.getState();
+
+  const approvalIndex = chatMessages.findIndex(
+    (m) => m?.type === "function_approval_request" && m?.id === approvalRequestId
+  );
+  const approval = (approvalIndex >= 0 ? chatMessages[approvalIndex] : undefined) as
+    | FunctionApprovalRequestItem
+    | undefined;
+  if (!approval) return;
+
+  const toolCall = chatMessages.find(
+    (m) => m?.type === "tool_call" && m?.id === approval.tool_call_id
+  ) as ToolCallItem | undefined;
+  if (!toolCall) return;
+
+  if (approvalIndex >= 0) {
+    chatMessages.splice(approvalIndex, 1);
+    setChatMessages([...chatMessages]);
+  }
+
+  const toolName = typeof approval.name === "string" ? approval.name : "";
+  const callId = typeof toolCall.call_id === "string" ? toolCall.call_id : "";
+  if (!callId) return;
+
+  if (action === "always_allow") {
+    try {
+      const { approveFunctionTool } = useToolsStore.getState();
+      if (typeof approveFunctionTool === "function") {
+        approveFunctionTool(toolName);
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  if (action === "deny") {
+    const denied = { error: "User denied tool execution" };
+    toolCall.status = "failed";
+    toolCall.output = JSON.stringify(denied);
+    setChatMessages([...chatMessages]);
+    conversationItems.push({
+      type: "function_call_output",
+      call_id: callId,
+      status: "completed",
+      output: JSON.stringify(denied),
+    });
+    setConversationItems([...conversationItems]);
+    await processMessages();
+    return;
+  }
+
+  toolCall.status = "in_progress";
+  setChatMessages([...chatMessages]);
+
+  try {
+    const toolResult = await handleTool(
+      toolCall.name as keyof typeof functionsMap,
+      toolCall.parsedArguments
+    );
+
+    toolCall.status = "completed";
+    toolCall.output = JSON.stringify(toolResult);
+    setChatMessages([...chatMessages]);
+    conversationItems.push({
+      type: "function_call_output",
+      call_id: callId,
+      status: "completed",
+      output: JSON.stringify(toolResult),
+    });
+    setConversationItems([...conversationItems]);
+    await processMessages();
+  } catch (e) {
+    const err = {
+      error: e instanceof Error ? e.message : "Tool execution failed",
+    };
+    toolCall.status = "failed";
+    toolCall.output = JSON.stringify(err);
+    setChatMessages([...chatMessages]);
+    conversationItems.push({
+      type: "function_call_output",
+      call_id: callId,
+      status: "completed",
+      output: JSON.stringify(err),
+    });
+    setConversationItems([...conversationItems]);
+    await processMessages();
+  }
 };

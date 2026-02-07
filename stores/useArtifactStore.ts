@@ -8,6 +8,13 @@ export interface Artifact {
   language?: string;
 }
 
+ export interface UrlArtifact {
+  id: string;
+  type: "url";
+  title?: string;
+  url: string;
+ }
+
 export interface FileArtifact {
   id: string;
   type: "file";
@@ -19,7 +26,7 @@ export interface FileArtifact {
   url: string;
 }
 
-export type AnyArtifact = Artifact | FileArtifact;
+export type AnyArtifact = Artifact | UrlArtifact | FileArtifact;
 
 interface ArtifactStore {
   currentArtifact: AnyArtifact | null;

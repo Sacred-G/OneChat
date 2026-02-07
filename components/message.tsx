@@ -49,6 +49,64 @@ const Message: React.FC<MessageProps> = ({ message }) => {
     return (
       <ReactMarkdown
         components={{
+          a({ href, children, ...props }: React.AnchorHTMLAttributes<HTMLAnchorElement> & { children?: React.ReactNode }) {
+            // If the assistant emitted a direct link to our container file proxy endpoint,
+            // open it in the Artifact Viewer instead of navigating.
+            if (href && (href.startsWith("/api/container_files/content") || href.includes("/api/container_files/content?"))) {
+              let fileId = "";
+              let containerId = "";
+              let filename = "";
+              try {
+                const u = new URL(href, window.location.origin);
+                fileId = u.searchParams.get("file_id") || "";
+                containerId = u.searchParams.get("container_id") || "";
+                filename = u.searchParams.get("filename") || "";
+              } catch {
+                // ignore
+              }
+
+              return (
+                <span
+                  className="text-blue-500 hover:text-blue-600 underline cursor-pointer"
+                  onClick={() => {
+                    if (!fileId) return;
+                    const artifact: any = {
+                      id: `file-${fileId}`,
+                      type: "file",
+                      title: filename || fileId,
+                      file_id: fileId,
+                      ...(containerId ? { container_id: containerId } : {}),
+                      ...(filename ? { filename } : {}),
+                      mime_type: "application/octet-stream",
+                      url: href,
+                    };
+                    addArtifact(artifact);
+                    setCurrentArtifact(artifact);
+                  }}
+                  {...props}
+                >
+                  {children}
+                </span>
+              );
+            }
+            // Handle sandbox:/ links - these are file download links from the AI
+            if (href && href.startsWith("sandbox:/")) {
+              const filename = href.replace(/^sandbox:\/.*\//, "");
+              return (
+                <span
+                  className="text-blue-500 hover:text-blue-600 underline cursor-pointer"
+                  onClick={() => {
+                    // Show a message that sandbox files need to be downloaded via the artifact viewer
+                    alert(`File "${filename}" was generated in a sandbox environment.\n\nTo download files, the AI should use the container_files API or generate the file content directly.`);
+                  }}
+                  {...props}
+                >
+                  {children}
+                </span>
+              );
+            }
+            return <a href={href} target="_blank" rel="noopener noreferrer" {...props}>{children}</a>;
+          },
           code(
             {
               inline,

@@ -135,14 +135,99 @@ export const generate_images = async ({
   return res;
 };
 
-export const functionsMap = {
+export const generate_video = async ({
+  prompt,
+  size = "1280x720",
+  seconds = 10,
+}: {
+  prompt: string;
+  size?: "1280x720" | "1920x1080";
+  seconds?: number;
+}) => {
+  const res = await fetch(`/api/videos/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      prompt: prompt.trim(),
+      model: "sora-2",
+      size,
+      seconds,
+    }),
+  }).then((res) => res.json());
+  return res;
+};
+
+export const read_skill_reference = async ({
+  skillName,
+  referencePath,
+}: {
+  skillName: string;
+  referencePath?: string;
+}) => {
+  const res = await fetch(`/api/skills/reference`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      skillName,
+      ...(typeof referencePath === "string" && referencePath.trim()
+        ? { referencePath: referencePath.trim() }
+        : {}),
+    }),
+  }).then((r) => r.json());
+  return res;
+};
+
+export const mcp_local_tool = async ({
+  server_id,
+  tool_name,
+  arguments: toolArgs,
+}: {
+  server_id: string;
+  tool_name: string;
+  arguments: Record<string, any>;
+}) => {
+  const res = await fetch(`/api/mcp_local`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      action: "call_tool",
+      server_id,
+      tool_name,
+      arguments: toolArgs,
+    }),
+  }).then((r) => r.json());
+  return res;
+};
+
+export const launch_streamlit_app = async () => {
+  const res = await fetch(`/api/streamlit/launch`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  }).then((r) => r.json());
+  return res;
+};
+
+export const deploy_streamlit_app = async ({ code }: { code: string }) => {
+  const res = await fetch(`/api/streamlit/deploy`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  }).then((r) => r.json());
+  return res;
+};
+
+export const functionsMap: Record<string, (params: any) => Promise<any>> = {
   get_weather: get_weather,
   get_joke: get_joke,
   generate_image: generate_image,
   generate_images: generate_images,
+  generate_video: generate_video,
   send_email: send_email,
   local_list_dir: local_list_dir,
   local_read_file: local_read_file,
   local_write_file: local_write_file,
   local_run_command: local_run_command,
+  read_skill_reference: read_skill_reference,
+  launch_streamlit_app: launch_streamlit_app,
+  deploy_streamlit_app: deploy_streamlit_app,
 };

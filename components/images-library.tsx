@@ -40,6 +40,17 @@ function filenameFromUrl(url: string, fallback = "image.png") {
   }
 }
 
+function getImageSource(path: string): { name: string; color: string } {
+  if (path.startsWith("nano-banana/")) {
+    return { name: "Nano Banana", color: "text-yellow-500" };
+  } else if (path.startsWith("imagen/")) {
+    return { name: "Imagen", color: "text-blue-500" };
+  } else if (path.startsWith("generated/")) {
+    return { name: "Generated", color: "text-green-500" };
+  }
+  return { name: "Unknown", color: "text-gray-500" };
+}
+
 function htmlForImage(url: string) {
   const safe = url.replace(/"/g, "%22");
   return `<!doctype html><html><head><meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" /></head><body style="margin:0;background:transparent;display:flex;align-items:center;justify-content:center;height:100vh;"><img src="${safe}" style="max-width:100%;max-height:100%;object-fit:contain;" /></body></html>`;
@@ -58,7 +69,7 @@ export default function ImagesLibrary({ limit = 100 }: { limit?: number }) {
   const textDim = theme === "dark" ? "text-stone-400" : "text-stone-500";
   const textMain = theme === "dark" ? "text-stone-100" : "text-stone-900";
 
-  const url = useMemo(() => `/api/library/images?prefix=generated&limit=${encodeURIComponent(String(limit))}`, [limit]);
+  const url = useMemo(() => `/api/library/images?prefix=all&limit=${encodeURIComponent(String(limit))}`, [limit]);
 
   useEffect(() => {
     let cancelled = false;
@@ -99,7 +110,7 @@ export default function ImagesLibrary({ limit = 100 }: { limit?: number }) {
     <div className="space-y-3">
       <div className={`flex items-center gap-2 text-sm ${textMain}`}>
         <ImageIcon size={16} className={theme === "dark" ? "text-stone-200" : "text-stone-700"} />
-        Generated images
+        All Generated Images (Nano Banana, Imagen, Chat)
       </div>
 
       {loading ? (
@@ -113,6 +124,7 @@ export default function ImagesLibrary({ limit = 100 }: { limit?: number }) {
           {items.map((item) => {
             const src = item.url;
             const filename = src ? filenameFromUrl(src, item.name || "image.png") : item.name || "image.png";
+            const source = getImageSource(item.path || "");
 
             return (
               <div
@@ -127,9 +139,10 @@ export default function ImagesLibrary({ limit = 100 }: { limit?: number }) {
                   )}
                 </div>
 
-                <div className="p-2 flex items-center justify-between gap-2">
+                <div className="p-2 flex flex-col gap-1">
                   <div className={`min-w-0 text-xs truncate ${textDim}`}>{item.name || item.path}</div>
-
+                  <div className={`text-xs font-medium ${source.color}`}>{source.name}</div>
+                  
                   <div className="flex items-center gap-1">
                     <button
                       type="button"

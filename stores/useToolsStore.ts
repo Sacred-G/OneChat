@@ -24,11 +24,25 @@ export type WebSearchConfig = {
 };
 
 export type McpConfig = {
+  id: string; // Unique identifier for each server
   server_label: string;
   server_url: string;
+  headers?: Record<string, string>;
   allowed_tools: string;
   skip_approval: boolean;
+  enabled: boolean; // Enable/disable individual servers
 };
+
+export type CommandMcpConfig = {
+  id: string;
+  command: string;
+  args: string[];
+  env?: Record<string, string>;
+  disabled: boolean;
+  disabledTools?: string[];
+};
+
+export type VoiceOption = "alloy" | "ash" | "ballad" | "coral" | "echo" | "sage" | "shimmer" | "verse";
 
 export interface ToolsState {
   webSearchEnabled: boolean;
@@ -39,13 +53,18 @@ export interface ToolsState {
   selectedProjectId?: string;
   webSearchConfig: WebSearchConfig;
   mcpEnabled: boolean;
-  mcpConfig: McpConfig;
+  mcpConfigs: McpConfig[];
+  commandMcpConfigs: CommandMcpConfig[];
   localAgentEnabled: boolean;
   localAgentUrl: string;
   localAgentCwd: string;
+  approvedFunctionTools: string[];
   googleIntegrationEnabled: boolean;
+  linkedinIntegrationEnabled: boolean;
   geminiImageEnabled: boolean;
   voiceModeEnabled: boolean;
+  selectedVoice: VoiceOption;
+  videoGenerationEnabled: boolean;
   provider: "openai" | "apipie";
   apipieModel: string;
   apipieImageModel: string;
@@ -64,6 +83,8 @@ interface StoreState {
   setFunctionsEnabled: (enabled: boolean) => void;
   googleIntegrationEnabled: boolean;
   setGoogleIntegrationEnabled: (enabled: boolean) => void;
+  linkedinIntegrationEnabled: boolean;
+  setLinkedinIntegrationEnabled: (enabled: boolean) => void;
   geminiImageEnabled: boolean;
   setGeminiImageEnabled: (enabled: boolean) => void;
   codeInterpreterEnabled: boolean;
@@ -76,17 +97,29 @@ interface StoreState {
   setWebSearchConfig: (config: WebSearchConfig) => void;
   mcpEnabled: boolean;
   setMcpEnabled: (enabled: boolean) => void;
-  mcpConfig: McpConfig;
-  setMcpConfig: (config: McpConfig) => void;
+  mcpConfigs: McpConfig[];
+  setMcpConfigs: (configs: McpConfig[]) => void;
+  addMcpConfig: (config: Omit<McpConfig, 'id'>) => void;
+  updateMcpConfig: (id: string, config: Partial<McpConfig>) => void;
+  removeMcpConfig: (id: string) => void;
+  toggleMcpConfig: (id: string) => void;
   hydrateMcpConfigFromFile: () => Promise<void>;
+  commandMcpConfigs: CommandMcpConfig[];
+  setCommandMcpConfigs: (configs: CommandMcpConfig[]) => void;
   voiceModeEnabled: boolean;
   setVoiceModeEnabled: (enabled: boolean) => void;
+  selectedVoice: VoiceOption;
+  setSelectedVoice: (voice: VoiceOption) => void;
+  videoGenerationEnabled: boolean;
+  setVideoGenerationEnabled: (enabled: boolean) => void;
   localAgentEnabled: boolean;
   setLocalAgentEnabled: (enabled: boolean) => void;
   localAgentUrl: string;
   setLocalAgentUrl: (url: string) => void;
   localAgentCwd: string;
   setLocalAgentCwd: (cwd: string) => void;
+  approvedFunctionTools: string[];
+  approveFunctionTool: (name: string) => void;
   provider: "openai" | "apipie";
   setProvider: (provider: "openai" | "apipie") => void;
   apipieModel: string;
@@ -113,12 +146,9 @@ const useToolsStore = create<StoreState>()(
           region: "",
         },
       },
-      mcpConfig: {
-        server_label: "",
-        server_url: "",
-        allowed_tools: "",
-        skip_approval: true,
-      },
+      mcpConfigs: [],
+      commandMcpConfigs: [],
+      setCommandMcpConfigs: (configs) => set({ commandMcpConfigs: configs }),
       provider: "openai",
       setProvider: (provider) => {
         set({ provider });
@@ -167,6 +197,10 @@ const useToolsStore = create<StoreState>()(
       setGoogleIntegrationEnabled: (enabled) => {
         set({ googleIntegrationEnabled: enabled });
       },
+      linkedinIntegrationEnabled: false,
+      setLinkedinIntegrationEnabled: (enabled) => {
+        set({ linkedinIntegrationEnabled: enabled });
+      },
       geminiImageEnabled: false,
       setGeminiImageEnabled: (enabled) => {
         set({ geminiImageEnabled: enabled });
@@ -182,29 +216,123 @@ const useToolsStore = create<StoreState>()(
           if (!res.ok) return;
           const cfg = data?.config;
           if (!cfg || typeof cfg !== "object") return;
-          const server_label = typeof cfg.server_label === "string" ? cfg.server_label : "";
-          const server_url = typeof cfg.server_url === "string" ? cfg.server_url : "";
-          const allowed_tools =
-            typeof cfg.allowed_tools === "string"
-              ? cfg.allowed_tools
-              : Array.isArray(cfg.allowed_tools)
-                ? cfg.allowed_tools.filter((t: any) => typeof t === "string").join(",")
-                : "";
-          const skip_approval = typeof cfg.skip_approval === "boolean" ? cfg.skip_approval : false;
-          if (!server_label || !server_url) return;
-          set({
-            mcpEnabled: true,
-            mcpConfig: {
+          
+          let configs: any[] = [];
+          
+          // Handle mcpServers object format (your format)
+          if (cfg.mcpServers && typeof cfg.mcpServers === "object") {
+            configs = Object.entries(cfg.mcpServers)
+              .filter(([key, server]: [string, any]) => {
+                if (!server || typeof server !== "object") return false;
+                if (server.disabled === true) return false;
+                
+                if (!server.serverUrl) return false;
+                if (typeof server.serverUrl !== "string") return false;
+                const url = server.serverUrl.trim();
+                if (!url) return false;
+                return /^https?:\/\//i.test(url);
+              })
+              .map(([key, server]: [string, any]) => {
+                // Sanitize server label to meet MCP requirements
+                const sanitizedLabel = key
+                  .toLowerCase()
+                  .replace(/[^a-z0-9\-_]/g, '-')
+                  .replace(/^-+|-+$/g, '')
+                  .replace(/-+/g, '-')
+                  .replace(/^[^a-z]/, 'mcp-');
+                
+                console.log('MCP Sanitization:', {
+                  original_key: key,
+                  sanitized_label: sanitizedLabel,
+                  server_url: server.serverUrl || server.command
+                });
+                
+                return {
+                  id: key,
+                  server_label: sanitizedLabel,
+                  server_url: server.serverUrl,
+                  headers:
+                    server.headers && typeof server.headers === "object" ? server.headers : undefined,
+                  allowed_tools: server.disabledTools ? server.disabledTools.join(",") : "",
+                  skip_approval: true, // Auto-approve for command-based servers
+                  enabled: !server.disabled,
+                };
+              });
+          }
+          // Handle array format (my original format)
+          else if (Array.isArray(cfg)) {
+            configs = cfg.filter(c => 
+              c && typeof c === "object" && 
+              typeof c.server_label === "string" && 
+              typeof c.server_url === "string"
+            ).map(c => ({
+              ...c,
+              id: c.id || crypto.randomUUID(),
+              enabled: c.enabled !== false,
+              skip_approval: c.skip_approval !== false,
+            }));
+          } 
+          // Handle single server format (legacy)
+          else if (typeof cfg === "object" && cfg.server_label) {
+            const server_label = typeof cfg.server_label === "string" ? cfg.server_label : "";
+            const server_url = typeof cfg.server_url === "string" ? cfg.server_url : "";
+            const allowed_tools = typeof cfg.allowed_tools === "string" ? cfg.allowed_tools : "";
+            const skip_approval = typeof cfg.skip_approval === "boolean" ? cfg.skip_approval : false;
+            if (!server_label || !server_url) return;
+            configs = [{
+              id: crypto.randomUUID(),
               server_label,
               server_url,
               allowed_tools,
               skip_approval,
-            },
-          });
+              enabled: true,
+            }];
+          }
+          
+          // Also parse command-based servers
+          let commandConfigs: any[] = [];
+          if (cfg.mcpServers && typeof cfg.mcpServers === "object") {
+            commandConfigs = Object.entries(cfg.mcpServers)
+              .filter(([key, server]: [string, any]) => {
+                if (!server || typeof server !== "object") return false;
+                // Only include command-based servers (those with 'command' field, not 'serverUrl')
+                if (typeof server.command !== "string") return false;
+                if (server.serverUrl) return false; // Skip HTTP-based servers
+                return true;
+              })
+              .map(([key, server]: [string, any]) => ({
+                id: key,
+                command: server.command,
+                args: Array.isArray(server.args) ? server.args : [],
+                env: server.env && typeof server.env === "object" ? server.env : undefined,
+                disabled: server.disabled === true,
+                disabledTools: Array.isArray(server.disabledTools) ? server.disabledTools : undefined,
+              }));
+          }
+          
+          const hasAnyMcp = configs.length > 0 || commandConfigs.filter(c => !c.disabled).length > 0;
+          set({ mcpConfigs: configs, commandMcpConfigs: commandConfigs, mcpEnabled: hasAnyMcp });
         } catch {
           // ignore
         }
       },
+      setMcpConfigs: (configs) => set({ mcpConfigs: configs }),
+      addMcpConfig: (config) => set((state) => ({
+        mcpConfigs: [...state.mcpConfigs, { ...config, id: crypto.randomUUID(), enabled: true }]
+      })),
+      updateMcpConfig: (id, updates) => set((state) => ({
+        mcpConfigs: state.mcpConfigs.map(config => 
+          config.id === id ? { ...config, ...updates } : config
+        )
+      })),
+      removeMcpConfig: (id) => set((state) => ({
+        mcpConfigs: state.mcpConfigs.filter(config => config.id !== id)
+      })),
+      toggleMcpConfig: (id) => set((state) => ({
+        mcpConfigs: state.mcpConfigs.map(config => 
+          config.id === id ? { ...config, enabled: !config.enabled } : config
+        )
+      })),
       localAgentEnabled: false,
       setLocalAgentEnabled: (enabled) => {
         set({ localAgentEnabled: enabled });
@@ -217,16 +345,35 @@ const useToolsStore = create<StoreState>()(
       setLocalAgentCwd: (cwd) => {
         set({ localAgentCwd: cwd });
       },
+      approvedFunctionTools: [],
+      approveFunctionTool: (name) => {
+        const tool = typeof name === "string" ? name.trim() : "";
+        if (!tool) return;
+        set((state) => {
+          const current = Array.isArray(state.approvedFunctionTools)
+            ? state.approvedFunctionTools
+            : [];
+          if (current.includes(tool)) return state;
+          return { approvedFunctionTools: [...current, tool] };
+        });
+      },
       codeInterpreterEnabled: false,
       setCodeInterpreterEnabled: (enabled) => {
         set({ codeInterpreterEnabled: enabled });
       },
       setVectorStore: (store) => set({ vectorStore: store }),
       setWebSearchConfig: (config) => set({ webSearchConfig: config }),
-      setMcpConfig: (config) => set({ mcpConfig: config }),
       voiceModeEnabled: false,
       setVoiceModeEnabled: (enabled) => {
         set({ voiceModeEnabled: enabled });
+      },
+      selectedVoice: "shimmer",
+      setSelectedVoice: (voice) => {
+        set({ selectedVoice: voice });
+      },
+      videoGenerationEnabled: false,
+      setVideoGenerationEnabled: (enabled) => {
+        set({ videoGenerationEnabled: enabled });
       },
     }),
     {

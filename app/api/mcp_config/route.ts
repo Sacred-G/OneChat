@@ -12,12 +12,7 @@ function json(status: number, body: any) {
   });
 }
 
-type McpConfigFile = {
-  server_label?: unknown;
-  server_url?: unknown;
-  allowed_tools?: unknown;
-  skip_approval?: unknown;
-};
+type McpConfigFile = any;
 
 export async function GET() {
   const filePath = path.join(process.cwd(), "mcp_config.json");
@@ -39,24 +34,9 @@ export async function GET() {
     });
   }
 
-  const server_label = typeof parsed.server_label === "string" ? parsed.server_label : "";
-  const server_url = typeof parsed.server_url === "string" ? parsed.server_url : "";
-
-  const allowed_tools = Array.isArray(parsed.allowed_tools)
-    ? parsed.allowed_tools.filter((t) => typeof t === "string")
-    : typeof parsed.allowed_tools === "string"
-      ? parsed.allowed_tools
-      : "";
-
-  const skip_approval = typeof parsed.skip_approval === "boolean" ? parsed.skip_approval : false;
-
+  // Return the config as-is - the frontend will handle both single and array formats
   return json(200, {
     ok: true,
-    config: {
-      server_label,
-      server_url,
-      allowed_tools,
-      skip_approval,
-    },
+    config: parsed,
   });
 }

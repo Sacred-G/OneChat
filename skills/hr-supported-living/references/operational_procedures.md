@@ -3,6 +3,7 @@
 ## New Hire Onboarding Process
 
 ### Pre-Hire Requirements
+
 1. Background clearance (Live Scan fingerprinting)
 2. Criminal record clearance
 3. TB test/clearance
@@ -11,7 +12,9 @@
 6. Reference checks (minimum 3)
 
 ### First Week - Orientation (within 7 days per Title 17)
+
 **Day 1:**
+
 - Complete new hire paperwork (I-9, W-4, direct deposit, emergency contacts)
 - Sign confidentiality agreement and HIPAA acknowledgment
 - Review consumer rights and agency mission
@@ -19,6 +22,7 @@
 - Complete computer/system setup
 
 **Days 1-7:**
+
 - Consumer rights and dignity training (2 hours)
 - Mandated reporter training (2 hours)
 - Person-centered planning overview (2 hours)
@@ -28,12 +32,15 @@
 - Medication observation training (if applicable) (4 hours)
 
 ### First 30 Days
+
 - Complete specialized training based on consumer needs
 - One-on-one supervision meetings (weekly)
 - Review of documentation quality
 - Competency assessments
+- Sexual Harrssment Training
 
 ### First 90 Days
+
 - Performance review and goal setting
 - Additional training as identified
 - Full integration into team
@@ -41,7 +48,9 @@
 ## Documentation Standards
 
 ### Progress Notes
+
 **Required Elements:**
+
 - Date and time of service
 - Consumer name and identifying information
 - Duration of service
@@ -51,6 +60,7 @@
 - Staff signature and credentials
 
 **Best Practices:**
+
 - Write in objective, descriptive language
 - Focus on observable behaviors and actions
 - Avoid subjective opinions or judgments
@@ -61,12 +71,14 @@
 ### Incident Reporting Workflow
 
 **Step 1: Immediate Response**
+
 - Ensure consumer safety
 - Provide necessary medical attention
 - Notify emergency services if needed
 - Notify supervisor immediately for serious incidents
 
 **Step 2: Documentation (within 24 hours)**
+
 - Complete incident report form
 - Include: date, time, location, people involved, witnesses
 - Describe what happened objectively
@@ -74,12 +86,14 @@
 - Note any injuries or property damage
 
 **Step 3: Notification**
+
 - Notify Regional Center within required timeframe
 - Notify CCL if required by regulation
 - Notify family/conservator as appropriate
 - Notify law enforcement if criminal activity suspected
 
 **Step 4: Follow-up**
+
 - Investigation if warranted
 - Corrective action plan
 - Staff retraining if needed
@@ -89,7 +103,9 @@
 ## Medication Observation Protocol
 
 ### Eight Rights Verification
+
 Before observing medication, DSS must verify:
+
 1. **Right Consumer**: Confirm identity
 2. **Right Medication**: Check prescription label matches
 3. **Right Dose**: Verify amount is correct
@@ -100,6 +116,7 @@ Before observing medication, DSS must verify:
 8. **Right Reason**: Understand why medication is prescribed
 
 ### Documentation Requirements
+
 - Consumer name and date of birth
 - Medication name, dose, route, time
 - Staff initials confirming observation
@@ -107,6 +124,7 @@ Before observing medication, DSS must verify:
 - Medication errors must be reported immediately
 
 ### Staff Requirements
+
 - Completed medication observation training
 - Annual competency assessment
 - Current certification on file
@@ -114,12 +132,15 @@ Before observing medication, DSS must verify:
 ## Performance Management
 
 ### Regular Supervision
+
 - New DSS: Weekly 1:1 meetings for first 90 days
 - All DSS: Biweekly 1:1 meetings ongoing
 - Monthly team meetings
 
 ### Annual Performance Reviews
+
 **Components:**
+
 - Self-assessment by employee
 - Supervisor evaluation
 - Review of training completion
@@ -127,6 +148,7 @@ Before observing medication, DSS must verify:
 - Salary/compensation discussion
 
 **Performance Criteria:**
+
 - Quality of documentation
 - Adherence to consumer ISPs
 - Professional conduct and ethics
@@ -135,12 +157,14 @@ Before observing medication, DSS must verify:
 - Compliance with policies and procedures
 
 ### Progressive Discipline
+
 1. Verbal warning (documented)
 2. Written warning
 3. Suspension (with or without pay)
 4. Termination
 
 **Exceptions** (immediate termination):
+
 - Consumer abuse or neglect
 - HIPAA violations
 - Fraud or theft
@@ -150,6 +174,7 @@ Before observing medication, DSS must verify:
 ## Training Requirements
 
 ### Mandatory Annual Training (all DSS)
+
 - Consumer rights (2 hours)
 - Mandated reporting refresher (1 hour)
 - CPR/First Aid recertification (as required by certifying body)
@@ -158,6 +183,7 @@ Before observing medication, DSS must verify:
 - Person-centered planning refresher (2 hours)
 
 ### Specialized Training (as needed)
+
 - Behavior support interventions
 - Specific medical conditions
 - Assistive technology
@@ -165,6 +191,7 @@ Before observing medication, DSS must verify:
 - Cultural competency
 
 ### Documentation
+
 - Training attendance records
 - Certificates of completion
 - Competency assessments
@@ -173,6 +200,7 @@ Before observing medication, DSS must verify:
 ## Quality Assurance
 
 ### Quarterly Reviews
+
 - Random sample of progress notes for quality
 - ISP goal progress tracking
 - Incident report analysis for trends
@@ -180,6 +208,7 @@ Before observing medication, DSS must verify:
 - Staff feedback sessions
 
 ### Annual Audits
+
 - Title 17 compliance self-audit
 - Regional Center vendor review preparation
 - Personnel file audits
@@ -189,18 +218,21 @@ Before observing medication, DSS must verify:
 ## Regional Center Vendor Compliance
 
 ### Quarterly Reporting
+
 - Service delivery statistics
 - Consumer outcomes
 - Incident summaries
 - Staffing updates
 
 ### Annual Requirements
+
 - Vendor recertification
 - Updated agency information
 - Proof of insurance
 - Current license/certification
 
 ### Service Authorization Compliance
+
 - Services match POS authorization
 - Billing aligns with documented services
 - Prior authorization for any service changes

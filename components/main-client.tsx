@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Images, LayoutGrid, Mic, Moon, PanelLeft, Plus, Settings, Star, Sun, X } from "lucide-react";
+import { AudioLines, Film, Images, ImagePlus, LayoutGrid, Mic, Moon, PanelLeft, Plus, Settings, Star, Sun, X } from "lucide-react";
 
 import Assistant from "@/components/assistant";
 import ConversationHistory from "@/components/conversation-history";
@@ -41,6 +41,7 @@ export default function MainClient() {
     selectedProjectId,
     setSelectedProjectId,
     setVectorStore,
+    hydrateMcpConfigFromFile,
     provider,
     setProvider,
     apipieModel,
@@ -66,6 +67,11 @@ export default function MainClient() {
     if (typeof document === "undefined") return;
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    hydrateMcpConfigFromFile();
+  }, [hydrateMcpConfigFromFile]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -472,6 +478,42 @@ export default function MainClient() {
             <LayoutGrid size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
           </button>
           <button
+            onClick={() => router.push("/veo-video")}
+            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Veo video"
+          >
+            <Film size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={() => router.push("/tts-audio")}
+            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="TTS audio"
+          >
+            <AudioLines size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={() => router.push("/imagen")}
+            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Imagen"
+          >
+            <ImagePlus size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={() => router.push("/nano-banana")}
+            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Nano Banana"
+          >
+            <Images size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
             onClick={() => setShowTools(true)}
             className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
               theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
@@ -673,6 +715,42 @@ export default function MainClient() {
             title="Gallery"
           >
             <LayoutGrid size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={() => router.push("/veo-video")}
+            className={`p-2 rounded-lg transition-colors md:hidden ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Veo video"
+          >
+            <Film size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={() => router.push("/tts-audio")}
+            className={`p-2 rounded-lg transition-colors md:hidden ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="TTS audio"
+          >
+            <AudioLines size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={() => router.push("/imagen")}
+            className={`p-2 rounded-lg transition-colors md:hidden ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Imagen"
+          >
+            <ImagePlus size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={() => router.push("/nano-banana")}
+            className={`p-2 rounded-lg transition-colors md:hidden ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Nano Banana"
+          >
+            <Images size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
           </button>
           <button
             onClick={toggleTheme}

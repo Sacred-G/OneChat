@@ -1,5 +1,7 @@
 export const dynamic = "force-dynamic";
 
+import { uploadGeneratedImage } from "@/lib/supabase-storage";
+
 export async function POST(request: Request) {
   const apiKey = process.env.APIPIE_API_KEY;
   if (!apiKey) {
@@ -81,8 +83,25 @@ export async function POST(request: Request) {
   const b64 = typeof json?.data?.[0]?.b64_json === "string" ? json.data[0].b64_json : null;
   const dataUrl = b64 ? `data:image/png;base64,${b64}` : null;
 
-  return new Response(JSON.stringify({ url, b64_json: b64, dataUrl, raw: json }), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  let persistedUrl: string | null = null;
+  if (b64) {
+    try {
+      const uploaded = await uploadGeneratedImage({
+        base64: b64,
+        mimeType: "image/png",
+        prefix: "apipie",
+      });
+      persistedUrl = typeof uploaded?.url === "string" ? uploaded.url : null;
+    } catch (e) {
+      console.error("[apipie/images] Supabase upload failed", e);
+    }
+  }
+
+  return new Response(
+    JSON.stringify({ url: persistedUrl || url, persistedUrl, b64_json: b64, dataUrl, raw: json }),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    }
+  );
 }

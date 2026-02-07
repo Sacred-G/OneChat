@@ -9,9 +9,16 @@ type Json = Record<string, any>;
 const PORT = Number(process.env.LOCAL_AGENT_PORT || 4001);
 const ROOT = process.env.LOCAL_AGENT_ROOT || "/Volumes/Development";
 const TOKEN = process.env.LOCAL_AGENT_TOKEN || "";
+const UNSAFE_MODE = process.env.LOCAL_AGENT_UNSAFE_MODE === "1";
+
+if (UNSAFE_MODE && !TOKEN) {
+  // eslint-disable-next-line no-console
+  console.error("[local-agent] Refusing to start: LOCAL_AGENT_UNSAFE_MODE=1 requires LOCAL_AGENT_TOKEN to be set");
+  process.exit(1);
+}
 
 const ALLOWED_COMMANDS = new Set(
-  (process.env.LOCAL_AGENT_ALLOWED_COMMANDS || "ls,pwd,cat,head,tail,grep,rg,git,node,npm,pnpm,yarn,bun,python,python3,pytest")
+  (process.env.LOCAL_AGENT_ALLOWED_COMMANDS || "/bin/ls,/bin/pwd,/bin/cat,/usr/bin/head,/usr/bin/tail,/usr/bin/grep,/usr/local/bin/rg,/usr/bin/git,/usr/local/bin/node,/usr/local/bin/npm,/usr/local/bin/pnpm,/usr/local/bin/yarn,/usr/local/bin/bun,/usr/bin/python3,/usr/bin/python,/usr/local/bin/pytest")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
@@ -34,7 +41,12 @@ function badRequest(res: http.ServerResponse, message: string) {
 }
 
 function normalizeWithinRoot(userPath: string): string {
-  // Treat empty or "/" as root.
+  if (UNSAFE_MODE) {
+    const p = userPath && userPath.trim() ? userPath.trim() : "/";
+    if (path.isAbsolute(p)) return path.resolve(p);
+    return path.resolve(ROOT, p);
+  }
+
   const rel = userPath && userPath !== "/" ? userPath : "";
   const resolved = path.resolve(ROOT, rel.replace(/^\/+/, ""));
   if (resolved !== ROOT && !resolved.startsWith(ROOT + path.sep)) {
@@ -128,11 +140,6 @@ async function handleRun(req: http.IncomingMessage, res: http.ServerResponse) {
 
   if (!command) return badRequest(res, "Missing command");
 
-  const [bin, ...args] = command.split(/\s+/);
-  if (!bin || !ALLOWED_COMMANDS.has(bin)) {
-    return badRequest(res, `Command not allowed: ${bin || ""}`);
-  }
-
   let fullCwd: string;
   try {
     fullCwd = normalizeWithinRoot(cwd);
@@ -144,10 +151,59 @@ async function handleRun(req: http.IncomingMessage, res: http.ServerResponse) {
   const maxOutput = Math.min(Math.max(Number(body?.maxOutputBytes) || 200000, 1000), 2_000_000);
 
   try {
-    const child = spawn(bin, args, {
+    if (!UNSAFE_MODE) {
+      const [bin, ...args] = command.split(/\s+/);
+      if (!bin || !ALLOWED_COMMANDS.has(bin)) {
+        return badRequest(res, `Command not allowed: ${bin || ""}`);
+      }
+
+      const child = spawn(bin, args, {
+        cwd: fullCwd,
+        env: process.env,
+        shell: false,
+      });
+
+      const bufs: Buffer[] = [];
+      const push = (b: Buffer) => {
+        if (bufs.reduce((acc, x) => acc + x.length, 0) >= maxOutput) return;
+        bufs.push(b);
+      };
+
+      child.stdout.on("data", (d: Buffer) => push(d));
+      child.stderr.on("data", (d: Buffer) => push(d));
+
+      const exitCode: number = await new Promise((resolve) => {
+        const t = setTimeout(() => {
+          try {
+            child.kill("SIGKILL");
+          } catch {
+            // ignore
+          }
+          resolve(124);
+        }, timeoutMs);
+
+        child.on("close", (code) => {
+          clearTimeout(t);
+          resolve(typeof code === "number" ? code : 0);
+        });
+      });
+
+      const output = Buffer.concat(bufs).toString("utf8");
+      return sendJson(res, 200, {
+        ok: true,
+        cwd,
+        command,
+        exitCode,
+        output,
+        truncated: Buffer.byteLength(output, "utf8") >= maxOutput,
+        timeoutMs,
+      });
+    }
+
+    const child = spawn(command, [], {
       cwd: fullCwd,
       env: process.env,
-      shell: false,
+      shell: true,
     });
 
     const bufs: Buffer[] = [];

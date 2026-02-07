@@ -51,6 +51,25 @@ export const toolsList = [
     },
   },
   {
+    name: "generate_video",
+    description: "Generate a video using OpenAI's Sora model from a text prompt. Returns a video ID that can be downloaded.",
+    parameters: {
+      prompt: {
+        type: "string",
+        description: "Text prompt describing the video to generate",
+      },
+      size: {
+        type: "string",
+        description: "Video resolution",
+        enum: ["1280x720", "1920x1080"],
+      },
+      seconds: {
+        type: "number",
+        description: "Video duration in seconds (1-60)",
+      },
+    },
+  },
+  {
     name: "send_email",
     description:
       "Send an email. Defaults to dry_run=true (preview only) unless explicitly set to false.",
@@ -125,6 +144,41 @@ export const toolsList = [
       cwd: {
         type: "string",
         description: "Working directory relative to workspace root. Use '/' for root.",
+      },
+    },
+  },
+  {
+    name: "read_skill_reference",
+    description: "Read a reference file from a skill's references directory. Use this to load detailed documentation, schemas, or guidelines that a skill references. If referencePath is omitted, returns a list of available reference files for the skill.",
+    required: ["skillName"],
+    strict: false,
+    parameters: {
+      skillName: {
+        type: "string",
+        description: "Name of the skill (e.g., 'hr-supported-living', 'web-artifacts-builder')",
+      },
+      referencePath: {
+        type: "string",
+        description: "Optional filename of the reference to read (e.g., 'terminology.md'). If omitted, lists available references.",
+      },
+    },
+  },
+  {
+    name: "launch_streamlit_app",
+    description:
+      "Start (or reuse) the local Streamlit app and return a URL that can be opened in an Artifact.",
+    parameters: {},
+  },
+  {
+    name: "deploy_streamlit_app",
+    description:
+      "Write Python code to streamlit-app/app.py (Streamlit entrypoint), start/reuse the local Streamlit server, and return a URL that can be opened in an Artifact.",
+    required: ["code"],
+    strict: false,
+    parameters: {
+      code: {
+        type: "string",
+        description: "Full contents of streamlit-app/app.py",
       },
     },
   },

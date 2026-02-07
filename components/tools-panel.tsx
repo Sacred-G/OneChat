@@ -3,13 +3,14 @@ import React from "react";
 import FileSearchSetup from "./file-search-setup";
 import WebSearchConfig from "./websearch-config";
 import FunctionsView from "./functions-view";
-import McpConfig from "./mcp-config";
+import McpConfig from "./mcp-multi-config";
 import PanelConfig from "./panel-config";
 import DestinationsPanel from "./destinations-panel";
 import LocalAgentPanel from "./local-agent-panel";
 import useToolsStore from "@/stores/useToolsStore";
 import GoogleIntegrationPanel from "@/components/google-integration";
-import { Mic, Trash2 } from "lucide-react";
+import LinkedInIntegrationPanel from "@/components/linkedin-integration";
+import { Mic, Trash2, Video } from "lucide-react";
 import useConversationStore from "@/stores/useConversationStore";
 import useThemeStore from "@/stores/useThemeStore";
 
@@ -26,6 +27,8 @@ export default function ContextPanel() {
     setFunctionsEnabled,
     googleIntegrationEnabled,
     setGoogleIntegrationEnabled,
+    linkedinIntegrationEnabled,
+    setLinkedinIntegrationEnabled,
     geminiImageEnabled,
     setGeminiImageEnabled,
     mcpEnabled,
@@ -37,8 +40,13 @@ export default function ContextPanel() {
     setCodeInterpreterEnabled,
     voiceModeEnabled,
     setVoiceModeEnabled,
+    selectedVoice,
+    setSelectedVoice,
+    videoGenerationEnabled,
+    setVideoGenerationEnabled,
   } = useToolsStore();
   const [oauthConfigured, setOauthConfigured] = React.useState<boolean>(false);
+  const [linkedinOauthConfigured, setLinkedinOauthConfigured] = React.useState<boolean>(false);
   const [isClearingHistory, setIsClearingHistory] = React.useState(false);
 
   React.useEffect(() => {
@@ -46,6 +54,13 @@ export default function ContextPanel() {
       .then((r) => r.json())
       .then((d) => setOauthConfigured(Boolean(d.oauthConfigured)))
       .catch(() => setOauthConfigured(false));
+  }, []);
+
+  React.useEffect(() => {
+    fetch("/api/linkedin/status")
+      .then((r) => r.json())
+      .then((d) => setLinkedinOauthConfigured(Boolean(d.oauthConfigured)))
+      .catch(() => setLinkedinOauthConfigured(false));
   }, []);
 
   React.useEffect(() => {
@@ -148,6 +163,15 @@ export default function ContextPanel() {
           <GoogleIntegrationPanel />
         </PanelConfig>
         <PanelConfig
+          title="LinkedIn Integration"
+          tooltip="Connect your LinkedIn account to post drafts to a Company Page."
+          enabled={linkedinOauthConfigured && linkedinIntegrationEnabled}
+          setEnabled={setLinkedinIntegrationEnabled}
+          disabled={!linkedinOauthConfigured}
+        >
+          <LinkedInIntegrationPanel />
+        </PanelConfig>
+        <PanelConfig
           title="Voice Mode"
           tooltip="Enable real-time voice conversation with the assistant using OpenAI Realtime API"
           enabled={voiceModeEnabled}
@@ -158,7 +182,44 @@ export default function ContextPanel() {
               <Mic size={16} />
               <span>Talk directly with the assistant</span>
             </div>
-            <p>When enabled, a voice chat interface will appear allowing you to have real-time audio conversations.</p>
+            <p className="mb-3">When enabled, a voice chat interface will appear allowing you to have real-time audio conversations.</p>
+            <div className="mt-3">
+              <label className={`block text-sm font-medium mb-1 ${theme === "dark" ? "text-white" : "text-stone-700"}`}>
+                Voice
+              </label>
+              <select
+                value={selectedVoice}
+                onChange={(e) => setSelectedVoice(e.target.value as any)}
+                className={`w-full rounded-md border px-3 py-2 text-sm ${
+                  theme === "dark"
+                    ? "bg-[#1a1a1a] border-white/10 text-white"
+                    : "bg-white border-stone-300 text-stone-900"
+                }`}
+              >
+                <option value="shimmer">Shimmer (Female)</option>
+                <option value="coral">Coral (Female)</option>
+                <option value="alloy">Alloy (Neutral)</option>
+                <option value="echo">Echo (Male)</option>
+                <option value="sage">Sage (Male)</option>
+                <option value="ash">Ash (Male)</option>
+                <option value="ballad">Ballad (Male)</option>
+                <option value="verse">Verse (Male)</option>
+              </select>
+            </div>
+          </div>
+        </PanelConfig>
+        <PanelConfig
+          title="Video Generation"
+          tooltip="Generate videos using OpenAI's Sora model"
+          enabled={videoGenerationEnabled}
+          setEnabled={setVideoGenerationEnabled}
+        >
+          <div className="text-sm text-stone-500 mt-2">
+            <div className="flex items-center gap-2 mb-2">
+              <Video size={16} />
+              <span>Create videos with AI</span>
+            </div>
+            <p>Generate high-quality videos using text descriptions. Perfect for creating animations, visual stories, or content demonstrations.</p>
           </div>
         </PanelConfig>
 
