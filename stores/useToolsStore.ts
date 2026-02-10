@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { defaultVectorStore } from "@/config/constants";
+import { toolsList } from "@/config/tools-list";
 
 type File = {
   id: string;
@@ -65,6 +66,7 @@ export interface ToolsState {
   voiceModeEnabled: boolean;
   selectedVoice: VoiceOption;
   videoGenerationEnabled: boolean;
+  disabledFunctions: string[];
   provider: "openai" | "apipie";
   apipieModel: string;
   apipieImageModel: string;
@@ -106,6 +108,9 @@ interface StoreState {
   hydrateMcpConfigFromFile: () => Promise<void>;
   commandMcpConfigs: CommandMcpConfig[];
   setCommandMcpConfigs: (configs: CommandMcpConfig[]) => void;
+  toggleCommandMcpConfig: (id: string) => void;
+  disableAllCommandMcpConfigs: () => void;
+  enableAllCommandMcpConfigs: () => void;
   voiceModeEnabled: boolean;
   setVoiceModeEnabled: (enabled: boolean) => void;
   selectedVoice: VoiceOption;
@@ -130,6 +135,10 @@ interface StoreState {
   toggleApipieFavoriteModel: (model: string) => void;
   apipieFavoriteImageModels: string[];
   toggleApipieFavoriteImageModel: (model: string) => void;
+  disabledFunctions: string[];
+  toggleFunction: (name: string) => void;
+  enableAllFunctions: () => void;
+  disableAllFunctions: () => void;
 }
 
 const useToolsStore = create<StoreState>()(
@@ -149,6 +158,17 @@ const useToolsStore = create<StoreState>()(
       mcpConfigs: [],
       commandMcpConfigs: [],
       setCommandMcpConfigs: (configs) => set({ commandMcpConfigs: configs }),
+      toggleCommandMcpConfig: (id) => set((state) => ({
+        commandMcpConfigs: state.commandMcpConfigs.map(config =>
+          config.id === id ? { ...config, disabled: !config.disabled } : config
+        )
+      })),
+      disableAllCommandMcpConfigs: () => set((state) => ({
+        commandMcpConfigs: state.commandMcpConfigs.map(config => ({ ...config, disabled: true }))
+      })),
+      enableAllCommandMcpConfigs: () => set((state) => ({
+        commandMcpConfigs: state.commandMcpConfigs.map(config => ({ ...config, disabled: false }))
+      })),
       provider: "openai",
       setProvider: (provider) => {
         set({ provider });
@@ -211,11 +231,21 @@ const useToolsStore = create<StoreState>()(
       },
       hydrateMcpConfigFromFile: async () => {
         try {
+          if (process.env.DISABLE_MCP_TOOLS === "true") {
+            set({ mcpConfigs: [], commandMcpConfigs: [], mcpEnabled: false });
+            return;
+          }
+
           const res = await fetch("/api/mcp_config");
           const data = await res.json().catch(() => null);
           if (!res.ok) return;
           const cfg = data?.config;
           if (!cfg || typeof cfg !== "object") return;
+
+          if ((cfg as any).mcpDisabled === true || (cfg as any).disabled === true) {
+            set({ mcpConfigs: [], commandMcpConfigs: [], mcpEnabled: false });
+            return;
+          }
           
           let configs: any[] = [];
           
@@ -374,6 +404,22 @@ const useToolsStore = create<StoreState>()(
       videoGenerationEnabled: false,
       setVideoGenerationEnabled: (enabled) => {
         set({ videoGenerationEnabled: enabled });
+      },
+      disabledFunctions: [],
+      toggleFunction: (name) => {
+        const fn = typeof name === "string" ? name.trim() : "";
+        if (!fn) return;
+        set((state) => {
+          const current = Array.isArray(state.disabledFunctions) ? state.disabledFunctions : [];
+          if (current.includes(fn)) {
+            return { disabledFunctions: current.filter((n) => n !== fn) };
+          }
+          return { disabledFunctions: [...current, fn] };
+        });
+      },
+      enableAllFunctions: () => set({ disabledFunctions: [] }),
+      disableAllFunctions: () => {
+        set({ disabledFunctions: toolsList.map((t) => t.name) });
       },
     }),
     {

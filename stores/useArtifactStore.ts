@@ -2,10 +2,11 @@ import { create } from "zustand";
 
 export interface Artifact {
   id: string;
-  type: "html" | "react" | "code";
+  type: "html" | "react" | "code" | "ts_app";
   title?: string;
   code: string;
   language?: string;
+  revision?: number;
 }
 
  export interface UrlArtifact {

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { MessageSquare, Plus, Trash2 } from "lucide-react";
 import useConversationStore from "@/stores/useConversationStore";
 import useThemeStore from "@/stores/useThemeStore";
+import useWorkspaceStore from "@/stores/useWorkspaceStore";
 
 interface ConversationHistoryProps {
   onNewConversation: () => void;
@@ -20,6 +21,7 @@ export default function ConversationHistory({ onNewConversation }: ConversationH
     setAssistantLoading,
   } = useConversationStore();
   const { theme } = useThemeStore();
+  const { activeWorkspaceId } = useWorkspaceStore();
   const [isClient, setIsClient] = useState(false);
   const [conversations, setConversations] = useState<
     Array<{ id: string; title: string | null; updatedAt?: string; createdAt?: string }>
@@ -36,7 +38,8 @@ export default function ConversationHistory({ onNewConversation }: ConversationH
     const loadList = async () => {
       setIsLoadingList(true);
       try {
-        const res = await fetch("/api/conversation?list=1");
+        const wsParam = activeWorkspaceId ? `&workspaceId=${encodeURIComponent(activeWorkspaceId)}` : "";
+        const res = await fetch(`/api/conversation?list=1${wsParam}`);
         if (!res.ok) return;
         const data = await res.json().catch(() => null);
         const list = Array.isArray(data?.conversations) ? data.conversations : [];
@@ -62,12 +65,13 @@ export default function ConversationHistory({ onNewConversation }: ConversationH
     return () => {
       cancelled = true;
     };
-  }, [isClient, chatMessages.length]);
+  }, [isClient, chatMessages.length, activeWorkspaceId]);
 
   const handleClearHistory = async () => {
     if (confirm("Are you sure you want to clear all conversation history?")) {
       try {
-        await fetch("/api/conversation", { method: "DELETE" });
+        const wsParam = activeWorkspaceId ? `&workspaceId=${encodeURIComponent(activeWorkspaceId)}` : "";
+        await fetch(`/api/conversation?${wsParam}`, { method: "DELETE" });
         setConversations([]);
         setActiveConversationId(null);
         try {

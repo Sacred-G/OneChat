@@ -24,6 +24,41 @@ export const toolsList = [
     parameters: {},
   },
   {
+    name: "update_ts_app",
+    description:
+      "Update the currently open TypeScript app (ts_app) by modifying files and/or dependencies. Use this to apply changes directly to the open app.",
+    strict: false,
+    parameters: {
+      files: {
+        type: "object",
+        description:
+          "Map of file paths to full file contents. Paths should look like /src/App.tsx. Provide only files you want to add/update.",
+        additionalProperties: { type: "string" },
+      },
+      deleteFiles: {
+        type: "array",
+        description: "Optional list of file paths to delete.",
+        items: { type: "string" },
+      },
+      dependencies: {
+        type: "object",
+        description:
+          "Optional npm dependencies map { packageName: version }. Provide to add/update dependencies.",
+        additionalProperties: { type: "string" },
+      },
+      entry: {
+        type: "string",
+        description: "Optional entry file path, e.g. /src/index.tsx.",
+      },
+      mode: {
+        type: "string",
+        description: "merge keeps existing files/dep and applies changes; replace overwrites the spec.",
+        enum: ["merge", "replace"],
+      },
+    },
+    required: ["files"],
+  },
+  {
     name: "generate_image",
     description:
       "Generate an image from a text prompt. Returns a data URL you can embed in markdown.",

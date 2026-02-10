@@ -3,6 +3,7 @@
 // Parameters for a tool call are passed as an object to the corresponding function
 
 import useToolsStore from "@/stores/useToolsStore";
+import useArtifactStore from "@/stores/useArtifactStore";
 
 export const get_weather = async ({
   location,
@@ -199,6 +200,19 @@ export const mcp_local_tool = async ({
   return res;
 };
 
+export const web_search_query = async ({
+  query,
+}: {
+  query: string;
+}) => {
+  const res = await fetch(`/api/web_search`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ query }),
+  }).then((r) => r.json());
+  return res;
+};
+
 export const launch_streamlit_app = async () => {
   const res = await fetch(`/api/streamlit/launch`, {
     method: "POST",
@@ -216,6 +230,87 @@ export const deploy_streamlit_app = async ({ code }: { code: string }) => {
   return res;
 };
 
+export const update_ts_app = async ({
+  files,
+  deleteFiles,
+  dependencies,
+  entry,
+  mode = "merge",
+}: {
+  files: Record<string, string>;
+  deleteFiles?: string[];
+  dependencies?: Record<string, string>;
+  entry?: string;
+  mode?: "merge" | "replace";
+}) => {
+  const { currentArtifact, upsertArtifact, setCurrentArtifact } =
+    useArtifactStore.getState() as any;
+
+  if (!currentArtifact || currentArtifact.type !== "ts_app") {
+    return { ok: false, error: "No ts_app is currently open" };
+  }
+
+  const raw = typeof currentArtifact.code === "string" ? currentArtifact.code : "";
+  const base = (() => {
+    try {
+      const parsed = raw && raw.trim() ? JSON.parse(raw) : null;
+      if (!parsed || typeof parsed !== "object") return null;
+      return parsed as any;
+    } catch {
+      return null;
+    }
+  })();
+
+  const nextSpec: any =
+    mode === "replace"
+      ? {
+          entry: typeof entry === "string" && entry.trim() ? entry.trim() : "/src/index.tsx",
+          dependencies: dependencies && typeof dependencies === "object" ? dependencies : {},
+          files: files && typeof files === "object" ? files : {},
+        }
+      : {
+          entry:
+            typeof entry === "string" && entry.trim()
+              ? entry.trim()
+              : typeof base?.entry === "string"
+                ? base.entry
+                : "/src/index.tsx",
+          dependencies: {
+            ...((base?.dependencies && typeof base.dependencies === "object") ? base.dependencies : {}),
+            ...((dependencies && typeof dependencies === "object") ? dependencies : {}),
+          },
+          files: {
+            ...((base?.files && typeof base.files === "object") ? base.files : {}),
+            ...((files && typeof files === "object") ? files : {}),
+          },
+        };
+
+  if (Array.isArray(deleteFiles) && deleteFiles.length > 0) {
+    for (const p of deleteFiles) {
+      if (typeof p === "string" && p in (nextSpec.files || {})) {
+        try {
+          delete nextSpec.files[p];
+        } catch {
+          // ignore
+        }
+      }
+    }
+  }
+
+  const nextArtifact = {
+    ...currentArtifact,
+    type: "ts_app",
+    language: "ts_app",
+    code: JSON.stringify(nextSpec, null, 2),
+    revision: Date.now(),
+  };
+
+  if (typeof upsertArtifact === "function") upsertArtifact(nextArtifact);
+  if (typeof setCurrentArtifact === "function") setCurrentArtifact(nextArtifact);
+
+  return { ok: true };
+};
+
 export const functionsMap: Record<string, (params: any) => Promise<any>> = {
   get_weather: get_weather,
   get_joke: get_joke,
@@ -230,4 +325,6 @@ export const functionsMap: Record<string, (params: any) => Promise<any>> = {
   read_skill_reference: read_skill_reference,
   launch_streamlit_app: launch_streamlit_app,
   deploy_streamlit_app: deploy_streamlit_app,
+  update_ts_app: update_ts_app,
+  web_search_query: web_search_query,
 };

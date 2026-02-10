@@ -21,7 +21,10 @@ import ScreenCapture from "./screen-capture";
 import useToolsStore from "@/stores/useToolsStore";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Switch } from "./ui/switch";
-import { Plus, Settings2, Mic } from "lucide-react";
+import { Plus, Settings2, Mic, ChevronDown, ChevronRight, FileText, Loader2 } from "lucide-react";
+import AgentSelector from "./agent-selector";
+import { toolsList } from "@/config/tools-list";
+import useAgentStore from "@/stores/useAgentStore";
 
 interface ChatProps {
   items: Item[];
@@ -53,6 +56,9 @@ const Chat: React.FC<ChatProps> = ({
   const [isNearBottom, setIsNearBottom] = useState(true);
   // This state is used to provide better user experience for non-English IMEs such as Japanese
   const [isComposing, setIsComposing] = useState(false);
+  const [showFunctionsList, setShowFunctionsList] = useState(false);
+  const [uploadedDocName, setUploadedDocName] = useState<string | null>(null);
+  const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const { isAssistantLoading, selectedSkill, setSelectedSkill } = useConversationStore();
   const { theme } = useThemeStore();
   const {
@@ -70,6 +76,8 @@ const Chat: React.FC<ChatProps> = ({
     setLocalAgentEnabled,
     googleIntegrationEnabled,
     setGoogleIntegrationEnabled,
+    disabledFunctions,
+    toggleFunction,
   } = useToolsStore();
 
   const handleScreenCapture = (imageData: string) => {
@@ -84,18 +92,96 @@ const Chat: React.FC<ChatProps> = ({
     uploadInputRef.current?.click();
   };
 
-  const handleUploadFile = (file: File) => {
-    const reader = new FileReader();
-    reader.onload = () => {
-      const result = typeof reader.result === "string" ? reader.result : null;
-      if (result) {
-        setCapturedImage(result);
-        if (!inputMessageText) {
-          setinputMessageText("What do you see in this image?");
+  const handleUploadFile = async (file: File) => {
+    const imageExts = [".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp", ".svg", ".heic", ".heif"];
+    const ext = "." + file.name.split(".").pop()?.toLowerCase();
+    const isImage = file.type.startsWith("image/") || imageExts.includes(ext);
+
+    if (isImage) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const result = typeof reader.result === "string" ? reader.result : null;
+        if (result) {
+          setCapturedImage(result);
+          if (!inputMessageText) {
+            setinputMessageText("What do you see in this image?");
+          }
+        }
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // Document upload → vector store
+    const selectedAgent = useAgentStore.getState().getSelectedAgent();
+    const globalVs = useToolsStore.getState().vectorStore;
+    let targetVsId = selectedAgent?.vectorStoreId || globalVs?.id || "";
+    let targetVsName = selectedAgent?.vectorStoreName || globalVs?.name || "";
+
+    setIsUploadingDoc(true);
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const bytes = new Uint8Array(arrayBuffer);
+      let binary = "";
+      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
+      const base64Content = btoa(binary);
+
+      // Upload file to OpenAI
+      const uploadRes = await fetch("/api/vector_stores/upload_file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileObject: { name: file.name, content: base64Content } }),
+      });
+      if (!uploadRes.ok) throw new Error("Upload failed");
+      const uploadData = await uploadRes.json();
+      const fileId = uploadData.id;
+      if (!fileId) throw new Error("No file ID");
+
+      // Create a vector store if none exists
+      if (!targetVsId) {
+        const storeName = selectedAgent ? `${selectedAgent.name} Knowledge Base` : "Chat Knowledge Base";
+        const createRes = await fetch("/api/vector_stores/create_store", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name: storeName }),
+        });
+        if (!createRes.ok) throw new Error("Failed to create store");
+        const createData = await createRes.json();
+        targetVsId = createData.id;
+        targetVsName = storeName;
+
+        // Persist the new store
+        if (selectedAgent) {
+          useAgentStore.getState().updateAgent(selectedAgent.id, {
+            vectorStoreId: targetVsId,
+            vectorStoreName: targetVsName,
+            fileSearchEnabled: true,
+          });
+        } else {
+          useToolsStore.getState().setVectorStore({ id: targetVsId, name: targetVsName });
+          useToolsStore.getState().setFileSearchEnabled(true);
         }
       }
-    };
-    reader.readAsDataURL(file);
+
+      // Add file to vector store
+      await fetch("/api/vector_stores/add_file", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fileId, vectorStoreId: targetVsId }),
+      });
+
+      setUploadedDocName(file.name);
+      if (!inputMessageText) {
+        setinputMessageText(`I just uploaded "${file.name}" to the knowledge base. Please use it to help me.`);
+      }
+      // Auto-clear the doc indicator after 5 seconds
+      setTimeout(() => setUploadedDocName(null), 5000);
+    } catch (err) {
+      console.error("Document upload error:", err);
+      alert("Failed to upload document. Please try again.");
+    } finally {
+      setIsUploadingDoc(false);
+    }
   };
 
   const handleSendWithImage = useCallback(() => {
@@ -215,6 +301,27 @@ const Chat: React.FC<ChatProps> = ({
         } backdrop-blur`}
       >
         <div className="mx-auto w-full max-w-3xl px-4 py-4">
+          {/* Document upload indicator */}
+          {(isUploadingDoc || uploadedDocName) && (
+            <div className={`mb-3 flex items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+              theme === "dark" ? "border-white/10 bg-[#1b1b1b] text-white" : "border-black/10 bg-gray-50 text-gray-900"
+            }`}>
+              {isUploadingDoc ? (
+                <>
+                  <Loader2 size={14} className="animate-spin text-blue-500" />
+                  <span className={theme === "dark" ? "text-gray-300" : "text-gray-600"}>Uploading document to knowledge base...</span>
+                </>
+              ) : uploadedDocName ? (
+                <>
+                  <FileText size={14} className="text-green-500" />
+                  <span className={theme === "dark" ? "text-gray-300" : "text-gray-600"}>
+                    <span className="font-medium">{uploadedDocName}</span> added to knowledge base
+                  </span>
+                </>
+              ) : null}
+            </div>
+          )}
+
           {/* Screen capture preview */}
           {capturedImage && (
             <div className="mb-3 relative">
@@ -297,12 +404,49 @@ const Chat: React.FC<ChatProps> = ({
                     <div>
                       <div className={`text-xs mb-2 ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Execution</div>
                       <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm">Functions</div>
-                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Locally defined tools</div>
+                        <div>
+                          <div className="flex items-center justify-between gap-3">
+                            <div className="min-w-0 flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setShowFunctionsList(!showFunctionsList)}
+                                className="p-0.5 -ml-1 rounded hover:bg-white/10"
+                              >
+                                {showFunctionsList ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                              </button>
+                              <div>
+                                <div className="text-sm">Functions</div>
+                                <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>
+                                  {(() => {
+                                    const d = Array.isArray(disabledFunctions) ? disabledFunctions : [];
+                                    const enabled = toolsList.filter((t) => !d.includes(t.name)).length;
+                                    return `${enabled}/${toolsList.length} enabled`;
+                                  })()}
+                                </div>
+                              </div>
+                            </div>
+                            <Switch checked={functionsEnabled} onCheckedChange={(v) => setFunctionsEnabled(Boolean(v))} />
                           </div>
-                          <Switch checked={functionsEnabled} onCheckedChange={(v) => setFunctionsEnabled(Boolean(v))} />
+                          {showFunctionsList && functionsEnabled && (
+                            <div className={`mt-2 ml-4 space-y-1.5 max-h-48 overflow-y-auto rounded-md border p-2 ${
+                              theme === "dark" ? "border-white/10 bg-black/20" : "border-black/5 bg-stone-50"
+                            }`}>
+                              {toolsList.map((tool) => {
+                                const d = Array.isArray(disabledFunctions) ? disabledFunctions : [];
+                                const isOn = !d.includes(tool.name);
+                                return (
+                                  <div key={tool.name} className="flex items-center justify-between gap-2">
+                                    <span className={`text-xs font-mono truncate ${isOn ? "" : "opacity-50"}`}>{tool.name}</span>
+                                    <Switch
+                                      checked={isOn}
+                                      onCheckedChange={() => toggleFunction(tool.name)}
+                                      className="scale-75"
+                                    />
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
                         </div>
                         <div className="flex items-center justify-between gap-3">
                           <div className="min-w-0">
@@ -363,7 +507,7 @@ const Chat: React.FC<ChatProps> = ({
               <input
                 ref={uploadInputRef}
                 type="file"
-                accept="image/*"
+                accept="image/*,.c,.cpp,.cs,.css,.doc,.docx,.go,.html,.java,.js,.json,.md,.pdf,.php,.pptx,.py,.rb,.sh,.tex,.ts,.txt"
                 className="hidden"
                 onChange={(e) => {
                   const file = e.target.files?.[0];
@@ -371,6 +515,7 @@ const Chat: React.FC<ChatProps> = ({
                   e.currentTarget.value = "";
                 }}
               />
+              <AgentSelector />
               <select
                 value={selectedSkill ?? ""}
                 onChange={(e) => {

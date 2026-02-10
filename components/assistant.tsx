@@ -9,6 +9,7 @@ import {
   processMessages,
 } from "@/lib/assistant";
 import useToolsStore from "@/stores/useToolsStore";
+import useWorkspaceStore from "@/stores/useWorkspaceStore";
 
 interface AssistantProps {
   voiceModeEnabled?: boolean;
@@ -42,12 +43,14 @@ export default function Assistant({
           ? String(firstUserMessage.content[0].text).slice(0, 60)
           : undefined;
 
+      const workspaceId = useWorkspaceStore.getState().activeWorkspaceId;
       const res = await fetch("/api/conversation", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           id: activeConversationId,
           title,
+          ...(workspaceId ? { workspaceId } : {}),
           state: {
             chatMessages,
             conversationItems,

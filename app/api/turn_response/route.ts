@@ -309,7 +309,7 @@ function toApipieChatMessages(messages: any[]): Array<{ role: string; content: a
 
 export async function POST(request: Request) {
   try {
-    const { messages, toolsState, selectedSkill, provider, apipieModel } = await request.json();
+    const { messages, toolsState, selectedSkill, provider, apipieModel, agentPrompt, agentName, agentTemperature } = await request.json();
 
     if (provider === "apipie") {
       const apiKey = process.env.APIPIE_API_KEY;
@@ -334,6 +334,37 @@ export async function POST(request: Request) {
               },
             }))
             .filter((t: any) => t?.function?.name);
+
+          // Apipie uses Chat Completions API which only supports function tools.
+          // The native web_search tool (type "web_search") gets filtered out above.
+          // Add a web_search_query function tool so apipie models can search the web.
+          if (toolsState?.webSearchEnabled) {
+            const hasWebSearch = functionTools.some(
+              (t: any) => t?.function?.name === "web_search_query"
+            );
+            if (!hasWebSearch) {
+              functionTools.push({
+                type: "function",
+                function: {
+                  name: "web_search_query",
+                  description:
+                    "Search the web for current information. Use this when the user asks about recent events, news, real-time data, or anything that requires up-to-date information from the internet.",
+                  parameters: {
+                    type: "object",
+                    properties: {
+                      query: {
+                        type: "string",
+                        description: "The search query to look up on the web",
+                      },
+                    },
+                    required: ["query"],
+                    additionalProperties: false,
+                  },
+                },
+              });
+            }
+          }
+
           return functionTools;
         } catch {
           return [];
@@ -341,6 +372,10 @@ export async function POST(request: Request) {
       })();
 
       let instructions = getDeveloperPrompt();
+      if (typeof agentPrompt === "string" && agentPrompt.trim()) {
+        const label = typeof agentName === "string" && agentName.trim() ? agentName.trim() : "Custom Agent";
+        instructions = `# Agent: ${label}\n\n${agentPrompt.trim()}\n\n---\n\n${instructions}`;
+      }
       const effectiveSkill =
         selectedSkill && typeof selectedSkill === "string"
           ? selectedSkill
@@ -374,7 +409,7 @@ export async function POST(request: Request) {
           model: typeof apipieModel === "string" && apipieModel.trim() ? apipieModel.trim() : "gpt-3.5-turbo",
           provider: "openai",
           stream: false,
-          temperature: 1,
+          temperature: typeof agentTemperature === "number" ? agentTemperature : 1,
           top_p: 1,
           max_tokens: 800,
           ...(toolsForApipie.length > 0 ? { tools: toolsForApipie, tool_choice: "auto" } : {}),
@@ -504,20 +539,34 @@ export async function POST(request: Request) {
 
     const tools = await getTools(toolsState);
 
-    console.log("Tools:", tools);
-
-    console.log("Received messages:", JSON.stringify(messages, null, 2));
+    if (process.env.DEBUG_TURN_RESPONSE === "true") {
+      console.log("Tools:", tools);
+      console.log("Received messages:", JSON.stringify(messages, null, 2));
+    } else {
+      console.log(
+        "Tools:",
+        (tools ?? [])
+          .map((t: any) => (t?.type === "function" ? `function:${t.name}` : t?.type))
+          .filter(Boolean)
+      );
+    }
 
     // Sanitize messages to ensure annotations have required fields
     const sanitizedMessages = sanitizeToolOutputs(
       removeDanglingFunctionCalls(sanitizeMessages(messages))
     );
     
-    console.log("Sanitized messages:", JSON.stringify(sanitizedMessages, null, 2));
+    if (process.env.DEBUG_TURN_RESPONSE === "true") {
+      console.log("Sanitized messages:", JSON.stringify(sanitizedMessages, null, 2));
+    }
 
     const openai = new OpenAI();
 
     let instructions = getDeveloperPrompt();
+    if (typeof agentPrompt === "string" && agentPrompt.trim()) {
+      const label = typeof agentName === "string" && agentName.trim() ? agentName.trim() : "Custom Agent";
+      instructions = `# Agent: ${label}\n\n${agentPrompt.trim()}\n\n---\n\n${instructions}`;
+    }
     const effectiveSkill =
       selectedSkill && typeof selectedSkill === "string"
         ? selectedSkill

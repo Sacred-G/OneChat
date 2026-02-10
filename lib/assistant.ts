@@ -3,6 +3,7 @@ import { handleTool } from "@/lib/tools/tools-handling";
 import useConversationStore from "@/stores/useConversationStore";
 import useToolsStore, { ToolsState } from "@/stores/useToolsStore";
 import useArtifactStore from "@/stores/useArtifactStore";
+import useAgentStore from "@/stores/useAgentStore";
 import { Annotation } from "@/components/annotations";
 import { functionsMap } from "@/config/functions";
 
@@ -100,10 +101,50 @@ export const handleTurn = async (
 ) => {
   try {
     const storeState = useToolsStore.getState() as any;
-    const { googleIntegrationEnabled, provider, apipieModel } = storeState;
+    const { googleIntegrationEnabled, provider: chatProvider, apipieModel } = storeState;
     const { selectedSkill } = useConversationStore.getState();
+    const selectedAgent = useAgentStore.getState().getSelectedAgent();
+    const agentPref = selectedAgent?.preferredProvider;
+    const provider = agentPref && agentPref !== "none" ? agentPref : chatProvider;
 
     let effectiveToolsState: ToolsState = toolsState;
+
+    // Apply agent-level overrides (vector store, file search, web search, code interpreter)
+    if (selectedAgent) {
+      const overrides: Partial<ToolsState> = {};
+      if (selectedAgent.vectorStoreId) {
+        overrides.fileSearchEnabled = true;
+        overrides.vectorStore = {
+          id: selectedAgent.vectorStoreId,
+          name: selectedAgent.vectorStoreName || "",
+        } as any;
+      } else if (selectedAgent.fileSearchEnabled) {
+        overrides.fileSearchEnabled = true;
+      }
+      if (selectedAgent.webSearchEnabled) {
+        overrides.webSearchEnabled = true;
+      }
+      if (selectedAgent.codeInterpreterEnabled) {
+        overrides.codeInterpreterEnabled = true;
+      }
+      if (Object.keys(overrides).length > 0) {
+        effectiveToolsState = { ...effectiveToolsState, ...overrides };
+      }
+    }
+    // Preserve any agent-level overrides when falling back to storeState for MCP
+    const agentOverrides = selectedAgent ? (() => {
+      const o: Partial<ToolsState> = {};
+      if (selectedAgent.vectorStoreId) {
+        o.fileSearchEnabled = true;
+        o.vectorStore = { id: selectedAgent.vectorStoreId, name: selectedAgent.vectorStoreName || "" } as any;
+      } else if (selectedAgent.fileSearchEnabled) {
+        o.fileSearchEnabled = true;
+      }
+      if (selectedAgent.webSearchEnabled) o.webSearchEnabled = true;
+      if (selectedAgent.codeInterpreterEnabled) o.codeInterpreterEnabled = true;
+      return Object.keys(o).length > 0 ? o : null;
+    })() : null;
+
     if (
       (!effectiveToolsState?.mcpEnabled &&
         Array.isArray(storeState?.mcpConfigs) &&
@@ -112,7 +153,7 @@ export const handleTurn = async (
         Array.isArray(storeState?.commandMcpConfigs) &&
         storeState.commandMcpConfigs.some((c: any) => c && c.disabled !== true))
     ) {
-      effectiveToolsState = storeState as ToolsState;
+      effectiveToolsState = { ...(storeState as ToolsState), ...agentOverrides };
     }
 
     if (
@@ -125,23 +166,43 @@ export const handleTurn = async (
     ) {
       try {
         await storeState.hydrateMcpConfigFromFile();
-        effectiveToolsState = useToolsStore.getState() as ToolsState;
+        effectiveToolsState = { ...(useToolsStore.getState() as ToolsState), ...agentOverrides };
       } catch {
         // ignore
       }
     }
+
+    const { currentArtifact } = useArtifactStore.getState() as any;
+    const tsAppContextMessage = (() => {
+      if (!currentArtifact || currentArtifact.type !== "ts_app") return null;
+      const raw = typeof currentArtifact.code === "string" ? currentArtifact.code : "";
+      const spec = raw && raw.trim() ? raw.trim() : "";
+      const text = `A TypeScript app (ts_app) is currently open in the editor.\n\nIf the user requests changes to the app (pages/components/styles/dependencies), you MUST apply them by calling the function tool update_ts_app.\n\nCurrent ts_app spec JSON (files + dependencies):\n${spec || "<empty>"}`;
+      return {
+        type: "message",
+        role: "system",
+        content: [{ type: "input_text", text }],
+      };
+    })();
+
+    const effectiveMessages = tsAppContextMessage
+      ? [tsAppContextMessage, ...(Array.isArray(messages) ? messages : [])]
+      : messages;
 
     // Get response from the API (defined in app/api/turn_response/route.ts)
     const response = await fetch("/api/turn_response", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        messages: messages,
+        messages: effectiveMessages,
         toolsState: effectiveToolsState,
         googleIntegrationEnabled,
         selectedSkill,
         provider,
         apipieModel,
+        agentPrompt: selectedAgent?.prompt ?? null,
+        agentName: selectedAgent?.name ?? null,
+        agentTemperature: selectedAgent?.temperature ?? null,
       }),
     });
 

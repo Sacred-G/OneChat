@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
-import { Mic, MicOff, Phone, PhoneOff, Volume2 } from "lucide-react";
+import { Mic, MicOff, Phone, PhoneOff, Volume2, ExternalLink, X } from "lucide-react";
 import useThemeStore from "@/stores/useThemeStore";
 import { RealtimeAgent, RealtimeSession, OpenAIRealtimeWebRTC, tool } from "@openai/agents/realtime";
 import { Item } from "@/lib/assistant";
@@ -30,6 +30,7 @@ export default function VoiceAgent({ onClose, onTranscript }: VoiceAgentProps) {
   const [transcripts, setTranscripts] = useState<Array<{ role: string; text: string }>>();
   const [isScreenSharing, setIsScreenSharing] = useState(false);
   const [currentScreenImage, setCurrentScreenImage] = useState<string | null>(null);
+  const [showVibenIframe, setShowVibenIframe] = useState(false);
   const screenShareIntervalRef = useRef<number | null>(null);
   
   const sessionRef = useRef<RealtimeSession | null>(null);
@@ -49,7 +50,7 @@ export default function VoiceAgent({ onClose, onTranscript }: VoiceAgentProps) {
           "Search the user's linked vector store for relevant passages. Use this when asked about uploaded documents.",
         parameters: z.object({
           query: z.string(),
-          maxNumResults: z.number().int().min(1).max(20).optional(),
+          maxNumResults: z.number().int().min(1).max(20).nullable().optional().describe("Maximum number of results to return (1-20)"),
         }),
         execute: async ({ query, maxNumResults }) => {
           const storeId = vectorStore?.id;
@@ -142,6 +143,7 @@ export default function VoiceAgent({ onClose, onTranscript }: VoiceAgentProps) {
             apipieImageModel: state.apipieImageModel,
             apipieFavoriteModels: state.apipieFavoriteModels,
             apipieFavoriteImageModels: state.apipieFavoriteImageModels,
+            disabledFunctions: state.disabledFunctions,
           } as any;
 
           const messages = [
@@ -230,8 +232,8 @@ export default function VoiceAgent({ onClose, onTranscript }: VoiceAgentProps) {
         description: "Generate a video using OpenAI's Sora model. Use this when the user asks for video content, animations, or visual stories.",
         parameters: z.object({
           prompt: z.string().describe("The video description/prompt"),
-          size: z.enum(["1280x720", "1920x1080"]).optional().describe("Video resolution: 1280x720 (720p) or 1920x1080 (1080p)"),
-          seconds: z.number().min(1).max(60).optional().describe("Video duration in seconds (1-60)"),
+          size: z.enum(["1280x720", "1920x1080"]).nullable().optional().describe("Video resolution: 1280x720 (720p) or 1920x1080 (1080p)"),
+          seconds: z.number().min(1).max(60).nullable().optional().describe("Video duration in seconds (1-60)"),
         }),
         execute: async ({ prompt, size = "1280x720", seconds = 10 }) => {
           try {
@@ -368,7 +370,7 @@ export default function VoiceAgent({ onClose, onTranscript }: VoiceAgentProps) {
         description: "Generate images with optional reference image input. Use this when the user asks to create images based on or inspired by an existing image.",
         parameters: z.object({
           prompt: z.string().describe("The image description/prompt"),
-          imageDataUrl: z.string().optional().describe("Optional base64 image data URL to use as reference"),
+          imageDataUrl: z.string().nullable().optional().describe("Optional base64 image data URL to use as reference"),
         }),
         execute: async ({ prompt, imageDataUrl }) => {
           try {
@@ -493,6 +495,7 @@ export default function VoiceAgent({ onClose, onTranscript }: VoiceAgentProps) {
               apipieImageModel: state.apipieImageModel,
               apipieFavoriteModels: state.apipieFavoriteModels,
               apipieFavoriteImageModels: state.apipieFavoriteImageModels,
+              disabledFunctions: state.disabledFunctions,
             } as any;
 
             const messages = [
@@ -632,7 +635,7 @@ export default function VoiceAgent({ onClose, onTranscript }: VoiceAgentProps) {
         parameters: z.object({
           serverId: z.string().describe("The MCP server ID (e.g., 'exa', 'playwright')"),
           toolName: z.string().describe("The name of the tool to call"),
-          arguments: z.record(z.any()).optional().describe("Arguments to pass to the tool as a JSON object"),
+          arguments: z.record(z.any()).nullable().describe("Arguments to pass to the tool as a JSON object"),
         }),
         execute: async ({ serverId, toolName, arguments: toolArgs }) => {
           if (!mcpEnabled) {
@@ -1242,6 +1245,30 @@ ${skillInstructions}`,
           </div>
         )}
 
+        {/* Viben iframe */}
+        {showVibenIframe && (
+          <div className="flex-shrink-0">
+            <div className="relative h-96 w-full max-w-md mx-auto rounded-lg overflow-hidden border border-gray-300 bg-white">
+              <iframe
+                src="https://viben-peach.vercel.app/"
+                className="w-full h-full"
+                title="Viben App"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+              <button
+                onClick={() => setShowVibenIframe(false)}
+                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1 hover:bg-red-600 z-10"
+              >
+                ✕
+              </button>
+            </div>
+            <p className={`text-xs text-center mt-2 ${mutedTextColor}`}>
+              Viben app is running in an embedded frame
+            </p>
+          </div>
+        )}
+
         <div className="flex-1 flex flex-col items-center justify-center gap-6">
           {/* Status indicator */}
           <div className="flex flex-col items-center gap-2">
@@ -1302,6 +1329,18 @@ ${skillInstructions}`,
               </button>
             ) : (
               <>
+                <button
+                  onClick={() => setShowVibenIframe(!showVibenIframe)}
+                  className={`p-3 rounded-full transition-colors ${
+                    showVibenIframe
+                      ? "bg-purple-500 hover:bg-purple-600 text-white"
+                      : `${bgColor} hover:opacity-80 ${textColor}`
+                  }`}
+                  title={showVibenIframe ? "Close Viben" : "Launch Viben"}
+                >
+                  {showVibenIframe ? <X size={20} /> : <ExternalLink size={20} />}
+                </button>
+
                 <button
                   onClick={toggleScreenSharing}
                   className={`p-3 rounded-full transition-colors ${

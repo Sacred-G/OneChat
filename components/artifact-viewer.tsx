@@ -3,11 +3,216 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { BookmarkPlus, X, Code2, Eye, Download, Maximize2, Minimize2, FileText } from "lucide-react";
 import useThemeStore from "@/stores/useThemeStore";
+import useArtifactStore from "@/stores/useArtifactStore";
 import type { AnyArtifact, FileArtifact } from "@/stores/useArtifactStore";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import ReactMarkdown from "react-markdown";
 import { renderAsync } from "docx-preview";
+import {
+  SandpackFileExplorer,
+  SandpackLayout,
+  SandpackPreview,
+  SandpackProvider,
+  SandpackStack,
+  FileTabs,
+  useActiveCode,
+  useSandpack,
+} from "@codesandbox/sandpack-react";
+import Editor from "@monaco-editor/react";
+
+type TsAppSpec = {
+  files: Record<string, string>;
+  dependencies?: Record<string, string>;
+  entry?: string;
+};
+
+function getDefaultTsAppSpec(): TsAppSpec {
+  return {
+    entry: "/src/index.tsx",
+    dependencies: {
+      "react-router-dom": "^6.30.0",
+    },
+    files: {
+      "/src/index.tsx": `import React from "react";
+import { createRoot } from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
+import "./styles.css";
+
+const root = document.getElementById("root");
+if (root) {
+  createRoot(root).render(
+    <React.StrictMode>
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    </React.StrictMode>
+  );
+}
+`,
+      "/src/App.tsx": `import React from "react";
+import { Link, Route, Routes } from "react-router-dom";
+import Home from "./pages/Home";
+import About from "./pages/About";
+
+export default function App() {
+  return (
+    <div style={{ padding: 24, fontFamily: "system-ui, -apple-system, Segoe UI, Roboto" }}>
+      <div style={{ display: "flex", gap: 12, marginBottom: 16 }}>
+        <Link to="/">Home</Link>
+        <Link to="/about">About</Link>
+      </div>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+      </Routes>
+    </div>
+  );
+}
+`,
+      "/src/pages/Home.tsx": `import React from "react";
+
+export default function Home() {
+  return (
+    <div>
+      <h1 style={{ fontSize: 28, margin: 0 }}>Home</h1>
+      <p style={{ opacity: 0.8 }}>Edit files on the left and see changes instantly.</p>
+    </div>
+  );
+}
+`,
+      "/src/pages/About.tsx": `import React from "react";
+
+export default function About() {
+  return (
+    <div>
+      <h1 style={{ fontSize: 28, margin: 0 }}>About</h1>
+      <p style={{ opacity: 0.8 }}>This is a sandboxed TypeScript app artifact.</p>
+    </div>
+  );
+}
+`,
+      "/src/styles.css": `:root {
+  color-scheme: light;
+}
+
+body {
+  margin: 0;
+}
+`,
+    },
+  };
+}
+
+function parseTsAppSpec(raw: string): { spec: TsAppSpec; error: string } {
+  const trimmed = (raw || "").trim();
+  if (!trimmed) return { spec: getDefaultTsAppSpec(), error: "" };
+  try {
+    const parsed = JSON.parse(trimmed);
+    const files = parsed?.files;
+    const deps = parsed?.dependencies;
+    const entry = typeof parsed?.entry === "string" ? parsed.entry : "/src/index.tsx";
+    if (!files || typeof files !== "object") {
+      return { spec: getDefaultTsAppSpec(), error: "Invalid ts_app: missing files" };
+    }
+    const nextFiles: Record<string, string> = {};
+    for (const [k, v] of Object.entries(files)) {
+      if (typeof k === "string" && typeof v === "string") nextFiles[k] = v;
+    }
+    const nextDeps: Record<string, string> = {};
+    if (deps && typeof deps === "object") {
+      for (const [k, v] of Object.entries(deps)) {
+        if (typeof k === "string" && typeof v === "string") nextDeps[k] = v;
+      }
+    }
+    return {
+      spec: {
+        entry,
+        dependencies: Object.keys(nextDeps).length > 0 ? nextDeps : undefined,
+        files: Object.keys(nextFiles).length > 0 ? nextFiles : getDefaultTsAppSpec().files,
+      },
+      error: "",
+    };
+  } catch (e) {
+    return {
+      spec: getDefaultTsAppSpec(),
+      error: e instanceof Error ? e.message : "Invalid ts_app JSON",
+    };
+  }
+}
+
+function MonacoSandpackEditor() {
+  const { code, updateCode } = useActiveCode();
+  const { sandpack } = useSandpack();
+  const language = (() => {
+    const f = sandpack.activeFile || "";
+    if (f.endsWith(".tsx")) return "typescript";
+    if (f.endsWith(".ts")) return "typescript";
+    if (f.endsWith(".jsx")) return "javascript";
+    if (f.endsWith(".js")) return "javascript";
+    if (f.endsWith(".css")) return "css";
+    if (f.endsWith(".json")) return "json";
+    if (f.endsWith(".md")) return "markdown";
+    if (f.endsWith(".html")) return "html";
+    return "plaintext";
+  })();
+
+  return (
+    <SandpackStack style={{ height: "100%", margin: 0 }}>
+      <FileTabs />
+      <div style={{ flex: 1, paddingTop: 8, background: "#1e1e1e" }}>
+        <Editor
+          width="100%"
+          height="100%"
+          language={language}
+          theme="vs-dark"
+          key={sandpack.activeFile}
+          defaultValue={code}
+          onChange={(value) => updateCode(value || "")}
+          options={{ minimap: { enabled: false }, fontSize: 12 }}
+        />
+      </div>
+    </SandpackStack>
+  );
+}
+
+function TsAppSync(props: {
+  enabled: boolean;
+  spec: TsAppSpec;
+  onSpec: (spec: TsAppSpec) => void;
+}) {
+  const { sandpack } = useSandpack();
+  const lastSerializedRef = useRef<string>("");
+
+  useEffect(() => {
+    if (!props.enabled) return;
+
+    const id = window.setInterval(() => {
+      const files: Record<string, string> = {};
+      const sandpackFiles = (sandpack as any)?.files || {};
+      for (const [path, file] of Object.entries(sandpackFiles)) {
+        const code = (file as any)?.code;
+        if (typeof path === "string" && typeof code === "string") files[path] = code;
+      }
+
+      const next: TsAppSpec = {
+        entry: props.spec.entry,
+        dependencies: props.spec.dependencies,
+        files,
+      };
+
+      const serialized = JSON.stringify(next);
+      if (serialized === lastSerializedRef.current) return;
+      lastSerializedRef.current = serialized;
+      props.onSpec(next);
+    }, 500);
+
+    return () => window.clearInterval(id);
+  }, [props.enabled, props.onSpec, props.spec.dependencies, props.spec.entry, sandpack]);
+
+  return null;
+}
 
 function hashToHue(input: string): number {
   let h = 0;
@@ -67,6 +272,7 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
   const [viewMode, setViewMode] = useState<"preview" | "code">("preview");
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { theme } = useThemeStore();
+  const { upsertArtifact } = useArtifactStore();
   const [isSaving, setIsSaving] = useState(false);
   const [fileText, setFileText] = useState<string>("");
   const [fileTextError, setFileTextError] = useState<string>("");
@@ -76,10 +282,12 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
   const docxContainerRef = useRef<HTMLDivElement>(null);
   const [docxLoading, setDocxLoading] = useState(false);
   const [docxError, setDocxError] = useState<string>("");
+  const [tsAppSpec, setTsAppSpec] = useState<TsAppSpec | null>(null);
+  const [tsAppError, setTsAppError] = useState<string>("");
 
   const previewHtml = useMemo(() => {
     if (!artifact) return "";
-    if (artifact.type === "code" || artifact.type === "file" || artifact.type === "url") return "";
+    if (artifact.type === "code" || artifact.type === "file" || artifact.type === "url" || artifact.type === "ts_app") return "";
 
     const html = artifact.code || "";
     if (!html.trim()) return "";
@@ -106,12 +314,23 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
   );
 
   useEffect(() => {
-    if (artifact?.type === "code") {
+    if (artifact?.type === "code" || artifact?.type === "ts_app") {
       setViewMode("code");
     } else {
       setViewMode("preview");
     }
   }, [artifact]);
+
+  useEffect(() => {
+    if (!artifact || artifact.type !== "ts_app") {
+      setTsAppSpec(null);
+      setTsAppError("");
+      return;
+    }
+    const { spec, error } = parseTsAppSpec(artifact.code);
+    setTsAppSpec(spec);
+    setTsAppError(error);
+  }, [artifact?.id, (artifact as any)?.revision]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -308,6 +527,19 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
 
     const language = (artifact.language || "").toLowerCase();
 
+    if (artifact.type === "ts_app") {
+      const blob = new Blob([artifact.code], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `${safeTitle}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      return;
+    }
+
     const defaultExt = artifact.type === "code" ? "txt" : "html";
     const extByLang: Record<string, { ext: string; mime: string }> = {
       js: { ext: "js", mime: "text/javascript" },
@@ -449,7 +681,67 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
 
       {/* Content */}
       <div className="flex-1 overflow-hidden">
-        {artifact.type === "file" ? (
+        {artifact.type === "ts_app" ? (
+          <div className={`h-full overflow-hidden ${theme === 'dark' ? 'bg-[#121212]' : 'bg-white'}`}>
+            {tsAppError && (
+              <div className="p-3 text-xs text-red-500 border-b border-white/10">
+                {tsAppError}
+              </div>
+            )}
+            <div className="h-full">
+              <SandpackProvider
+                template="react-ts"
+                theme="dark"
+                key={`${String((artifact as any)?.revision || "0")}:${JSON.stringify(tsAppSpec?.dependencies || {})}`}
+                files={(() => {
+                  const spec = tsAppSpec || getDefaultTsAppSpec();
+                  const files: Record<string, any> = {};
+                  for (const [path, code] of Object.entries(spec.files || {})) {
+                    files[path] = { code };
+                  }
+                  const entry = spec.entry || "/src/index.tsx";
+                  if (files[entry]) files[entry] = { ...(files[entry] || {}), active: true };
+                  return files;
+                })()}
+                customSetup={{ dependencies: tsAppSpec?.dependencies || {} }}
+                options={{ autorun: true }}
+              >
+                {viewMode === "preview" ? (
+                  <SandpackLayout style={{ height: "100%" }}>
+                    <SandpackPreview style={{ height: "100%" }} />
+                  </SandpackLayout>
+                ) : (
+                  <SandpackLayout style={{ height: "100%" }}>
+                    <div style={{ width: 220, overflow: "auto" }}>
+                      <SandpackFileExplorer />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <MonacoSandpackEditor />
+                    </div>
+                    <div style={{ width: "50%", minWidth: 320 }}>
+                      <SandpackPreview style={{ height: "100%" }} />
+                    </div>
+                  </SandpackLayout>
+                )}
+                <TsAppSync
+                  enabled={viewMode === "code"}
+                  spec={tsAppSpec || getDefaultTsAppSpec()}
+                  onSpec={(next) => {
+                    setTsAppError("");
+                    if (!artifact) return;
+                    const nextArtifact: any = {
+                      ...artifact,
+                      type: "ts_app",
+                      code: JSON.stringify(next, null, 2),
+                      language: "ts_app",
+                    };
+                    upsertArtifact(nextArtifact);
+                  }}
+                />
+              </SandpackProvider>
+            </div>
+          </div>
+        ) : artifact.type === "file" ? (
           <div className={`h-full overflow-auto ${theme === 'dark' ? 'bg-[#121212]' : 'bg-white'}`}>
             {(() => {
               const filename = (fileArtifact?.filename || "").toLowerCase();

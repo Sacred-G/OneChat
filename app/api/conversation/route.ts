@@ -38,6 +38,7 @@ type ConversationDoc = {
   _id: string;
   state: ConversationState;
   title?: string;
+  workspaceId?: string;
   createdAt: Date;
   updatedAt: Date;
 };
@@ -46,6 +47,12 @@ function getIdFromRequest(request: Request) {
   const url = new URL(request.url);
   const id = url.searchParams.get("id");
   return id && id.trim().length > 0 ? id : null;
+}
+
+function getWorkspaceIdFromRequest(request: Request) {
+  const url = new URL(request.url);
+  const wid = url.searchParams.get("workspaceId");
+  return wid && wid.trim().length > 0 ? wid.trim() : null;
 }
 
 function shouldList(request: Request) {
@@ -61,7 +68,12 @@ export async function GET(request: Request) {
       const store = getMemoryStore();
 
       if (shouldList(request)) {
+        const workspaceId = getWorkspaceIdFromRequest(request);
         const docs = Array.from(store.values())
+          .filter((d) => {
+            if (!workspaceId) return !d.workspaceId;
+            return d.workspaceId === workspaceId;
+          })
           .sort((a, b) => (b.updatedAt?.getTime?.() || 0) - (a.updatedAt?.getTime?.() || 0))
           .slice(0, 50);
         return new Response(
@@ -90,9 +102,13 @@ export async function GET(request: Request) {
     }
 
     if (shouldList(request)) {
+      const workspaceId = getWorkspaceIdFromRequest(request);
+      const filter: Record<string, any> = workspaceId
+        ? { workspaceId }
+        : { $or: [{ workspaceId: { $exists: false } }, { workspaceId: null }, { workspaceId: "" }] };
       const docs = await db
         .collection<ConversationDoc>(COLLECTION)
-        .find({}, { projection: { _id: 1, title: 1, updatedAt: 1, createdAt: 1 } })
+        .find(filter, { projection: { _id: 1, title: 1, updatedAt: 1, createdAt: 1 } })
         .sort({ updatedAt: -1 })
         .limit(50)
         .toArray();
@@ -142,11 +158,13 @@ export async function POST(request: Request) {
   let state: unknown;
   let id: unknown;
   let title: unknown;
+  let workspaceId: string | undefined;
   try {
     const body = await request.json();
     state = body?.state;
     id = body?.id;
     title = body?.title;
+    workspaceId = typeof body?.workspaceId === "string" && body.workspaceId.trim() ? body.workspaceId.trim() : undefined;
   } catch {
     return new Response(JSON.stringify({ ok: false, error: "Invalid JSON" }), {
       status: 400,
@@ -197,6 +215,7 @@ export async function POST(request: Request) {
         _id: conversationId,
         state: conversationState,
         ...(conversationTitle ? { title: conversationTitle } : {}),
+        ...(workspaceId ? { workspaceId } : existing?.workspaceId ? { workspaceId: existing.workspaceId } : {}),
         createdAt,
         updatedAt: new Date(),
       });
@@ -211,10 +230,12 @@ export async function POST(request: Request) {
         $set: {
           state: conversationState,
           ...(conversationTitle ? { title: conversationTitle } : {}),
+          ...(workspaceId ? { workspaceId } : {}),
           updatedAt: new Date(),
         },
         $setOnInsert: {
           createdAt: new Date(),
+          ...(workspaceId ? {} : { workspaceId: "" }),
         },
       },
       { upsert: true }
@@ -241,8 +262,13 @@ export async function DELETE(request: Request) {
       if (isHosted) throw new Error("MongoDB unavailable");
       const store = getMemoryStore();
       const id = getIdFromRequest(request);
+      const workspaceId = getWorkspaceIdFromRequest(request);
       if (id) {
         store.delete(id);
+      } else if (workspaceId) {
+        for (const [key, doc] of store.entries()) {
+          if (doc.workspaceId === workspaceId) store.delete(key);
+        }
       } else {
         store.clear();
       }
@@ -253,8 +279,11 @@ export async function DELETE(request: Request) {
     }
 
     const id = getIdFromRequest(request);
+    const workspaceId = getWorkspaceIdFromRequest(request);
     if (id) {
       await db.collection<ConversationDoc>(COLLECTION).deleteOne({ _id: id });
+    } else if (workspaceId) {
+      await db.collection<ConversationDoc>(COLLECTION).deleteMany({ workspaceId });
     } else {
       await db.collection<ConversationDoc>(COLLECTION).deleteMany({});
     }

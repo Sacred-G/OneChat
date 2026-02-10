@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import "xterm/css/xterm.css";
 import "./globals.css";
+import SandpackStyleInjector from "@/components/sandpack-style-injector";
+import SessionProvider from "@/components/session-provider";
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",
@@ -31,7 +34,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground min-h-screen`}
       >
-        <main className="min-h-screen">{children}</main>
+        <SessionProvider>
+          <SandpackStyleInjector />
+          <main className="min-h-screen">{children}</main>
+        </SessionProvider>
       </body>
     </html>
   );

@@ -15,6 +15,8 @@ function json(status: number, body: any) {
 
 interface McpConfigFile {
   mcpServers?: Record<string, any>;
+  mcpDisabled?: boolean;
+  disabled?: boolean;
 }
 
 function normalizeServerId(id: string): string {
@@ -52,6 +54,10 @@ function resolveConfigByServerId(
 }
 
 async function loadCommandServersFromConfig(): Promise<CommandMcpServerConfig[]> {
+  if (process.env.DISABLE_MCP_TOOLS === "true") {
+    return [];
+  }
+
   const filePath = path.join(process.cwd(), "mcp_config.json");
 
   let raw: string;
@@ -65,6 +71,10 @@ async function loadCommandServersFromConfig(): Promise<CommandMcpServerConfig[]>
   try {
     parsed = JSON.parse(raw);
   } catch {
+    return [];
+  }
+
+  if ((parsed as any)?.mcpDisabled === true || (parsed as any)?.disabled === true) {
     return [];
   }
 

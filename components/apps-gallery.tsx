@@ -9,7 +9,7 @@ import useArtifactStore from "@/stores/useArtifactStore";
 type AppListItem = {
   id: string;
   title: string;
-  type: "html" | "react" | "code" | "url";
+  type: "html" | "react" | "code" | "url" | "ts_app";
   language: string | null;
   thumbnail: string | null;
   updatedAt: string;
@@ -19,7 +19,7 @@ type AppListItem = {
 type AppDetail = {
   id: string;
   title: string;
-  type: "html" | "react" | "code" | "url";
+  type: "html" | "react" | "code" | "url" | "ts_app";
   language: string | null;
   code?: string;
   url?: string;
@@ -52,7 +52,14 @@ export default function AppsGallery({ onClose }: { onClose: () => void }) {
           .map((x: any) => ({
             id: String(x.id),
             title: String(x.title),
-            type: x.type === "html" || x.type === "react" || x.type === "code" || x.type === "url" ? x.type : "code",
+            type:
+              x.type === "html" ||
+              x.type === "react" ||
+              x.type === "code" ||
+              x.type === "url" ||
+              x.type === "ts_app"
+                ? x.type
+                : "code",
             language: typeof x.language === "string" ? x.language : null,
             thumbnail: typeof x.thumbnail === "string" ? x.thumbnail : null,
             updatedAt: typeof x.updatedAt === "string" ? x.updatedAt : "",

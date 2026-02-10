@@ -40,9 +40,12 @@ export function extractArtifacts(content: string): {
     if (code && typeof code === "string") {
       artifactIndex++;
       
-      let artifactType: "html" | "react" | "code" = "code";
+      let artifactType: "html" | "react" | "code" | "ts_app" = "code";
       let processedCode = code;
 
+      if (language === "ts_app") {
+        artifactType = "ts_app";
+      } else
       if (isHtmlArtifact) {
         artifactType = "html";
         // Ensure it's a complete HTML document

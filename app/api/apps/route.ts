@@ -7,7 +7,7 @@ const COLLECTION = "apps";
 
 const isHosted = Boolean(process.env.VERCEL) || process.env.NODE_ENV === "production";
 
-type AppType = "html" | "react" | "code" | "url";
+type AppType = "html" | "react" | "code" | "url" | "ts_app";
 
 type AppDoc = {
   _id: string;
@@ -181,7 +181,14 @@ export async function POST(request: Request) {
   }
 
   const id = typeof body?.id === "string" && body.id.trim().length > 0 ? body.id.trim() : randomUUID();
-  const type = body?.type === "html" || body?.type === "react" || body?.type === "code" || body?.type === "url" ? body.type : null;
+  const type =
+    body?.type === "html" ||
+    body?.type === "react" ||
+    body?.type === "code" ||
+    body?.type === "url" ||
+    body?.type === "ts_app"
+      ? body.type
+      : null;
   const title = typeof body?.title === "string" ? body.title.trim() : "";
   const code = typeof body?.code === "string" ? body.code : "";
   const url = typeof body?.url === "string" ? body.url.trim() : "";

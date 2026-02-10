@@ -46,7 +46,12 @@ export const getTools = async (toolsState: ToolsState) => {
     mcpConfigs,
     commandMcpConfigs,
     googleIntegrationEnabled,
+    disabledFunctions,
   } = toolsState;
+
+  const disabled = Array.isArray(disabledFunctions) ? disabledFunctions : [];
+
+  const mcpGloballyDisabled = process.env.DISABLE_MCP_TOOLS === "true";
 
   const tools = [];
 
@@ -88,6 +93,10 @@ export const getTools = async (toolsState: ToolsState) => {
           if (tool.name === "generate_video") {
             return videoGenerationEnabled;
           }
+          // Skip individually disabled functions
+          if (disabled.includes(tool.name)) {
+            return false;
+          }
           return true;
         })
         .map((tool) => {
@@ -111,7 +120,7 @@ export const getTools = async (toolsState: ToolsState) => {
     );
   }
 
-  if (mcpEnabled && mcpConfigs.length > 0) {
+  if (!mcpGloballyDisabled && mcpEnabled && mcpConfigs.length > 0) {
     // Add tools for all enabled MCP servers
     mcpConfigs
       .filter(
@@ -152,7 +161,7 @@ export const getTools = async (toolsState: ToolsState) => {
   }
 
   // Handle command-based MCP servers
-  if (mcpEnabled && commandMcpConfigs && commandMcpConfigs.length > 0) {
+  if (!mcpGloballyDisabled && mcpEnabled && commandMcpConfigs && commandMcpConfigs.length > 0) {
     const enabledCommandServers = commandMcpConfigs.filter((c) => !c.disabled);
     
     for (const config of enabledCommandServers) {

@@ -7,7 +7,7 @@ import { Button } from "./ui/button";
 import { Plus, Trash2, Edit2, Check, X, Server, Power, Terminal } from "lucide-react";
 
 export default function McpMultiConfig() {
-  const { mcpConfigs, commandMcpConfigs, addMcpConfig, updateMcpConfig, removeMcpConfig, toggleMcpConfig } = useToolsStore();
+  const { mcpConfigs, commandMcpConfigs, addMcpConfig, updateMcpConfig, removeMcpConfig, toggleMcpConfig, toggleCommandMcpConfig, disableAllCommandMcpConfigs, enableAllCommandMcpConfigs } = useToolsStore();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newServer, setNewServer] = useState({
     server_label: "",
@@ -246,10 +246,30 @@ export default function McpMultiConfig() {
       {/* Command-based MCP Servers (from mcp_config.json) */}
       {commandMcpConfigs && commandMcpConfigs.length > 0 && (
         <div className="mt-6">
-          <div className="flex items-center gap-2 mb-3">
-            <Terminal size={16} />
-            <span className="text-sm font-medium">Command-based MCP Servers</span>
-            <span className="text-xs text-stone-500">(from mcp_config.json)</span>
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2">
+              <Terminal size={16} />
+              <span className="text-sm font-medium">MCP Servers</span>
+              <span className="text-xs text-stone-500">(from mcp-config.json)</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={enableAllCommandMcpConfigs}
+                className="text-xs h-7 px-2"
+              >
+                Enable All
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={disableAllCommandMcpConfigs}
+                className="text-xs h-7 px-2"
+              >
+                Disable All
+              </Button>
+            </div>
           </div>
           <div className="space-y-3">
             {commandMcpConfigs.map((config) => (
@@ -268,14 +288,16 @@ export default function McpMultiConfig() {
                     <div className={`w-2 h-2 rounded-full ${
                       !config.disabled ? 'bg-green-500' : 'bg-stone-400'
                     }`} />
-                    <span className={`text-xs px-2 py-0.5 rounded ${
-                      !config.disabled 
-                        ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
-                        : 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-400'
-                    }`}>
-                      {!config.disabled ? 'Enabled' : 'Disabled'}
-                    </span>
                   </div>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => toggleCommandMcpConfig(config.id)}
+                    className="flex items-center gap-1"
+                  >
+                    <Power size={14} />
+                    {config.disabled ? 'Enable' : 'Disable'}
+                  </Button>
                 </div>
                 <div className="space-y-1 text-sm">
                   <div className="text-stone-600 dark:text-stone-400 font-mono text-xs">
@@ -291,7 +313,7 @@ export default function McpMultiConfig() {
             ))}
           </div>
           <p className="text-xs text-stone-500 mt-2">
-            Command-based servers are configured in mcp_config.json. Edit the file to modify these servers.
+            Toggle individual servers on/off. Edit mcp-config.json to add or remove servers.
           </p>
         </div>
       )}
