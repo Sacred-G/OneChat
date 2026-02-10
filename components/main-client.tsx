@@ -2,27 +2,33 @@
 
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
-import { AudioLines, Film, Images, ImagePlus, LayoutGrid, Mic, Moon, PanelLeft, Plus, Settings, Star, Sun, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AudioLines, ExternalLink, Film, Images, ImagePlus, LayoutGrid, Mail, Mic, Moon, PanelLeft, Plus, Settings, Star, Sun, Terminal, X, CalendarDays } from "lucide-react";
 
 import Assistant from "@/components/assistant";
 import ConversationHistory from "@/components/conversation-history";
+import WorkspaceSwitcher from "@/components/workspace-switcher";
 import useArtifactStore from "@/stores/useArtifactStore";
 import useConversationStore from "@/stores/useConversationStore";
 import useThemeStore from "@/stores/useThemeStore";
 import useToolsStore from "@/stores/useToolsStore";
+import useWorkspaceStore from "@/stores/useWorkspaceStore";
+import useAgentStore from "@/stores/useAgentStore";
 import { Item } from "@/lib/assistant";
+import UserMenu from "@/components/user-menu";
 
 const ToolsPanel = dynamic(() => import("@/components/tools-panel"), { ssr: false });
 const ArtifactViewer = dynamic(() => import("@/components/artifact-viewer"), { ssr: false });
 const VoiceAgent = dynamic(() => import("@/components/voice-agent"), { ssr: false });
 const ImagesLibrary = dynamic(() => import("@/components/images-library"), { ssr: false });
 const AppsGallery = dynamic(() => import("@/components/apps-gallery"), { ssr: false });
+const TerminalPanel = dynamic(() => import("@/components/terminal-panel"), { ssr: false });
 
 export default function MainClient() {
   const [showTools, setShowTools] = useState(false);
   const [showImagesLibrary, setShowImagesLibrary] = useState(false);
   const [showAppsGallery, setShowAppsGallery] = useState(false);
+  const [showTerminal, setShowTerminal] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const router = useRouter();
   const {
@@ -34,8 +40,11 @@ export default function MainClient() {
     setAssistantLoading,
     setActiveConversationId,
   } = useConversationStore();
-  const { currentArtifact, setCurrentArtifact } = useArtifactStore();
+  const { currentArtifact, setCurrentArtifact, addArtifact } = useArtifactStore();
   const { theme, toggleTheme } = useThemeStore();
+  const splitContainerRef = useRef<HTMLDivElement | null>(null);
+  const [splitRatio, setSplitRatio] = useState(0.5);
+  const splitRatioRef = useRef(0.5);
   const {
     voiceModeEnabled,
     selectedProjectId,
@@ -54,6 +63,8 @@ export default function MainClient() {
     toggleApipieFavoriteImageModel,
   } = useToolsStore();
   const [showVoiceAgent, setShowVoiceAgent] = useState(false);
+  const [showVibenIframe, setShowVibenIframe] = useState(false);
+  const [showSbouldinIframe, setShowSbouldinIframe] = useState(false);
   const [apipieModels, setApipieModels] = useState<string[]>([]);
   const [isLoadingApipieModels, setIsLoadingApipieModels] = useState(false);
   const [apipieImageModels, setApipieImageModels] = useState<string[]>([]);
@@ -62,11 +73,28 @@ export default function MainClient() {
     Array<{ id: string; name: string; vectorStoreId?: string; vectorStoreName?: string }>
   >([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const { activeWorkspaceId } = useWorkspaceStore();
 
   useEffect(() => {
     if (typeof document === "undefined") return;
     document.documentElement.classList.toggle("dark", theme === "dark");
   }, [theme]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem("onechat_split_ratio");
+      const v = raw ? Number(raw) : NaN;
+      if (!Number.isFinite(v)) return;
+      setSplitRatio(Math.min(0.75, Math.max(0.25, v)));
+    } catch {
+      // ignore
+    }
+  }, []);
+
+  useEffect(() => {
+    splitRatioRef.current = splitRatio;
+  }, [splitRatio]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -106,6 +134,59 @@ export default function MainClient() {
       cancelled = true;
     };
   }, []);
+
+  const handleNewTsApp = () => {
+    const a: any = {
+      id: `ts-app-${Date.now()}`,
+      type: "ts_app",
+      title: "TypeScript App",
+      code: "",
+      language: "ts_app",
+      revision: Date.now(),
+    };
+    addArtifact(a);
+    setCurrentArtifact(a);
+  };
+
+  const handleVibenApp = () => {
+    setShowVibenIframe(!showVibenIframe);
+  };
+
+  const handleSbouldinApp = () => {
+    // Open in new tab since iframe embedding is blocked
+    window.open('http://sbouldin.com:8443', '_blank');
+    setShowSbouldinIframe(false); // Don't show iframe, just open tab
+  };
+
+  const beginResize = (e: React.MouseEvent) => {
+    if (typeof window === "undefined") return;
+    if (!splitContainerRef.current) return;
+    e.preventDefault();
+
+    const el = splitContainerRef.current;
+    const rect = el.getBoundingClientRect();
+
+    const onMove = (ev: MouseEvent) => {
+      const x = ev.clientX;
+      const next = (x - rect.left) / rect.width;
+      const clamped = Math.min(0.75, Math.max(0.25, next));
+      splitRatioRef.current = clamped;
+      setSplitRatio(clamped);
+    };
+
+    const onUp = () => {
+      window.removeEventListener("mousemove", onMove);
+      window.removeEventListener("mouseup", onUp);
+      try {
+        localStorage.setItem("onechat_split_ratio", String(splitRatioRef.current));
+      } catch {
+        // ignore
+      }
+    };
+
+    window.addEventListener("mousemove", onMove);
+    window.addEventListener("mouseup", onUp);
+  };
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -343,10 +424,128 @@ export default function MainClient() {
     };
   }, [provider, apipieImageModel, setApipieImageModel]);
 
+  const saveCurrentWorkspaceState = async (wsId: string | null) => {
+    if (!wsId) return;
+    try {
+      const agents = useAgentStore.getState().agents;
+      const selectedAgentId = useAgentStore.getState().selectedAgentId;
+      const ws = useWorkspaceStore.getState().workspaces.find((w) => w.id === wsId);
+      if (!ws) return;
+      await fetch("/api/workspaces", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: wsId,
+          name: ws.name,
+          icon: ws.icon,
+          color: ws.color,
+          agents,
+          selectedAgentId,
+          selectedProjectId,
+          toolSettings: {
+            provider,
+            apipieModel,
+            apipieImageModel,
+          },
+        }),
+      });
+    } catch {
+      // ignore
+    }
+  };
+
+  const loadWorkspaceState = async (wsId: string | null) => {
+    if (!wsId) {
+      // Switching to default workspace — restore from localStorage defaults
+      useAgentStore.getState().setSelectedAgentId(null);
+      return;
+    }
+    try {
+      const res = await fetch(`/api/workspaces?id=${encodeURIComponent(wsId)}`);
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null);
+      const ws = data?.workspace;
+      if (!ws) return;
+
+      // Restore agents
+      if (Array.isArray(ws.agents)) {
+        useAgentStore.setState({ agents: ws.agents, selectedAgentId: ws.selectedAgentId ?? null });
+      }
+
+      // Restore selected project
+      if (typeof ws.selectedProjectId === "string") {
+        setSelectedProjectId(ws.selectedProjectId);
+      }
+
+      // Restore tool settings
+      if (ws.toolSettings && typeof ws.toolSettings === "object") {
+        if (ws.toolSettings.provider) setProvider(ws.toolSettings.provider);
+        if (ws.toolSettings.apipieModel) setApipieModel(ws.toolSettings.apipieModel);
+        if (ws.toolSettings.apipieImageModel) setApipieImageModel(ws.toolSettings.apipieImageModel);
+      }
+    } catch {
+      // ignore
+    }
+  };
+
+  const handleWorkspaceSwitch = async (newWorkspaceId: string | null) => {
+    // 1. Save current conversation
+    try {
+      const { chatMessages, conversationItems, selectedSkill, activeConversationId } =
+        useConversationStore.getState();
+      const currentWsId = useWorkspaceStore.getState().activeWorkspaceId;
+
+      if (activeConversationId) {
+        const firstUserMessage = chatMessages.find(
+          (m: any) => m?.type === "message" && m?.role === "user" && m?.content?.[0]?.text
+        ) as any;
+        const title =
+          typeof firstUserMessage?.content?.[0]?.text === "string"
+            ? String(firstUserMessage.content[0].text).slice(0, 60)
+            : undefined;
+
+        await fetch("/api/conversation", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            id: activeConversationId,
+            title,
+            ...(currentWsId ? { workspaceId: currentWsId } : {}),
+            state: { chatMessages, conversationItems, selectedSkill },
+          }),
+        }).catch(() => {});
+      }
+
+      // 2. Save current workspace state (agents, settings)
+      await saveCurrentWorkspaceState(currentWsId);
+    } catch {
+      // ignore
+    }
+
+    // 3. Reset conversation
+    setActiveConversationId(null);
+    try { localStorage.removeItem("activeConversationId"); } catch {}
+    resetConversation();
+
+    // 4. Load new workspace state
+    await loadWorkspaceState(newWorkspaceId);
+  };
+
+  // Load active workspace state on mount
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const wsId = useWorkspaceStore.getState().activeWorkspaceId;
+    if (wsId) {
+      loadWorkspaceState(wsId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleNewConversation = () => {
     try {
       const { chatMessages, conversationItems, selectedSkill, activeConversationId } =
         useConversationStore.getState();
+      const wsId = useWorkspaceStore.getState().activeWorkspaceId;
 
       const firstUserMessage = chatMessages.find(
         (m: any) => m?.type === "message" && m?.role === "user" && m?.content?.[0]?.text
@@ -362,6 +561,7 @@ export default function MainClient() {
         body: JSON.stringify({
           id: activeConversationId,
           title,
+          ...(wsId ? { workspaceId: wsId } : {}),
           state: {
             chatMessages,
             conversationItems,
@@ -426,6 +626,9 @@ export default function MainClient() {
           <X size={16} />
         </button>
       </div>
+      <div className={`px-2 py-2 border-b ${theme === "dark" ? "border-white/10" : "border-black/10"}`}>
+        <WorkspaceSwitcher onSwitch={handleWorkspaceSwitch} />
+      </div>
       <ConversationHistory onNewConversation={handleNewConversation} />
     </div>
 
@@ -436,14 +639,16 @@ export default function MainClient() {
       />
     )}
 
-    <div
-      className={`flex-1 flex flex-col min-h-0 ${currentArtifact ? "md:w-1/2" : "w-full"} transition-all bg-background`}
-    >
+    <div ref={splitContainerRef} className="flex-1 flex min-h-0 bg-background">
       <div
-        className={`sticky top-0 z-30 flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b ${
-          theme === "dark" ? "border-white/10 bg-background" : "border-black/10 bg-background"
-        }`}
+        className="flex flex-col min-h-0 transition-all bg-background"
+        style={{ flex: currentArtifact ? splitRatio : 1, minWidth: 0 }}
       >
+        <div
+          className={`sticky top-0 z-30 flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b ${
+            theme === "dark" ? "border-white/10 bg-background" : "border-black/10 bg-background"
+          }`}
+        >
         <h1
           className={`text-sm font-semibold tracking-tight ${theme === "dark" ? "text-white" : "text-gray-900"}`}
         >
@@ -476,6 +681,53 @@ export default function MainClient() {
             title="Gallery"
           >
             <LayoutGrid size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={handleVibenApp}
+            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+              showVibenIframe
+                ? theme === "dark" ? "bg-purple-600 hover:bg-purple-700" : "bg-purple-500 hover:bg-purple-600"
+                : theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title={showVibenIframe ? "Close Viben" : "Launch Viben"}
+          >
+            <ExternalLink size={20} className={showVibenIframe ? "text-white" : (theme === "dark" ? "text-gray-400" : "text-gray-600")} />
+          </button>
+          <button
+            onClick={handleSbouldinApp}
+            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Launch Sbouldin App"
+          >
+            <ExternalLink size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={() => router.push("/email")}
+            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Email"
+          >
+            <Mail size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={() => router.push("/calendar")}
+            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Calendar"
+          >
+            <CalendarDays size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={() => setShowTerminal(true)}
+            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Terminal"
+          >
+            <Terminal size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
           </button>
           <button
             onClick={() => router.push("/veo-video")}
@@ -522,6 +774,7 @@ export default function MainClient() {
           >
             <Settings size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
           </button>
+          <UserMenu />
           <div className="flex min-w-0 items-center gap-1">
             <select
               value={selectedProjectId}
@@ -717,6 +970,53 @@ export default function MainClient() {
             <LayoutGrid size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
           </button>
           <button
+            onClick={handleVibenApp}
+            className={`p-2 rounded-lg transition-colors md:hidden ${
+              showVibenIframe
+                ? theme === "dark" ? "bg-purple-600 hover:bg-purple-700" : "bg-purple-500 hover:bg-purple-600"
+                : theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title={showVibenIframe ? "Close Viben" : "Launch Viben"}
+          >
+            <ExternalLink size={20} className={showVibenIframe ? "text-white" : (theme === "dark" ? "text-gray-400" : "text-gray-600")} />
+          </button>
+          <button
+            onClick={handleSbouldinApp}
+            className={`p-2 rounded-lg transition-colors md:hidden ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Launch Sbouldin App"
+          >
+            <ExternalLink size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={() => router.push("/email")}
+            className={`p-2 rounded-lg transition-colors md:hidden ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Email"
+          >
+            <Mail size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={() => router.push("/calendar")}
+            className={`p-2 rounded-lg transition-colors md:hidden ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Calendar"
+          >
+            <CalendarDays size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
+            onClick={() => setShowTerminal(true)}
+            className={`p-2 rounded-lg transition-colors md:hidden ${
+              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+            }`}
+            title="Terminal"
+          >
+            <Terminal size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+          </button>
+          <button
             onClick={() => router.push("/veo-video")}
             className={`p-2 rounded-lg transition-colors md:hidden ${
               theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
@@ -752,6 +1052,7 @@ export default function MainClient() {
           >
             <Images size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
           </button>
+          <UserMenu />
           <button
             onClick={toggleTheme}
             className={`p-2 rounded-lg transition-colors ${
@@ -763,24 +1064,35 @@ export default function MainClient() {
           </button>
         </div>
       </div>
-      <div className="flex-1 min-h-0">
-        <Assistant
-          voiceModeEnabled={voiceModeEnabled}
-          showVoiceAgent={showVoiceAgent}
-          setShowVoiceAgent={setShowVoiceAgent}
-        />
+        <div className="flex-1 min-h-0">
+          <Assistant
+            voiceModeEnabled={voiceModeEnabled}
+            showVoiceAgent={showVoiceAgent}
+            setShowVoiceAgent={setShowVoiceAgent}
+          />
+        </div>
       </div>
-    </div>
 
-    {currentArtifact && (
-      <div
-        className={`hidden md:block md:w-1/2 border-l ${
-          theme === "dark" ? "border-white/10" : "border-stone-200"
-        }`}
-      >
-        <ArtifactViewer artifact={currentArtifact} onClose={() => setCurrentArtifact(null)} />
-      </div>
-    )}
+      {currentArtifact && (
+        <>
+          <div
+            className={`hidden md:block w-1.5 cursor-col-resize ${
+              theme === "dark" ? "bg-white/10 hover:bg-white/20" : "bg-black/10 hover:bg-black/20"
+            }`}
+            onMouseDown={beginResize}
+            title="Drag to resize"
+          />
+          <div
+            className={`hidden md:block min-h-0 border-l ${
+              theme === "dark" ? "border-white/10" : "border-stone-200"
+            }`}
+            style={{ flex: 1 - splitRatio, minWidth: 0 }}
+          >
+            <ArtifactViewer artifact={currentArtifact} onClose={() => setCurrentArtifact(null)} />
+          </div>
+        </>
+      )}
+    </div>
 
     {showTools && !currentArtifact && (
       <div
@@ -839,6 +1151,19 @@ export default function MainClient() {
 
     {showAppsGallery && <AppsGallery onClose={() => setShowAppsGallery(false)} />}
 
+    {showTerminal && (
+      <div className="fixed inset-0 z-50 flex bg-black bg-opacity-30">
+        <div
+          className={
+            "w-full max-w-3xl h-full overflow-hidden border-l ml-auto " +
+            (theme === "dark" ? "border-white/10 bg-[#141414]" : "border-stone-200 bg-white")
+          }
+        >
+          <TerminalPanel onClose={() => setShowTerminal(false)} />
+        </div>
+      </div>
+    )}
+
     {showTools && (
       <div className="fixed inset-0 z-50 flex bg-black bg-opacity-30 md:hidden">
         <div className={`w-full max-w-md h-full overflow-y-auto ${theme === "dark" ? "bg-[#141414]" : "bg-white"}`}>
@@ -857,6 +1182,114 @@ export default function MainClient() {
               </button>
             </div>
             <ToolsPanel />
+          </div>
+        </div>
+      </div>
+    )}
+
+    {showVibenIframe && (
+      <div className="fixed inset-0 z-50 flex bg-black bg-opacity-30">
+        <div className={`w-full max-w-[95vw] h-[95vh] mx-auto my-auto ${theme === "dark" ? "bg-[#141414]" : "bg-white"} rounded-lg overflow-hidden`}>
+          <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: theme === "dark" ? "#333" : "#e5e7eb" }}>
+            <h2 className={`text-lg font-semibold ${theme === "dark" ? "text-white" : "text-stone-900"}`}>
+              Viben App
+            </h2>
+            <button
+              onClick={() => setShowVibenIframe(false)}
+              className={`p-1 rounded transition-colors ${
+                theme === "dark" ? "hover:bg-white/10" : "hover:bg-stone-100"
+              }`}
+            >
+              <X size={24} className={theme === "dark" ? "text-stone-400" : "text-stone-600"} />
+            </button>
+          </div>
+          <div className="h-full p-4">
+            <iframe
+              src="https://viben-peach.vercel.app/"
+              className="w-full h-full rounded"
+              style={{ minHeight: "600px" }}
+              title="Viben App"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      </div>
+    )}
+
+    {showSbouldinIframe && (
+      <div className="fixed inset-0 z-50 flex bg-black bg-opacity-30">
+        <div className={`w-full h-full ${theme === "dark" ? "bg-[#141414]" : "bg-white"}`}>
+          <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: theme === "dark" ? "#333" : "#e5e7eb" }}>
+            <h2 className={`text-lg font-semibold ${theme === "dark" ? "text-white" : "text-stone-900"}`}>
+              Sbouldin App
+            </h2>
+            <button
+              onClick={() => setShowSbouldinIframe(false)}
+              className={`p-1 rounded transition-colors ${
+                theme === "dark" ? "hover:bg-white/10" : "hover:bg-stone-100"
+              }`}
+            >
+              <X size={24} className={theme === "dark" ? "text-stone-400" : "text-stone-600"} />
+            </button>
+          </div>
+          <div className="h-full relative" style={{ height: "calc(100vh - 73px)" }}>
+            <iframe
+              src="http://sbouldin.com:8443"
+              className="w-full h-full"
+              title="Sbouldin App"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
+              onLoad={() => {
+                console.log('Sbouldin iframe loaded successfully');
+                console.log('Iframe src:', (document.querySelector('iframe[src*="sbouldin"]') as HTMLIFrameElement | null)?.src);
+                // Hide loading message when loaded
+                const loadingMsg = document.getElementById('sbouldin-loading');
+                if (loadingMsg) {
+                  setTimeout(() => {
+                    loadingMsg.style.display = 'none';
+                  }, 1000); // Give it a second to render
+                }
+              }}
+              onError={(e) => {
+                console.error('Failed to load sbouldin iframe:', e);
+                const loadingMsg = document.getElementById('sbouldin-loading');
+                if (loadingMsg) {
+                  loadingMsg.textContent = 'Failed to load http://sbouldin.com:8443 - Check if server is running';
+                  loadingMsg.className = `text-sm text-red-400 bg-black/50 px-3 py-1 rounded`;
+                }
+              }}
+            />
+            <div id="sbouldin-loading" className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"} bg-black/50 px-3 py-1 rounded`}>
+                Loading http://sbouldin.com:8443... If you see this message for more than 3 seconds, the app may be blocking iframe embedding
+              </p>
+            </div>
+            <div className="absolute top-4 right-4 flex gap-2">
+              <button
+                onClick={() => window.open('http://sbouldin.com:8443', '_blank')}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  theme === "dark" ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-blue-500 hover:bg-blue-600 text-white"
+                }`}
+              >
+                Open in New Tab
+              </button>
+              <button
+                onClick={() => {
+                  const iframe = document.querySelector('iframe[src*="sbouldin"]') as HTMLIFrameElement;
+                  if (iframe) {
+                    console.log('Current iframe src:', iframe.src);
+                    console.log('Iframe content loaded:', iframe.contentWindow ? 'Yes' : 'No (blocked by security)');
+                  }
+                }}
+                className={`px-3 py-1 rounded text-sm transition-colors ${
+                  theme === "dark" ? "bg-gray-600 hover:bg-gray-700 text-white" : "bg-gray-500 hover:bg-gray-600 text-white"
+                }`}
+              >
+                Debug
+              </button>
+            </div>
           </div>
         </div>
       </div>

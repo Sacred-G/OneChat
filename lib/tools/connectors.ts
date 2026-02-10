@@ -21,3 +21,27 @@ export function getGoogleConnectorTools(accessToken: string): any[] {
     },
   ];
 }
+
+export function getMicrosoftConnectorTools(accessToken: string): any[] {
+  if (!accessToken) return [];
+  return [
+    {
+      type: "mcp",
+      server_label: "MicrosoftMail",
+      server_description:
+        "Read, send, organize, and manage the user's Microsoft Outlook email. Supports reading inbox, sent items, drafts, and archive folders. Can send new emails, reply, forward, move, flag, and delete messages.",
+      connector_id: "connector_microsoft_mail",
+      authorization: accessToken,
+      require_approval: "never",
+    },
+    {
+      type: "mcp",
+      server_label: "MicrosoftCalendar",
+      server_description:
+        "Read, create, update, and manage the user's Microsoft Outlook calendar events. Supports viewing day/week/month calendars, creating meetings, accepting/declining invitations, and AI-powered scheduling assistance.",
+      connector_id: "connector_microsoft_calendar",
+      authorization: accessToken,
+      require_approval: "never",
+    },
+  ];
+}
