@@ -589,7 +589,7 @@ export default function MainClient() {
       onMouseLeave={() => setSidebarCollapsed(true)}
       className={`hidden shrink-0 md:flex md:flex-col transition-[width] duration-200 ${
         sidebarCollapsed ? "w-0 overflow-hidden" : "w-72"
-      } ${theme === "dark" ? "bg-[#141414]" : "bg-[#f7f7f8]"}`}
+      } ${theme === "dark" ? "bg-[#141414]" : "bg-[#e8eef2]"}`}
     >
       <div
         className={`flex items-center justify-between px-3 py-3 border-b ${
@@ -601,7 +601,7 @@ export default function MainClient() {
           className={`flex-1 flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${
             theme === "dark"
               ? "bg-[#10a37f] hover:bg-[#0e9070] text-white"
-              : "bg-white hover:bg-gray-50 text-gray-700 border border-gray-200"
+              : "bg-[#3b82f6] text-white hover:bg-[#2563eb]"
           }`}
         >
           <Plus size={16} />
@@ -610,7 +610,7 @@ export default function MainClient() {
         <button
           onClick={() => setShowTools(!showTools)}
           className={`p-2 rounded-lg transition-colors ml-2 ${
-            theme === "dark" ? "hover:bg-white/5 text-gray-400" : "hover:bg-gray-100 text-gray-600"
+            theme === "dark" ? "hover:bg-white/5 text-gray-700" : "hover:bg-gray-100 text-gray-600"
           }`}
           title="Settings"
         >
@@ -619,7 +619,7 @@ export default function MainClient() {
         <button
           onClick={() => setSidebarCollapsed(true)}
           className={`p-2 rounded-lg transition-colors ml-1 ${
-            theme === "dark" ? "hover:bg-white/5 text-gray-400" : "hover:bg-gray-100 text-gray-600"
+            theme === "dark" ? "hover:bg-white/5 text-gray-800" : "hover:bg-gray-100 text-gray-600"
           }`}
           title="Hide sidebar"
         >
@@ -646,7 +646,7 @@ export default function MainClient() {
       >
         <div
           className={`sticky top-0 z-30 flex flex-wrap items-center justify-between gap-2 px-4 py-3 border-b ${
-            theme === "dark" ? "border-white/10 bg-background" : "border-black/10 bg-background"
+            theme === "dark" ? "border-white/10 bg-background" : "border-black/10 bg-[#f8fafc]"
           }`}
         >
         <h1
@@ -686,8 +686,8 @@ export default function MainClient() {
             onClick={handleVibenApp}
             className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
               showVibenIframe
-                ? theme === "dark" ? "bg-purple-600 hover:bg-purple-700" : "bg-purple-500 hover:bg-purple-600"
-                : theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+                ? theme === "dark" ? "bg-amber-700 hover:bg-amber-800" : "bg-amber-600 hover:bg-amber-700"
+                : theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-[#e8e2d5]"
             }`}
             title={showVibenIframe ? "Close Viben" : "Launch Viben"}
           >

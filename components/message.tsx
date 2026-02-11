@@ -140,6 +140,77 @@ const Message: React.FC<MessageProps> = ({ message }) => {
               </code>
             );
           },
+          img({ src, alt, ...props }: React.ImgHTMLAttributes<HTMLImageElement>) {
+            // Handle data URLs and image artifacts
+            if (src && src.startsWith('data:')) {
+              return (
+                <img
+                  src={src}
+                  alt={alt || ""}
+                  className="max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-700"
+                  {...props}
+                />
+              );
+            }
+            // Handle container file URLs
+            if (src && (src.startsWith("/api/container_files/content") || src.includes("/api/container_files/content?"))) {
+              let fileId = "";
+              let containerId = "";
+              let filename = "";
+              try {
+                const u = new URL(src, window.location.origin);
+                fileId = u.searchParams.get("file_id") || "";
+                containerId = u.searchParams.get("container_id") || "";
+                filename = u.searchParams.get("filename") || "";
+              } catch {
+                // ignore
+              }
+
+              if (fileId) {
+                const artifact: any = {
+                  id: `file-${fileId}`,
+                  type: "file",
+                  title: filename || fileId,
+                  file_id: fileId,
+                  ...(containerId ? { container_id: containerId } : {}),
+                  ...(filename ? { filename } : {}),
+                  mime_type: "application/octet-stream",
+                  url: src,
+                };
+                
+                return (
+                  <div className="relative mt-2 h-64 w-full cursor-pointer" onClick={() => {
+                    addArtifact(artifact);
+                    setCurrentArtifact(artifact);
+                  }}>
+                    <Image
+                      src={src}
+                      alt={alt || filename || ""}
+                      fill
+                      sizes="100vw"
+                      className="rounded-lg object-contain border border-gray-200 dark:border-gray-700"
+                      unoptimized
+                    />
+                    <div className="absolute bottom-2 right-2 bg-black/50 text-white text-xs px-2 py-1 rounded">
+                      View artifact
+                    </div>
+                  </div>
+                );
+              }
+            }
+            // Fallback for empty or invalid src
+            if (!src) {
+              return null;
+            }
+            return (
+              <img
+                src={src}
+                alt={alt || ""}
+                className="max-w-full h-auto rounded-lg border border-gray-200 dark:border-gray-700"
+                {...props}
+              />
+            );
+          },
         }}
       >
         {cleanedContent}
