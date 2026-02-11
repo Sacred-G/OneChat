@@ -116,9 +116,35 @@ async function inferSkillName(messages: any[]): Promise<string | null> {
   return best.name;
 }
 
+// Helper function to generate consistent safe IDs
+function generateSafeId(originalId: string): string {
+  const safeId = `fc_${originalId.replace(/[^a-zA-Z0-9_]/g, '').substring(0, 20)}`;
+  console.log(`ID conversion: ${originalId} -> ${safeId}`);
+  return safeId;
+}
+
 // Sanitize messages to ensure all annotations have required fields and images are properly formatted
 function sanitizeMessages(messages: any[]): any[] {
-  return messages.map((msg) => {
+  return (messages ?? []).map((msg: any) => {
+    if (!msg || typeof msg !== "object") return msg;
+
+    // Fix ID format for OpenAI Realtime API - generate valid IDs
+    if (msg.type === "function_call" && typeof msg.id === "string") {
+      const safeId = generateSafeId(msg.id);
+      return {
+        ...msg,
+        id: safeId
+      };
+    }
+
+    if (msg.type === "function_call_output" && typeof msg.call_id === "string") {
+      const safeId = generateSafeId(msg.call_id);
+      return {
+        ...msg,
+        call_id: safeId
+      };
+    }
+
     if (msg.content && Array.isArray(msg.content)) {
       return {
         ...msg,
@@ -200,22 +226,44 @@ function sanitizeToolOutputs(items: any[]): any[] {
 
 function removeDanglingFunctionCalls(items: any[]): any[] {
   const callIdsWithOutput = new Set<string>();
+  console.log("Processing removeDanglingFunctionCalls with items:", items.map(i => ({ type: i.type, id: i.id || i.call_id })));
+  
+  // First pass: collect all function call outputs
   for (const item of items ?? []) {
     if (!item || typeof item !== "object") continue;
     if (item.type === "function_call_output" && typeof item.call_id === "string") {
       callIdsWithOutput.add(item.call_id);
+      console.log(`Added output ID: ${item.call_id}`);
     }
   }
 
-  return (items ?? []).filter((item: any) => {
+  console.log("Call IDs with output:", Array.from(callIdsWithOutput));
+
+  // Second pass: filter function calls
+  // In streaming context, we should be more conservative and only filter
+  // function calls that are clearly from previous incomplete turns
+  const filtered = (items ?? []).filter((item: any) => {
     if (!item || typeof item !== "object") return false;
     if (item.type === "function_call") {
-      const callId = item.call_id;
+      const callId = item.id; // Function calls use 'id' field, not 'call_id'
       if (typeof callId !== "string" || !callId.trim()) return false;
-      return callIdsWithOutput.has(callId);
+      
+      // Only filter if we're certain this is an orphaned call from a previous turn
+      // Check if there are any outputs after this function call in the sequence
+      const itemIndex = items.indexOf(item);
+      const hasOutputsAfter = items.slice(itemIndex + 1).some(
+        laterItem => laterItem?.type === "function_call_output" && laterItem?.call_id === callId
+      );
+      
+      const hasMatch = callIdsWithOutput.has(callId) || hasOutputsAfter;
+      console.log(`Function call ID ${callId} has output: ${hasMatch} (direct: ${callIdsWithOutput.has(callId)}, after: ${hasOutputsAfter})`);
+      return hasMatch;
     }
     return true;
   });
+
+  console.log("Filtered items:", filtered.map(i => ({ type: i.type, id: i.id || i.call_id })));
+  return filtered;
 }
 
 function toApipieChatMessages(messages: any[]): Array<{ role: string; content: any }> {
@@ -310,9 +358,14 @@ function toApipieChatMessages(messages: any[]): Array<{ role: string; content: a
 export async function POST(request: Request) {
   try {
     const { messages, toolsState, selectedSkill, provider, apipieModel, agentPrompt, agentName, agentTemperature } = await request.json();
+    
+    console.log("Request received - Provider:", provider, "Model:", apipieModel || "default");
 
     if (provider === "apipie") {
       const apiKey = process.env.APIPIE_API_KEY;
+      
+      console.log("APIPie Request - Original model:", apipieModel);
+      
       if (!apiKey) {
         return new Response(
           JSON.stringify({ error: "Missing APIPIE_API_KEY" }),
@@ -392,10 +445,33 @@ export async function POST(request: Request) {
       }
 
       // Prepend developer instructions as a system message
+      // Sanitize messages to prevent tool output errors
+      const sanitizedMessages = sanitizeToolOutputs(sanitizeMessages(messages));
       const apipieMessages = [
         { role: "system", content: instructions },
-        ...toApipieChatMessages(messages),
+        ...toApipieChatMessages(sanitizedMessages),
       ];
+
+      // Extract provider from model name, but use only the model name for the API
+      const providerName = apipieModel.split("::")[0];
+      const modelName = apipieModel.split("::")[1] || apipieModel;
+      
+      // APIPie expects just the model name without provider prefix
+      const finalModelName = modelName || apipieModel;
+      
+      console.log("APIPie - Provider:", providerName, "Model name:", modelName, "Final model:", finalModelName);
+      
+      const requestBody = {
+        messages: apipieMessages,
+        model: finalModelName,
+        stream: false,
+        temperature: typeof agentTemperature === "number" ? agentTemperature : 1,
+        top_p: 1,
+        max_tokens: 800,
+        ...(toolsForApipie.length > 0 ? { tools: toolsForApipie, tool_choice: "auto" } : {}),
+      };
+
+      console.log("APIPie Request Body:", JSON.stringify(requestBody, null, 2));
 
       const apipieRes = await fetch("https://apipie.ai/v1/chat/completions", {
         method: "POST",
@@ -404,16 +480,7 @@ export async function POST(request: Request) {
           Accept: "application/json",
           Authorization: `Bearer ${apiKey}`,
         },
-        body: JSON.stringify({
-          messages: apipieMessages,
-          model: typeof apipieModel === "string" && apipieModel.trim() ? apipieModel.trim() : "gpt-3.5-turbo",
-          provider: "openai",
-          stream: false,
-          temperature: typeof agentTemperature === "number" ? agentTemperature : 1,
-          top_p: 1,
-          max_tokens: 800,
-          ...(toolsForApipie.length > 0 ? { tools: toolsForApipie, tool_choice: "auto" } : {}),
-        }),
+        body: JSON.stringify(requestBody),
       });
 
       if (!apipieRes.ok) {
@@ -433,6 +500,13 @@ export async function POST(request: Request) {
       }
 
       const completion = await apipieRes.json().catch(() => null);
+      
+      console.log("APIPie Response:", {
+        provider: completion?.provider,
+        model: completion?.model,
+        id: completion?.id
+      });
+      
       const apipieMessage = completion?.choices?.[0]?.message;
       const assistantText = typeof apipieMessage?.content === "string" ? apipieMessage.content : "";
 
@@ -537,6 +611,8 @@ export async function POST(request: Request) {
       });
     }
 
+    console.log("Using OpenAI provider - Processing request...");
+    
     const tools = await getTools(toolsState);
 
     if (process.env.DEBUG_TURN_RESPONSE === "true") {
@@ -552,9 +628,9 @@ export async function POST(request: Request) {
     }
 
     // Sanitize messages to ensure annotations have required fields
-    const sanitizedMessages = sanitizeToolOutputs(
-      removeDanglingFunctionCalls(sanitizeMessages(messages))
-    );
+    // Note: In streaming mode, we don't filter dangling function calls 
+    // since outputs come later in the stream
+    const sanitizedMessages = sanitizeToolOutputs(sanitizeMessages(messages));
     
     if (process.env.DEBUG_TURN_RESPONSE === "true") {
       console.log("Sanitized messages:", JSON.stringify(sanitizedMessages, null, 2));
