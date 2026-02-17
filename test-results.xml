@@ -1,0 +1,2962 @@
+<testsuites id="" name="" tests="710" failures="0" skipped="710" errors="0" time="0.4301309999999999">
+<testsuite name="core/agents.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="chromium" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Agent Management › should display agent selector" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should open agent selector dropdown" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should create new agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should select existing agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should edit existing agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should delete agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should use agent custom prompt in conversation" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should apply agent temperature setting" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should toggle agent features" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should show agent badges for enabled features" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should validate agent creation form" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should cancel agent creation" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/artifacts.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="chromium" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Artifact Creation and Viewing › should create code artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should create markdown artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should edit artifact inline" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should download artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should copy artifact to clipboard" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should delete artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should show artifact syntax highlighting" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should support multiple artifacts in one response" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should expand/collapse artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should show artifact execution for runnable code" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should handle artifact creation errors" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/chat.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="chromium" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="Chat Core Functionality › should load chat interface" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should send message and receive response" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle message streaming" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should clear chat history" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should start new conversation" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle empty message submission" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle long messages" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should maintain message order" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle keyboard shortcuts" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should show typing indicator during response generation" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/streamlit.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="chromium" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Streamlit App Deployment and Interaction › should deploy Streamlit app from artifact" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show deployment status" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show successful deployment" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should handle deployment failures" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should open deployed app in new tab" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should monitor deployment logs" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should cancel deployment" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should redeploy updated app" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show deployment metrics" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/tools.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="chromium" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Tool Execution › should execute web search tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute code interpreter tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute file search tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should handle tool execution errors" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should show tool execution progress" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute multiple tools in sequence" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should handle tool timeout" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should allow tool cancellation" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should display tool usage statistics" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/concurrent-operations.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="chromium" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Concurrent Operations Handling › should handle multiple simultaneous chat requests" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent tool executions" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent file uploads and chat messages" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent agent operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent memory operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent Microsoft Graph operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent calendar operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent Streamlit deployments" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should prevent race conditions in UI state" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent WebSocket connections" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle resource cleanup after concurrent operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/large-files.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="chromium" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Large File Upload Handling › should handle large file upload with progress indicator" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file size limit exceeded" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle upload interruption and resume" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle multiple concurrent file uploads" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file upload timeout" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle unsupported file types" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle virus scan detection" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle storage quota exceeded" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file corruption during upload" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should show detailed upload statistics" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle drag and drop of large files" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/network-failures.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="chromium" tests="16" failures="0" skipped="16" time="0" errors="0">
+<testcase name="Network Failure Handling › should handle API timeout" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle network connection loss" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle server error (500)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle rate limiting (429)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle authentication failure (401)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle malformed API response" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should retry failed requests automatically" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle intermittent network issues" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle offline mode" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle slow network connections" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle concurrent request failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle partial API responses" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle DNS resolution failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle CORS errors" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should provide network status indicator" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle WebSocket connection failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/calendar.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="chromium" tests="15" failures="0" skipped="15" time="0" errors="0">
+<testcase name="Microsoft Calendar Integration › should load calendar interface when authenticated" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should display calendar events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should create new event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should edit existing event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should delete event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should switch between calendar views" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should navigate calendar dates" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should accept meeting invitation" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should decline meeting invitation" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should show event details modal" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should search calendar events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should handle overlapping events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should create recurring event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should handle calendar sync errors" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should show loading states during calendar operations" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/email.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="chromium" tests="14" failures="0" skipped="14" time="0" errors="0">
+<testcase name="Microsoft Email Integration › should load email interface when authenticated" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should fetch and display emails" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should display email details" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should compose and send email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should reply to email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should forward email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should delete email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should mark email as read/unread" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should flag/unflag email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should move email to folder" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should search emails" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should handle email pagination" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should handle email sending errors" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should show loading states during email operations" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/memory.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="chromium" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Memory System Persistence › should fetch memories on first message" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should display memory context in conversation" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should extract memories from conversation" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should persist memories across conversations" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should update existing memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should delete memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should search memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should handle memory extraction errors" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should show memory statistics" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should export memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should import memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should handle memory conflicts during import" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/microsoft-auth.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="chromium" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Microsoft Graph Authentication › should show Microsoft connect button when not authenticated" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should initiate Microsoft OAuth flow" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle OAuth callback successfully" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle OAuth callback errors" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should show connected status when authenticated" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should disconnect Microsoft account" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should refresh expired tokens" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle token refresh failure" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should validate Microsoft credentials" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle network errors during authentication" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should persist authentication state across page reloads" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle multiple Microsoft accounts" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/agents.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="firefox" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Agent Management › should display agent selector" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should open agent selector dropdown" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should create new agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should select existing agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should edit existing agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should delete agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should use agent custom prompt in conversation" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should apply agent temperature setting" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should toggle agent features" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should show agent badges for enabled features" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should validate agent creation form" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should cancel agent creation" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/artifacts.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="firefox" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Artifact Creation and Viewing › should create code artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should create markdown artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should edit artifact inline" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should download artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should copy artifact to clipboard" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should delete artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should show artifact syntax highlighting" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should support multiple artifacts in one response" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should expand/collapse artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should show artifact execution for runnable code" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should handle artifact creation errors" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/chat.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="firefox" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="Chat Core Functionality › should load chat interface" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should send message and receive response" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle message streaming" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should clear chat history" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should start new conversation" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle empty message submission" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle long messages" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should maintain message order" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle keyboard shortcuts" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should show typing indicator during response generation" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/streamlit.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="firefox" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Streamlit App Deployment and Interaction › should deploy Streamlit app from artifact" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show deployment status" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show successful deployment" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should handle deployment failures" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should open deployed app in new tab" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should monitor deployment logs" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should cancel deployment" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should redeploy updated app" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show deployment metrics" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/tools.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="firefox" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Tool Execution › should execute web search tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute code interpreter tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute file search tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should handle tool execution errors" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should show tool execution progress" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute multiple tools in sequence" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should handle tool timeout" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should allow tool cancellation" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should display tool usage statistics" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/concurrent-operations.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="firefox" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Concurrent Operations Handling › should handle multiple simultaneous chat requests" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent tool executions" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent file uploads and chat messages" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent agent operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent memory operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent Microsoft Graph operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent calendar operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent Streamlit deployments" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should prevent race conditions in UI state" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent WebSocket connections" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle resource cleanup after concurrent operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/large-files.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="firefox" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Large File Upload Handling › should handle large file upload with progress indicator" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file size limit exceeded" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle upload interruption and resume" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle multiple concurrent file uploads" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file upload timeout" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle unsupported file types" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle virus scan detection" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle storage quota exceeded" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file corruption during upload" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should show detailed upload statistics" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle drag and drop of large files" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/network-failures.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="firefox" tests="16" failures="0" skipped="16" time="0" errors="0">
+<testcase name="Network Failure Handling › should handle API timeout" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle network connection loss" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle server error (500)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle rate limiting (429)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle authentication failure (401)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle malformed API response" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should retry failed requests automatically" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle intermittent network issues" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle offline mode" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle slow network connections" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle concurrent request failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle partial API responses" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle DNS resolution failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle CORS errors" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should provide network status indicator" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle WebSocket connection failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/calendar.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="firefox" tests="15" failures="0" skipped="15" time="0" errors="0">
+<testcase name="Microsoft Calendar Integration › should load calendar interface when authenticated" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should display calendar events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should create new event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should edit existing event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should delete event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should switch between calendar views" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should navigate calendar dates" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should accept meeting invitation" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should decline meeting invitation" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should show event details modal" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should search calendar events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should handle overlapping events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should create recurring event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should handle calendar sync errors" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should show loading states during calendar operations" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/email.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="firefox" tests="14" failures="0" skipped="14" time="0" errors="0">
+<testcase name="Microsoft Email Integration › should load email interface when authenticated" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should fetch and display emails" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should display email details" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should compose and send email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should reply to email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should forward email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should delete email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should mark email as read/unread" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should flag/unflag email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should move email to folder" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should search emails" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should handle email pagination" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should handle email sending errors" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should show loading states during email operations" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/memory.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="firefox" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Memory System Persistence › should fetch memories on first message" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should display memory context in conversation" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should extract memories from conversation" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should persist memories across conversations" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should update existing memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should delete memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should search memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should handle memory extraction errors" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should show memory statistics" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should export memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should import memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should handle memory conflicts during import" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/microsoft-auth.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="firefox" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Microsoft Graph Authentication › should show Microsoft connect button when not authenticated" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should initiate Microsoft OAuth flow" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle OAuth callback successfully" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle OAuth callback errors" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should show connected status when authenticated" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should disconnect Microsoft account" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should refresh expired tokens" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle token refresh failure" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should validate Microsoft credentials" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle network errors during authentication" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should persist authentication state across page reloads" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle multiple Microsoft accounts" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/agents.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="webkit" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Agent Management › should display agent selector" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should open agent selector dropdown" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should create new agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should select existing agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should edit existing agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should delete agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should use agent custom prompt in conversation" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should apply agent temperature setting" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should toggle agent features" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should show agent badges for enabled features" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should validate agent creation form" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should cancel agent creation" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/artifacts.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="webkit" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Artifact Creation and Viewing › should create code artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should create markdown artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should edit artifact inline" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should download artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should copy artifact to clipboard" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should delete artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should show artifact syntax highlighting" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should support multiple artifacts in one response" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should expand/collapse artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should show artifact execution for runnable code" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should handle artifact creation errors" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/chat.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="webkit" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="Chat Core Functionality › should load chat interface" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should send message and receive response" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle message streaming" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should clear chat history" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should start new conversation" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle empty message submission" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle long messages" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should maintain message order" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle keyboard shortcuts" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should show typing indicator during response generation" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/streamlit.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="webkit" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Streamlit App Deployment and Interaction › should deploy Streamlit app from artifact" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show deployment status" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show successful deployment" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should handle deployment failures" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should open deployed app in new tab" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should monitor deployment logs" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should cancel deployment" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should redeploy updated app" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show deployment metrics" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/tools.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="webkit" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Tool Execution › should execute web search tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute code interpreter tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute file search tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should handle tool execution errors" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should show tool execution progress" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute multiple tools in sequence" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should handle tool timeout" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should allow tool cancellation" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should display tool usage statistics" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/concurrent-operations.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="webkit" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Concurrent Operations Handling › should handle multiple simultaneous chat requests" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent tool executions" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent file uploads and chat messages" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent agent operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent memory operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent Microsoft Graph operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent calendar operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent Streamlit deployments" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should prevent race conditions in UI state" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent WebSocket connections" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle resource cleanup after concurrent operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/large-files.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="webkit" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Large File Upload Handling › should handle large file upload with progress indicator" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file size limit exceeded" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle upload interruption and resume" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle multiple concurrent file uploads" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file upload timeout" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle unsupported file types" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle virus scan detection" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle storage quota exceeded" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file corruption during upload" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should show detailed upload statistics" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle drag and drop of large files" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/network-failures.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="webkit" tests="16" failures="0" skipped="16" time="0" errors="0">
+<testcase name="Network Failure Handling › should handle API timeout" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle network connection loss" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle server error (500)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle rate limiting (429)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle authentication failure (401)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle malformed API response" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should retry failed requests automatically" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle intermittent network issues" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle offline mode" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle slow network connections" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle concurrent request failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle partial API responses" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle DNS resolution failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle CORS errors" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should provide network status indicator" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle WebSocket connection failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/calendar.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="webkit" tests="15" failures="0" skipped="15" time="0" errors="0">
+<testcase name="Microsoft Calendar Integration › should load calendar interface when authenticated" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should display calendar events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should create new event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should edit existing event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should delete event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should switch between calendar views" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should navigate calendar dates" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should accept meeting invitation" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should decline meeting invitation" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should show event details modal" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should search calendar events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should handle overlapping events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should create recurring event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should handle calendar sync errors" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should show loading states during calendar operations" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/email.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="webkit" tests="14" failures="0" skipped="14" time="0" errors="0">
+<testcase name="Microsoft Email Integration › should load email interface when authenticated" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should fetch and display emails" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should display email details" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should compose and send email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should reply to email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should forward email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should delete email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should mark email as read/unread" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should flag/unflag email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should move email to folder" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should search emails" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should handle email pagination" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should handle email sending errors" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should show loading states during email operations" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/memory.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="webkit" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Memory System Persistence › should fetch memories on first message" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should display memory context in conversation" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should extract memories from conversation" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should persist memories across conversations" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should update existing memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should delete memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should search memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should handle memory extraction errors" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should show memory statistics" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should export memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should import memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should handle memory conflicts during import" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/microsoft-auth.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="webkit" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Microsoft Graph Authentication › should show Microsoft connect button when not authenticated" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should initiate Microsoft OAuth flow" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle OAuth callback successfully" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle OAuth callback errors" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should show connected status when authenticated" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should disconnect Microsoft account" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should refresh expired tokens" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle token refresh failure" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should validate Microsoft credentials" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle network errors during authentication" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should persist authentication state across page reloads" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle multiple Microsoft accounts" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/agents.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Chrome" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Agent Management › should display agent selector" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should open agent selector dropdown" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should create new agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should select existing agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should edit existing agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should delete agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should use agent custom prompt in conversation" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should apply agent temperature setting" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should toggle agent features" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should show agent badges for enabled features" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should validate agent creation form" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should cancel agent creation" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/artifacts.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Chrome" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Artifact Creation and Viewing › should create code artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should create markdown artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should edit artifact inline" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should download artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should copy artifact to clipboard" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should delete artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should show artifact syntax highlighting" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should support multiple artifacts in one response" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should expand/collapse artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should show artifact execution for runnable code" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should handle artifact creation errors" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/chat.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Chrome" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="Chat Core Functionality › should load chat interface" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should send message and receive response" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle message streaming" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should clear chat history" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should start new conversation" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle empty message submission" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle long messages" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should maintain message order" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle keyboard shortcuts" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should show typing indicator during response generation" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/streamlit.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Chrome" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Streamlit App Deployment and Interaction › should deploy Streamlit app from artifact" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show deployment status" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show successful deployment" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should handle deployment failures" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should open deployed app in new tab" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should monitor deployment logs" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should cancel deployment" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should redeploy updated app" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show deployment metrics" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/tools.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Chrome" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Tool Execution › should execute web search tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute code interpreter tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute file search tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should handle tool execution errors" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should show tool execution progress" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute multiple tools in sequence" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should handle tool timeout" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should allow tool cancellation" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should display tool usage statistics" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/concurrent-operations.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Chrome" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Concurrent Operations Handling › should handle multiple simultaneous chat requests" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent tool executions" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent file uploads and chat messages" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent agent operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent memory operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent Microsoft Graph operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent calendar operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent Streamlit deployments" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should prevent race conditions in UI state" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent WebSocket connections" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle resource cleanup after concurrent operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/large-files.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Chrome" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Large File Upload Handling › should handle large file upload with progress indicator" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file size limit exceeded" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle upload interruption and resume" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle multiple concurrent file uploads" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file upload timeout" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle unsupported file types" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle virus scan detection" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle storage quota exceeded" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file corruption during upload" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should show detailed upload statistics" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle drag and drop of large files" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/network-failures.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Chrome" tests="16" failures="0" skipped="16" time="0" errors="0">
+<testcase name="Network Failure Handling › should handle API timeout" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle network connection loss" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle server error (500)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle rate limiting (429)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle authentication failure (401)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle malformed API response" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should retry failed requests automatically" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle intermittent network issues" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle offline mode" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle slow network connections" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle concurrent request failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle partial API responses" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle DNS resolution failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle CORS errors" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should provide network status indicator" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle WebSocket connection failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/calendar.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Chrome" tests="15" failures="0" skipped="15" time="0" errors="0">
+<testcase name="Microsoft Calendar Integration › should load calendar interface when authenticated" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should display calendar events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should create new event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should edit existing event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should delete event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should switch between calendar views" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should navigate calendar dates" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should accept meeting invitation" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should decline meeting invitation" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should show event details modal" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should search calendar events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should handle overlapping events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should create recurring event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should handle calendar sync errors" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should show loading states during calendar operations" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/email.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Chrome" tests="14" failures="0" skipped="14" time="0" errors="0">
+<testcase name="Microsoft Email Integration › should load email interface when authenticated" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should fetch and display emails" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should display email details" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should compose and send email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should reply to email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should forward email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should delete email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should mark email as read/unread" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should flag/unflag email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should move email to folder" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should search emails" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should handle email pagination" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should handle email sending errors" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should show loading states during email operations" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/memory.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Chrome" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Memory System Persistence › should fetch memories on first message" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should display memory context in conversation" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should extract memories from conversation" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should persist memories across conversations" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should update existing memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should delete memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should search memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should handle memory extraction errors" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should show memory statistics" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should export memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should import memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should handle memory conflicts during import" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/microsoft-auth.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Chrome" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Microsoft Graph Authentication › should show Microsoft connect button when not authenticated" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should initiate Microsoft OAuth flow" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle OAuth callback successfully" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle OAuth callback errors" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should show connected status when authenticated" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should disconnect Microsoft account" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should refresh expired tokens" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle token refresh failure" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should validate Microsoft credentials" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle network errors during authentication" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should persist authentication state across page reloads" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle multiple Microsoft accounts" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/agents.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Safari" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Agent Management › should display agent selector" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should open agent selector dropdown" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should create new agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should select existing agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should edit existing agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should delete agent" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should use agent custom prompt in conversation" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should apply agent temperature setting" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should toggle agent features" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should show agent badges for enabled features" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should validate agent creation form" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Agent Management › should cancel agent creation" classname="core/agents.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/artifacts.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Safari" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Artifact Creation and Viewing › should create code artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should create markdown artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should edit artifact inline" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should download artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should copy artifact to clipboard" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should delete artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should show artifact syntax highlighting" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should support multiple artifacts in one response" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should expand/collapse artifact" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should show artifact execution for runnable code" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Artifact Creation and Viewing › should handle artifact creation errors" classname="core/artifacts.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/chat.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Safari" tests="10" failures="0" skipped="10" time="0" errors="0">
+<testcase name="Chat Core Functionality › should load chat interface" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should send message and receive response" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle message streaming" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should clear chat history" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should start new conversation" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle empty message submission" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle long messages" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should maintain message order" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should handle keyboard shortcuts" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Chat Core Functionality › should show typing indicator during response generation" classname="core/chat.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/streamlit.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Safari" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Streamlit App Deployment and Interaction › should deploy Streamlit app from artifact" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show deployment status" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show successful deployment" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should handle deployment failures" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should open deployed app in new tab" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should monitor deployment logs" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should cancel deployment" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should redeploy updated app" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Streamlit App Deployment and Interaction › should show deployment metrics" classname="core/streamlit.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="core/tools.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Safari" tests="9" failures="0" skipped="9" time="0" errors="0">
+<testcase name="Tool Execution › should execute web search tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute code interpreter tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute file search tool" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should handle tool execution errors" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should show tool execution progress" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should execute multiple tools in sequence" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should handle tool timeout" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should allow tool cancellation" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Tool Execution › should display tool usage statistics" classname="core/tools.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/concurrent-operations.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Safari" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Concurrent Operations Handling › should handle multiple simultaneous chat requests" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent tool executions" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent file uploads and chat messages" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent agent operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent memory operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent Microsoft Graph operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent calendar operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent Streamlit deployments" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should prevent race conditions in UI state" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle concurrent WebSocket connections" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Concurrent Operations Handling › should handle resource cleanup after concurrent operations" classname="edge-cases/concurrent-operations.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/large-files.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Safari" tests="11" failures="0" skipped="11" time="0" errors="0">
+<testcase name="Large File Upload Handling › should handle large file upload with progress indicator" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file size limit exceeded" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle upload interruption and resume" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle multiple concurrent file uploads" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file upload timeout" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle unsupported file types" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle virus scan detection" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle storage quota exceeded" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle file corruption during upload" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should show detailed upload statistics" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Large File Upload Handling › should handle drag and drop of large files" classname="edge-cases/large-files.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="edge-cases/network-failures.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Safari" tests="16" failures="0" skipped="16" time="0" errors="0">
+<testcase name="Network Failure Handling › should handle API timeout" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle network connection loss" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle server error (500)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle rate limiting (429)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle authentication failure (401)" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle malformed API response" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should retry failed requests automatically" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle intermittent network issues" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle offline mode" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle slow network connections" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle concurrent request failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle partial API responses" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle DNS resolution failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle CORS errors" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should provide network status indicator" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Network Failure Handling › should handle WebSocket connection failures" classname="edge-cases/network-failures.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/calendar.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Safari" tests="15" failures="0" skipped="15" time="0" errors="0">
+<testcase name="Microsoft Calendar Integration › should load calendar interface when authenticated" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should display calendar events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should create new event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should edit existing event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should delete event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should switch between calendar views" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should navigate calendar dates" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should accept meeting invitation" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should decline meeting invitation" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should show event details modal" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should search calendar events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should handle overlapping events" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should create recurring event" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should handle calendar sync errors" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Calendar Integration › should show loading states during calendar operations" classname="integrations/calendar.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/email.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Safari" tests="14" failures="0" skipped="14" time="0" errors="0">
+<testcase name="Microsoft Email Integration › should load email interface when authenticated" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should fetch and display emails" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should display email details" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should compose and send email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should reply to email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should forward email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should delete email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should mark email as read/unread" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should flag/unflag email" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should move email to folder" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should search emails" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should handle email pagination" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should handle email sending errors" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Email Integration › should show loading states during email operations" classname="integrations/email.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/memory.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Safari" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Memory System Persistence › should fetch memories on first message" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should display memory context in conversation" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should extract memories from conversation" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should persist memories across conversations" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should update existing memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should delete memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should search memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should handle memory extraction errors" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should show memory statistics" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should export memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should import memories" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Memory System Persistence › should handle memory conflicts during import" classname="integrations/memory.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+<testsuite name="integrations/microsoft-auth.spec.ts" timestamp="2026-02-16T02:48:44.559Z" hostname="Mobile Safari" tests="12" failures="0" skipped="12" time="0" errors="0">
+<testcase name="Microsoft Graph Authentication › should show Microsoft connect button when not authenticated" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should initiate Microsoft OAuth flow" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle OAuth callback successfully" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle OAuth callback errors" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should show connected status when authenticated" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should disconnect Microsoft account" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should refresh expired tokens" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle token refresh failure" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should validate Microsoft credentials" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle network errors during authentication" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should persist authentication state across page reloads" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+<testcase name="Microsoft Graph Authentication › should handle multiple Microsoft accounts" classname="integrations/microsoft-auth.spec.ts" time="0">
+<skipped>
+</skipped>
+</testcase>
+</testsuite>
+</testsuites>

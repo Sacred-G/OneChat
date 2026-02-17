@@ -1,0 +1,912 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Markdown → Slides</title>
+
+  <!-- Markdown parser (CDN) -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  <style>
+    :root{
+      --bg: #0b1220;
+      --panel: rgba(255,255,255,.06);
+      --panel2: rgba(255,255,255,.08);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.68);
+      --border: rgba(255,255,255,.12);
+      --shadow: 0 18px 55px rgba(0,0,0,.35);
+      --shadow2: 0 10px 30px rgba(0,0,0,.25);
+      --accent: #6aa8ff;
+      --accent2: #9b7bff;
+      --danger: #ff6b6b;
+      --ok: #2ee59d;
+
+      --slide-bg: #0f172a;
+      --slide-surface: rgba(255,255,255,.06);
+      --slide-text: rgba(255,255,255,.92);
+      --slide-muted: rgba(255,255,255,.70);
+      --code-bg: rgba(255,255,255,.08);
+      --table-border: rgba(255,255,255,.14);
+
+      --radius: 16px;
+      --radius2: 22px;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    [data-theme="light"]{
+      --bg: #f4f6fb;
+      --panel: rgba(0,0,0,.045);
+      --panel2: rgba(0,0,0,.06);
+      --text: rgba(10,20,35,.92);
+      --muted: rgba(10,20,35,.60);
+      --border: rgba(10,20,35,.12);
+      --shadow: 0 20px 60px rgba(10,20,35,.12);
+      --shadow2: 0 12px 35px rgba(10,20,35,.12);
+
+      --slide-bg: #ffffff;
+      --slide-surface: rgba(10,20,35,.05);
+      --slide-text: rgba(10,20,35,.92);
+      --slide-muted: rgba(10,20,35,.65);
+      --code-bg: rgba(10,20,35,.06);
+      --table-border: rgba(10,20,35,.16);
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: var(--sans);
+      color: var(--text);
+      background:
+        radial-gradient(1200px 700px at 15% 15%, rgba(106,168,255,.22), transparent 55%),
+        radial-gradient(900px 600px at 80% 25%, rgba(155,123,255,.20), transparent 60%),
+        radial-gradient(1100px 800px at 65% 85%, rgba(46,229,157,.13), transparent 60%),
+        linear-gradient(180deg, rgba(255,255,255,.02), rgba(255,255,255,0)),
+        var(--bg);
+      overflow:hidden;
+    }
+
+    /* App shell */
+    .app{
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      gap:12px;
+      padding:14px;
+    }
+
+    .topbar{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+      padding:14px 14px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius2);
+      background: linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,.03));
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(10px);
+    }
+
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:12px;
+      min-width: 260px;
+    }
+
+    .logo{
+      width:42px;
+      height:42px;
+      border-radius: 14px;
+      background:
+        radial-gradient(18px 18px at 30% 30%, rgba(255,255,255,.32), transparent 60%),
+        linear-gradient(135deg, rgba(106,168,255,.95), rgba(155,123,255,.85));
+      box-shadow: 0 14px 40px rgba(0,0,0,.22);
+      position:relative;
+      overflow:hidden;
+    }
+    .logo:after{
+      content:"";
+      position:absolute;
+      inset:-40%;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.35), transparent);
+      transform: rotate(25deg);
+      animation: sheen 4.8s ease-in-out infinite;
+    }
+    @keyframes sheen{
+      0%,55%{ transform: translateX(-30%) rotate(25deg); opacity:.0; }
+      65%{ opacity:.8; }
+      100%{ transform: translateX(65%) rotate(25deg); opacity:0; }
+    }
+
+    .brand h1{
+      margin:0;
+      font-size: 16px;
+      letter-spacing: .2px;
+      line-height: 1.15;
+    }
+    .brand p{
+      margin:2px 0 0;
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .actions{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap: wrap;
+      justify-content:flex-end;
+    }
+
+    .chip{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius: 999px;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-size: 12.5px;
+      white-space: nowrap;
+    }
+
+    .btn{
+      appearance:none;
+      border:1px solid var(--border);
+      background: rgba(255,255,255,.06);
+      color: var(--text);
+      padding:9px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      font-weight: 600;
+      font-size: 13px;
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      transition: transform .08s ease, background .2s ease, border-color .2s ease;
+      user-select:none;
+    }
+    .btn:hover{ background: rgba(255,255,255,.09); }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      border-color: rgba(106,168,255,.35);
+      background: linear-gradient(135deg, rgba(106,168,255,.23), rgba(155,123,255,.14));
+    }
+    .btn.ghost{
+      background: transparent;
+    }
+    .btn:focus-visible{
+      outline: 3px solid rgba(106,168,255,.45);
+      outline-offset: 2px;
+    }
+
+    .kbd{
+      font-family: var(--mono);
+      font-size: 11.5px;
+      padding: 1px 6px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: rgba(255,255,255,.05);
+      color: var(--muted);
+    }
+
+    /* Main split */
+    .main{
+      flex:1;
+      min-height:0;
+      display:grid;
+      grid-template-columns: 1.05fr 1.35fr;
+      gap:12px;
+    }
+
+    .panel{
+      border:1px solid var(--border);
+      border-radius: var(--radius2);
+      background: rgba(255,255,255,.04);
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      min-height:0;
+    }
+
+    .panelHeader{
+      padding:12px 12px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02));
+    }
+
+    .panelHeader h2{
+      margin:0;
+      font-size: 13.5px;
+      letter-spacing: .2px;
+      color: var(--text);
+    }
+    .panelHeader .sub{
+      font-size: 12px;
+      color: var(--muted);
+      margin-left:8px;
+      font-weight: 500;
+    }
+
+    .panelBody{
+      flex:1;
+      min-height:0;
+      display:flex;
+    }
+
+    /* Editor */
+    textarea{
+      width:100%;
+      height:100%;
+      border:0;
+      outline:none;
+      resize:none;
+      padding:14px 14px 16px;
+      background: transparent;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 13px;
+      line-height: 1.45;
+      tab-size: 2;
+    }
+    .hint{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      border-top: 1px solid var(--border);
+      color: var(--muted);
+      font-size: 12px;
+      background: rgba(255,255,255,.03);
+    }
+
+    /* Preview deck */
+    .previewWrap{
+      flex:1;
+      min-height:0;
+      display:flex;
+      flex-direction:column;
+    }
+
+    .previewArea{
+      flex:1;
+      min-height:0;
+      position:relative;
+      overflow:hidden;
+      background:
+        radial-gradient(900px 600px at 25% 20%, rgba(106,168,255,.12), transparent 55%),
+        radial-gradient(800px 600px at 80% 70%, rgba(155,123,255,.10), transparent 55%),
+        rgba(255,255,255,.02);
+    }
+
+    .stage{
+      position:absolute;
+      inset:0;
+      display:grid;
+      place-items:center;
+      padding:18px;
+    }
+
+    .deckScale{
+      transform-origin: center center;
+      will-change: transform;
+    }
+
+    .slide{
+      width: 1280px;
+      height: 720px;
+      border-radius: 24px;
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.02)), var(--slide-bg);
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+
+    .slideInner{
+      height:100%;
+      padding: 64px 78px;
+      color: var(--slide-text);
+      position:relative;
+    }
+
+    .slideInner:before{
+      content:"";
+      position:absolute;
+      inset:0;
+      background:
+        radial-gradient(900px 600px at 20% 10%, rgba(106,168,255,.18), transparent 60%),
+        radial-gradient(900px 600px at 80% 80%, rgba(155,123,255,.14), transparent 60%);
+      opacity: .6;
+      pointer-events:none;
+    }
+
+    .slideContent{
+      position:relative;
+      z-index:1;
+      height:100%;
+      display:flex;
+      flex-direction:column;
+      gap:18px;
+    }
+
+    /* Markdown styling inside slide */
+    .md h1, .md h2, .md h3 { margin: 0 0 10px; letter-spacing: .2px; }
+    .md h1{ font-size: 54px; line-height: 1.04; }
+    .md h2{ font-size: 38px; line-height: 1.10; color: var(--slide-text); }
+    .md h3{ font-size: 26px; line-height: 1.18; color: var(--slide-text); opacity:.95; }
+
+    .md p{
+      margin: 0 0 10px;
+      font-size: 20px;
+      line-height: 1.55;
+      color: var(--slide-text);
+    }
+    .md p strong{ color: var(--slide-text); }
+    .md em{ color: var(--slide-muted); }
+
+    .md ul, .md ol{
+      margin: 8px 0 0 24px;
+      padding:0;
+      font-size: 20px;
+      line-height: 1.55;
+    }
+    .md li{ margin: 8px 0; }
+    .md a{
+      color: var(--accent);
+      text-decoration: none;
+      border-bottom: 1px solid rgba(106,168,255,.35);
+    }
+    .md a:hover{ border-bottom-color: rgba(106,168,255,.7); }
+
+    .md blockquote{
+      margin: 14px 0;
+      padding: 14px 16px;
+      border-left: 4px solid rgba(106,168,255,.55);
+      background: var(--slide-surface);
+      border-radius: 16px;
+      color: var(--slide-muted);
+      font-size: 18px;
+    }
+
+    .md code{
+      font-family: var(--mono);
+      font-size: .92em;
+      padding: 2px 7px;
+      border-radius: 10px;
+      background: var(--code-bg);
+      border: 1px solid var(--border);
+    }
+    .md pre{
+      margin: 14px 0 0;
+      padding: 14px 16px;
+      border-radius: 18px;
+      background: rgba(0,0,0,.18);
+      border: 1px solid var(--border);
+      overflow:auto;
+    }
+    [data-theme="light"] .md pre{
+      background: rgba(10,20,35,.06);
+    }
+    .md pre code{
+      display:block;
+      padding:0;
+      border:0;
+      background: transparent;
+      font-size: 15px;
+      line-height: 1.45;
+    }
+
+    .md table{
+      width:100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 18px;
+      background: rgba(255,255,255,.03);
+      border: 1px solid var(--table-border);
+      border-radius: 14px;
+      overflow:hidden;
+    }
+    .md th, .md td{
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--table-border);
+      vertical-align: top;
+    }
+    .md th{
+      text-align:left;
+      color: var(--slide-text);
+      background: rgba(255,255,255,.04);
+      font-weight: 700;
+    }
+    .md tr:last-child td{ border-bottom: 0; }
+
+    .slideFooter{
+      position:absolute;
+      left: 22px;
+      right: 22px;
+      bottom: 16px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+      color: var(--slide-muted);
+      font-size: 14px;
+      pointer-events:none;
+      opacity: .9;
+    }
+    .pill{
+      pointer-events:none;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border: 1px solid var(--border);
+      color: var(--slide-muted);
+      font-size: 12.5px;
+      backdrop-filter: blur(6px);
+    }
+
+    .navRow{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      flex-wrap:wrap;
+    }
+
+    .statusDot{
+      width:10px; height:10px;
+      border-radius:999px;
+      background: var(--ok);
+      box-shadow: 0 0 0 4px rgba(46,229,157,.12);
+    }
+
+    /* Fullscreen tweaks */
+    .fullscreen .topbar,
+    .fullscreen .panelHeader,
+    .fullscreen .hint{
+      display:none !important;
+    }
+    .fullscreen .main{
+      grid-template-columns: 1fr;
+      padding: 0;
+      gap: 0;
+    }
+    .fullscreen #editorPanel{
+      display:none !important;
+    }
+    .fullscreen #previewPanel{
+      border-radius: 0;
+      border: 0;
+      box-shadow: none;
+    }
+    .fullscreen .previewArea{
+      background: radial-gradient(1200px 700px at 20% 20%, rgba(106,168,255,.14), transparent 55%),
+                  radial-gradient(900px 700px at 80% 80%, rgba(155,123,255,.12), transparent 60%),
+                  var(--bg);
+    }
+    .fullscreen .stage{
+      padding: 28px;
+    }
+
+    /* Responsive */
+    @media (max-width: 1050px){
+      body{ overflow:auto; }
+      .app{ overflow:auto; }
+      .main{
+        grid-template-columns: 1fr;
+      }
+      .panel{ min-height: 520px; }
+    }
+  </style>
+</head>
+
+<body data-theme="dark">
+  <div class="app" id="appRoot">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <h1>Markdown → Slides</h1>
+          <p>Type markdown. Use <span class="kbd">---</span> on its own line for slide breaks.</p>
+        </div>
+      </div>
+
+      <div class="actions">
+        <span class="chip" title="Keyboard navigation">
+          <span class="statusDot" aria-hidden="true"></span>
+          <span>Nav: <span class="kbd">←</span><span class="kbd">→</span> / <span class="kbd">PgUp</span><span class="kbd">PgDn</span> / <span class="kbd">Home</span><span class="kbd">End</span></span>
+        </span>
+        <button class="btn ghost" id="btnSample" type="button" title="Load a sample deck">Load sample</button>
+        <button class="btn ghost" id="btnTheme" type="button" title="Toggle theme">Theme</button>
+        <button class="btn primary" id="btnFullscreen" type="button" title="Fullscreen preview">Fullscreen</button>
+      </div>
+    </div>
+
+    <div class="main">
+      <!-- Editor -->
+      <section class="panel" id="editorPanel">
+        <div class="panelHeader">
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <h2>Markdown Editor</h2>
+            <span class="sub" id="editorMeta">—</span>
+          </div>
+          <div class="navRow">
+            <button class="btn" id="btnPrev" type="button" title="Previous slide (←)">Prev</button>
+            <button class="btn" id="btnNext" type="button" title="Next slide (→)">Next</button>
+          </div>
+        </div>
+
+        <div class="panelBody">
+          <textarea id="mdInput" spellcheck="false" aria-label="Markdown input"></textarea>
+        </div>
+
+        <div class="hint">
+          Tip: Keep the cursor in the editor while typing. Use arrow keys to navigate slides when the editor is not focused.
+        </div>
+      </section>
+
+      <!-- Preview -->
+      <section class="panel" id="previewPanel">
+        <div class="panelHeader">
+          <div style="display:flex;align-items:baseline;gap:10px;">
+            <h2>Live Preview</h2>
+            <span class="sub" id="previewMeta">Slide 1 of 1</span>
+          </div>
+          <div class="navRow">
+            <span class="chip" id="deckHealth" title="Parse status">Ready</span>
+          </div>
+        </div>
+
+        <div class="previewWrap">
+          <div class="previewArea" id="previewArea">
+            <div class="stage">
+              <div class="deckScale" id="deckScale">
+                <article class="slide" id="slide">
+                  <div class="slideInner">
+                    <div class="slideContent md" id="slideHtml"></div>
+                  </div>
+                  <div class="slideFooter">
+                    <span class="pill" id="slideLeftPill">Markdown → Slides</span>
+                    <span class="pill" id="slideRightPill">1 / 1</span>
+                  </div>
+                </article>
+              </div>
+            </div>
+          </div>
+
+          <div class="hint" style="justify-content:space-between;">
+            <span>Fullscreen works best for presenting.</span>
+            <span style="display:flex;gap:10px;align-items:center;">
+              <span style="color:var(--muted);">Scale:</span>
+              <span class="kbd" id="scaleLabel">100%</span>
+            </span>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <script>
+    // Main app state
+    const state = {
+      slides: [],
+      index: 0,
+      theme: "dark",
+      lastRenderOk: true,
+      renderTimer: null
+    };
+
+    // Elements
+    const appRoot = document.getElementById("appRoot");
+    const mdInput = document.getElementById("mdInput");
+    const slideHtml = document.getElementById("slideHtml");
+    const previewMeta = document.getElementById("previewMeta");
+    const editorMeta = document.getElementById("editorMeta");
+    const slideRightPill = document.getElementById("slideRightPill");
+    const deckHealth = document.getElementById("deckHealth");
+    const scaleLabel = document.getElementById("scaleLabel");
+
+    const btnPrev = document.getElementById("btnPrev");
+    const btnNext = document.getElementById("btnNext");
+    const btnSample = document.getElementById("btnSample");
+    const btnTheme = document.getElementById("btnTheme");
+    const btnFullscreen = document.getElementById("btnFullscreen");
+
+    const previewArea = document.getElementById("previewArea");
+    const deckScale = document.getElementById("deckScale");
+    const slideEl = document.getElementById("slide");
+
+    // Marked configuration (business-friendly defaults)
+    marked.setOptions({
+      gfm: true,
+      breaks: false
+    });
+
+    // Demo markdown (filled in textbox by default)
+    const SAMPLE_MD = `# Q1 Business Review
+**Markdown → Slides** turns simple markdown into a polished deck.
+
+- Live preview
+- Fullscreen presenting
+- Keyboard navigation
+- Theme toggle
+
+> Use \\ ---  \\ on its own line to create a new slide.
+
+---
+
+## Executive Summary
+**What changed this quarter:**
+
+1. Revenue grew **18%** QoQ
+2. Churn improved from **3.1% → 2.4%**
+3. Enterprise pipeline expanded in **Healthcare** and **Public Sector**
+
+**Key takeaway:** we’re scaling efficiently while improving retention.
+
+---
+
+## KPI Snapshot
+
+| Metric | Q4 | Q1 | Δ |
+|---|---:|---:|---:|
+| Revenue | $4.2M | $5.0M | +18% |
+| Gross Margin | 71% | 74% | +3pp |
+| Churn | 3.1% | 2.4% | -0.7pp |
+| NPS | 42 | 51 | +9 |
+
+---
+
+## Strategic Priorities
+### 1) Improve activation
+- Streamline onboarding flows
+- Expand templates for common workflows
+
+### 2) Grow enterprise
+- Security posture & compliance packaging
+- Customer proof points and case studies
+
+### 3) Operational excellence
+- Reduce cycle time in delivery
+- Harden reliability with SLOs
+
+---
+
+## Roadmap (Next 60 Days)
+- **Week 1–2:** Launch revised onboarding
+- **Week 3–4:** Release admin analytics v1
+- **Week 5–8:** Enterprise controls & audit logs
+
+\`\`\`
+Owner: Product + Eng
+Success: +10% activation, -20% time-to-value
+\`\`\`
+
+---
+
+# Thank You
+**Questions & discussion**
+
+Email: name@company.com
+`;
+
+    // Split markdown into slides by lines that are exactly ---
+    function splitSlides(mdText) {
+      const normalized = (mdText || "").replace(/\r\n/g, "\n");
+      const parts = normalized
+        .split(/\n---\n/g) // common
+        .map(s => s.trim())
+        .filter(Boolean);
+
+      // Also support cases where --- might be surrounded by whitespace lines
+      if (parts.length > 0) return parts;
+
+      return normalized
+        .split(/^\s*---\s*$/m)
+        .map(s => s.trim())
+        .filter(Boolean);
+    }
+
+    function safeParseMarkdown(md) {
+      // Ensure something always renders
+      const text = (md || "").trim();
+      if (!text) return "<h2>Start typing…</h2><p>Add <code>---</code> to create slides.</p>";
+
+      return marked.parse(text);
+    }
+
+    function clampIndex() {
+      const max = Math.max(0, state.slides.length - 1);
+      state.index = Math.min(Math.max(0, state.index), max);
+    }
+
+    function updateMeta() {
+      const total = Math.max(1, state.slides.length);
+      const current = Math.min(state.index + 1, total);
+      previewMeta.textContent = `Slide ${current} of ${total}`;
+      slideRightPill.textContent = `${current} / ${total}`;
+      editorMeta.textContent = `${total} slide${total === 1 ? "" : "s"} • Breaks: "---"`;
+    }
+
+    function setHealth(ok, message) {
+      state.lastRenderOk = ok;
+      deckHealth.textContent = message;
+      deckHealth.style.borderColor = ok ? "rgba(46,229,157,.35)" : "rgba(255,107,107,.45)";
+      deckHealth.style.color = ok ? "var(--muted)" : "var(--danger)";
+      deckHealth.style.background = ok ? "rgba(46,229,157,.10)" : "rgba(255,107,107,.10)";
+    }
+
+    function render() {
+      try {
+        state.slides = splitSlides(mdInput.value);
+        if (state.slides.length === 0) state.slides = [""];
+        clampIndex();
+
+        const md = state.slides[state.index] ?? "";
+        slideHtml.innerHTML = safeParseMarkdown(md);
+        updateMeta();
+        fitToStage();
+
+        setHealth(true, "Ready");
+      } catch (err) {
+        // Render a graceful error slide (still presentable)
+        slideHtml.innerHTML = `
+          <h2>Render error</h2>
+          <p>Something went wrong while parsing markdown.</p>
+          <pre><code>${escapeHtml(String(err && err.message ? err.message : err))}</code></pre>
+        `;
+        updateMeta();
+        fitToStage();
+        setHealth(false, "Error");
+      }
+    }
+
+    function scheduleRender() {
+      if (state.renderTimer) clearTimeout(state.renderTimer);
+      state.renderTimer = setTimeout(render, 120);
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;",
+        "<":"&lt;",
+        ">":"&gt;",
+        '"':"&quot;",
+        "'":"&#039;"
+      }[c]));
+    }
+
+    // Slide navigation
+    function go(delta) {
+      state.index += delta;
+      clampIndex();
+      render();
+    }
+    function goTo(idx) {
+      state.index = idx;
+      clampIndex();
+      render();
+    }
+
+    // Fit slide to preview area (keeps 16:9 slide crisp)
+    function fitToStage() {
+      const rect = previewArea.getBoundingClientRect();
+      const pad = isFullscreen() ? 56 : 36;
+      const usableW = Math.max(320, rect.width - pad);
+      const usableH = Math.max(240, rect.height - pad);
+
+      const baseW = 1280;
+      const baseH = 720;
+
+      const scale = Math.min(usableW / baseW, usableH / baseH);
+      const pct = Math.round(scale * 100);
+
+      deckScale.style.transform = `scale(${scale})`;
+      scaleLabel.textContent = `${pct}%`;
+    }
+
+    function isFullscreen() {
+      return !!document.fullscreenElement;
+    }
+
+    async function toggleFullscreen() {
+      try {
+        if (!isFullscreen()) {
+          await appRoot.requestFullscreen();
+        } else {
+          await document.exitFullscreen();
+        }
+      } catch (err) {
+        // If fullscreen fails, show small indicator
+        setHealth(false, "Fullscreen blocked");
+        console.error(err);
+      }
+    }
+
+    function applyTheme(theme) {
+      state.theme = theme;
+      document.body.setAttribute("data-theme", theme);
+    }
+
+    function toggleTheme() {
+      applyTheme(state.theme === "dark" ? "light" : "dark");
+      fitToStage();
+    }
+
+    function loadSample() {
+      mdInput.value = SAMPLE_MD;
+      state.index = 0;
+      render();
+    }
+
+    // Events
+    mdInput.addEventListener("input", scheduleRender);
+
+    btnPrev.addEventListener("click", () => go(-1));
+    btnNext.addEventListener("click", () => go(1));
+    btnSample.addEventListener("click", loadSample);
+    btnTheme.addEventListener("click", toggleTheme);
+    btnFullscreen.addEventListener("click", toggleFullscreen);
+
+    document.addEventListener("keydown", (e) => {
+      // Avoid hijacking typing in the textarea unless user holds a modifier
+      const inEditor = document.activeElement === mdInput;
+      const hasModifier = e.ctrlKey || e.metaKey || e.altKey;
+
+      // Always allow Escape behavior to be handled by browser in fullscreen
+      if (e.key === "Escape") return;
+
+      if (inEditor && !hasModifier) return;
+
+      const key = e.key;
+
+      if (key === "ArrowRight" || key === "PageDown" || key === " " || key === "Enter") {
+        e.preventDefault();
+        go(1);
+      } else if (key === "ArrowLeft" || key === "PageUp") {
+        e.preventDefault();
+        go(-1);
+      } else if (key === "Home") {
+        e.preventDefault();
+        goTo(0);
+      } else if (key === "End") {
+        e.preventDefault();
+        goTo(999999);
+      } else if (key.toLowerCase() === "f") {
+        // Quick present mode: press "f" (when not typing)
+        e.preventDefault();
+        toggleFullscreen();
+      } else if (key.toLowerCase() === "t") {
+        // Quick theme toggle: press "t" (when not typing)
+        e.preventDefault();
+        toggleTheme();
+      }
+    });
+
+    document.addEventListener("fullscreenchange", () => {
+      // Toggle a class for layout changes
+      document.body.classList.toggle("fullscreen", isFullscreen());
+      fitToStage();
+    });
+
+    // Resize handling
+    const ro = new ResizeObserver(() => fitToStage());
+    ro.observe(previewArea);
+
+    // Init
+    applyTheme("dark");
+    loadSample();
+  </script>
+</body>
+</html>

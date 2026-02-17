@@ -1,0 +1,79 @@
+config:
+  target: 'http://localhost:3000'
+  phases:
+    - duration: 60
+      arrivalRate: 5
+      name: "Warm up"
+    - duration: 120
+      arrivalRate: 10
+      name: "Load test"
+    - duration: 60
+      arrivalRate: 20
+      name: "Stress test"
+    - duration: 60
+      arrivalRate: 5
+      name: "Cool down"
+  processor: "./test-processor.js"
+
+scenarios:
+  - name: "Load main page"
+    weight: 40
+    flow:
+      - get:
+          url: "/"
+          capture:
+            - json: "$.html"
+              as: "htmlContent"
+      - think: 2
+
+  - name: "API load test - turn response"
+    weight: 30
+    flow:
+      - post:
+          url: "/api/turn_response"
+          json:
+            messages:
+              - role: "user"
+                content: "Hello, how are you?"
+            model: "gpt-4"
+            temperature: 0.7
+          capture:
+            - json: "$.choices[0].message.content"
+              as: "response"
+      - think: 1
+
+  - name: "Navigate to email"
+    weight: 15
+    flow:
+      - get:
+          url: "/email"
+      - think: 3
+
+  - name: "Navigate to calendar"
+    weight: 15
+    flow:
+      - get:
+          url: "/calendar"
+      - think: 3
+
+  - name: "Memory API load test"
+    weight: 10
+    flow:
+      - get:
+          url: "/api/memories"
+          capture:
+            - json: "$.memories"
+              as: "memories"
+      - think: 1
+
+  - name: "File upload simulation"
+    weight: 5
+    flow:
+      - post:
+          url: "/api/upload"
+          formData:
+            file: "@test-file.txt"
+          capture:
+            - json: "$.fileId"
+              as: "fileId"
+      - think: 2

@@ -1,0 +1,26 @@
+[
+  {
+    "id": "deepwiki-server-1",
+    "server_label": "DeepWiki",
+    "server_url": "http://localhost:3000",
+    "allowed_tools": "search_wiki,get_page",
+    "skip_approval": false,
+    "enabled": true
+  },
+  {
+    "id": "filesystem-server-2", 
+    "server_label": "File System",
+    "server_url": "http://localhost:3001",
+    "allowed_tools": "",
+    "skip_approval": true,
+    "enabled": true
+  },
+  {
+    "id": "database-server-3",
+    "server_label": "Database Tools", 
+    "server_url": "http://localhost:3002",
+    "allowed_tools": "query_db,insert_record",
+    "skip_approval": false,
+    "enabled": false
+  }
+]

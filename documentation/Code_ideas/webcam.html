@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Webcam Filter Playground</title>
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --panel:rgba(12,16,22,.72);
+      --panel2:rgba(12,16,22,.86);
+      --text:#e8eef7;
+      --muted:#9fb0c7;
+      --border:rgba(255,255,255,.10);
+      --accent:#67e8f9;
+      --danger:#fb7185;
+    }
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      background: radial-gradient(1200px 600px at 50% -10%, rgba(103,232,249,.18), transparent 55%),
+                  radial-gradient(900px 500px at 20% 110%, rgba(251,113,133,.12), transparent 55%),
+                  var(--bg);
+      color:var(--text);
+      font: 14px/1.35 system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,Helvetica,Arial;
+      overflow:hidden;
+    }
+
+    .app{
+      height:100%;
+      display:grid;
+      grid-template-rows: 1fr auto;
+    }
+
+    .stage{
+      position:relative;
+      display:grid;
+      place-items:center;
+      padding:14px;
+    }
+
+    .frame{
+      width:min(92vw, 980px);
+      aspect-ratio: 16/10;
+      background: rgba(0,0,0,.35);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow:hidden;
+      position:relative;
+      box-shadow: 0 24px 80px rgba(0,0,0,.45);
+    }
+
+    canvas#view{
+      width:100%;
+      height:100%;
+      display:block;
+      background:#000;
+    }
+
+    .hud{
+      position:absolute;
+      left:14px;
+      top:14px;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px 12px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      backdrop-filter: blur(10px);
+      user-select:none;
+    }
+    .badge{
+      font-weight:700;
+      letter-spacing:.2px;
+      white-space:nowrap;
+    }
+    .hint{
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+    }
+
+    .controls{
+      padding:12px 14px;
+      border-top: 1px solid var(--border);
+      background: linear-gradient(to top, rgba(0,0,0,.55), rgba(0,0,0,.15));
+      backdrop-filter: blur(10px);
+      display:grid;
+      grid-template-columns: 1fr auto;
+      gap:12px;
+      align-items:center;
+    }
+
+    .row{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      flex-wrap:wrap;
+    }
+
+    .group{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      padding:10px;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+    }
+
+    label{
+      color:var(--muted);
+      font-size:12px;
+      margin-right:6px;
+      white-space:nowrap;
+    }
+
+    select, input[type="range"]{
+      accent-color: var(--accent);
+    }
+
+    select{
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding:8px 10px;
+      outline:none;
+    }
+
+    input[type="range"]{
+      width: 160px;
+    }
+
+    button{
+      background: rgba(255,255,255,.08);
+      color:var(--text);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding:10px 12px;
+      cursor:pointer;
+      outline:none;
+      transition: transform .05s ease, background .15s ease, border-color .15s ease;
+      font-weight:600;
+    }
+    button:hover{ background: rgba(255,255,255,.12); }
+    button:active{ transform: translateY(1px); }
+    button.primary{ border-color: rgba(103,232,249,.35); }
+    button.danger{ border-color: rgba(251,113,133,.35); color: #ffe4ea; }
+    button:disabled{ opacity:.55; cursor:not-allowed; }
+
+    .shots{
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:flex-end;
+      overflow:auto hidden;
+      padding:6px 2px;
+      max-width: 48vw;
+    }
+
+    .shot{
+      width: 86px;
+      height: 56px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      overflow:hidden;
+      background:#000;
+      flex:0 0 auto;
+      position:relative;
+    }
+    .shot img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+      display:block;
+    }
+    .shot a{
+      position:absolute;
+      inset:0;
+      text-indent:-9999px;
+    }
+
+    .toast{
+      position:absolute;
+      right:14px;
+      top:14px;
+      max-width: min(420px, 92vw);
+      padding:10px 12px;
+      background: var(--panel2);
+      border:1px solid var(--border);
+      border-radius: 14px;
+      color:var(--text);
+      display:none;
+      backdrop-filter: blur(10px);
+    }
+    .toast.show{ display:block; }
+    .toast .small{ color:var(--muted); font-size:12px; margin-top:4px; }
+
+    .sr-only{
+      position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <main class="stage">
+      <div class="frame">
+        <canvas id="view"></canvas>
+
+        <div class="hud">
+          <div class="badge">Webcam Filter Playground</div>
+          <div class="hint" id="status">Ready</div>
+        </div>
+
+        <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+        <!-- hidden video + canvases -->
+        <video id="video" playsinline muted class="sr-only"></video>
+        <canvas id="src" class="sr-only"></canvas>
+        <canvas id="tmp" class="sr-only"></canvas>
+      </div>
+    </main>
+
+    <footer class="controls">
+      <div class="row">
+        <div class="group">
+          <button class="primary" id="btnStart">Start Camera</button>
+          <button id="btnStop" disabled>Stop</button>
+          <button class="primary" id="btnSnap" disabled>Snapshot</button>
+          <button id="btnClear" disabled>Clear Shots</button>
+        </div>
+
+        <div class="group">
+          <label for="effect">Effect</label>
+          <select id="effect">
+            <option value="normal">Normal</option>
+            <option value="mirror">Mirror</option>
+            <option value="grayscale">Grayscale</option>
+            <option value="sepia">Sepia</option>
+            <option value="invert">Invert</option>
+            <option value="posterize">Posterize</option>
+            <option value="pixelate">Pixelate</option>
+            <option value="edge">Edge Detect</option>
+            <option value="rgbSplit">RGB Split</option>
+            <option value="glitch">Glitch</option>
+            <option value="trail">Ghost Trail</option>
+            <option value="nightvision">Night Vision</option>
+            <option value="thermal">🔥 Thermal Cam</option>
+          </select>
+
+          <label for="intensity">Intensity</label>
+          <input id="intensity" type="range" min="0" max="100" value="60" />
+        </div>
+      </div>
+
+      <div class="shots" id="shots" aria-label="Snapshots"></div>
+    </footer>
+  </div>
+
+  <script>
+    // Webcam Filter Playground - single file app
+
+    const els = {
+      view: document.getElementById('view'),
+      src: document.getElementById('src'),
+      tmp: document.getElementById('tmp'),
+      video: document.getElementById('video'),
+      status: document.getElementById('status'),
+      toast: document.getElementById('toast'),
+      btnStart: document.getElementById('btnStart'),
+      btnStop: document.getElementById('btnStop'),
+      btnSnap: document.getElementById('btnSnap'),
+      btnClear: document.getElementById('btnClear'),
+      effect: document.getElementById('effect'),
+      intensity: document.getElementById('intensity'),
+      shots: document.getElementById('shots')
+    };
+
+    const viewCtx = els.view.getContext('2d', { willReadFrequently: true });
+    const srcCtx  = els.src.getContext('2d',  { willReadFrequently: true });
+    const tmpCtx  = els.tmp.getContext('2d',  { willReadFrequently: true });
+
+    let stream = null;
+    let rafId = null;
+
+    // Used by a couple effects
+    let prevFrame = null; // ImageData
+    let lastSnapshotUrl = null;
+
+    function setStatus(text){ els.status.textContent = text; }
+
+    function toast(msg, small = ''){
+      els.toast.innerHTML = `<div>${escapeHtml(msg)}</div>` + (small ? `<div class="small">${escapeHtml(small)}</div>` : '');
+      els.toast.classList.add('show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => els.toast.classList.remove('show'), 2600);
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    function clamp255(v){ return v < 0 ? 0 : (v > 255 ? 255 : v); }
+
+    function ensureCanvasSize(w, h){
+      if (els.view.width !== w || els.view.height !== h){
+        els.view.width = w; els.view.height = h;
+      }
+      if (els.src.width !== w || els.src.height !== h){
+        els.src.width = w; els.src.height = h;
+      }
+      if (els.tmp.width !== w || els.tmp.height !== h){
+        els.tmp.width = w; els.tmp.height = h;
+      }
+    }
+
+    async function startCamera(){
+      try{
+        if (!navigator.mediaDevices?.getUserMedia){
+          toast("getUserMedia not supported", "Try a modern browser (Chrome/Edge/Firefox).");
+          return;
+        }
+
+        // Must be on HTTPS or localhost in most browsers
+        setStatus("Requesting camera permission…");
+
+        stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            facingMode: 'user',
+            width: { ideal: 1280 },
+            height: { ideal: 720 }
+          },
+          audio: false
+        });
+
+        els.video.srcObject = stream;
+
+        await els.video.play();
+
+        const w = els.video.videoWidth || 1280;
+        const h = els.video.videoHeight || 720;
+        ensureCanvasSize(w, h);
+
+        prevFrame = null;
+        setUiRunning(true);
+        setStatus("Live");
+
+        renderLoop();
+      } catch (err){
+        console.error(err);
+        setUiRunning(false);
+        setStatus("Ready");
+        toast("Camera blocked or unavailable", err?.message || "Check permissions and try again.");
+      }
+    }
+
+    function stopCamera(){
+      try{
+        if (rafId) cancelAnimationFrame(rafId);
+        rafId = null;
+
+        if (stream){
+          for (const t of stream.getTracks()) t.stop();
+        }
+        stream = null;
+        els.video.srcObject = null;
+
+        prevFrame = null;
+        setUiRunning(false);
+        setStatus("Stopped");
+      } catch (err){
+        console.error(err);
+        toast("Couldn't stop cleanly", err?.message || "");
+      }
+    }
+
+    function setUiRunning(running){
+      els.btnStart.disabled = running;
+      els.btnStop.disabled  = !running;
+      els.btnSnap.disabled  = !running;
+      els.btnClear.disabled = els.shots.childElementCount === 0;
+    }
+
+    function getIntensity01(){
+      return Number(els.intensity.value) / 100;
+    }
+
+    function renderLoop(){
+      if (!stream) return;
+
+      const w = els.view.width, h = els.view.height;
+      // Draw current frame to src
+      srcCtx.drawImage(els.video, 0, 0, w, h);
+
+      const effect = els.effect.value;
+      const k = getIntensity01();
+
+      // Pixelate uses a different draw path for speed
+      if (effect === 'pixelate'){
+        applyPixelate(w, h, k);
+        rafId = requestAnimationFrame(renderLoop);
+        return;
+      }
+
+      // Some effects benefit from a tmp buffer
+      const img = srcCtx.getImageData(0, 0, w, h);
+      const data = img.data;
+
+      switch(effect){
+        case 'normal':     /* no-op */ break;
+        case 'mirror':     applyMirror(img, w, h); break;
+        case 'grayscale':  applyGrayscale(data, k); break;
+        case 'sepia':      applySepia(data, k); break;
+        case 'invert':     applyInvert(data, k); break;
+        case 'posterize':  applyPosterize(data, k); break;
+        case 'edge':       applyEdge(img, w, h, k); break;
+        case 'rgbSplit':   applyRgbSplit(img, w, h, k); break;
+        case 'glitch':     applyGlitch(img, w, h, k); break;
+        case 'trail':      applyTrail(img, w, h, k); break;
+        case 'nightvision':applyNightVision(data, k); break;
+        case 'thermal':    applyThermal(data, k); break;
+        default: break;
+      }
+
+      viewCtx.putImageData(img, 0, 0);
+      rafId = requestAnimationFrame(renderLoop);
+    }
+
+    // --- Effects -----------------------------------------------------------
+
+    function applyMirror(img, w, h){
+      // Mirror by drawing to tmp canvas then flipping back into img
+      tmpCtx.putImageData(img, 0, 0);
+      // Draw mirrored into view directly for speed
+      viewCtx.save();
+      viewCtx.scale(-1, 1);
+      viewCtx.drawImage(els.tmp, -w, 0, w, h);
+      viewCtx.restore();
+      // Prevent double draw by replacing img with what's already on view
+      // (No action needed; renderLoop will putImageData only for other effects)
+      // Here we short-circuit by copying view back into img:
+      const mirrored = viewCtx.getImageData(0, 0, w, h);
+      img.data.set(mirrored.data);
+    }
+
+    function applyGrayscale(d, k){
+      const mix = 0.35 + 0.65 * k;
+      for (let i=0; i<d.length; i+=4){
+        const r=d[i], g=d[i+1], b=d[i+2];
+        const y = (0.2126*r + 0.7152*g + 0.0722*b);
+        d[i]   = clamp255(r*(1-mix) + y*mix);
+        d[i+1] = clamp255(g*(1-mix) + y*mix);
+        d[i+2] = clamp255(b*(1-mix) + y*mix);
+      }
+    }
+
+    function applySepia(d, k){
+      const amt = 0.25 + 0.75*k;
+      for (let i=0; i<d.length; i+=4){
+        const r=d[i], g=d[i+1], b=d[i+2];
+        const tr = (0.393*r + 0.769*g + 0.189*b);
+        const tg = (0.349*r + 0.686*g + 0.168*b);
+        const tb = (0.272*r + 0.534*g + 0.131*b);
+        d[i]   = clamp255(r*(1-amt) + tr*amt);
+        d[i+1] = clamp255(g*(1-amt) + tg*amt);
+        d[i+2] = clamp255(b*(1-amt) + tb*amt);
+      }
+    }
+
+    function applyInvert(d, k){
+      const amt = 0.2 + 0.8*k;
+      for (let i=0; i<d.length; i+=4){
+        d[i]   = clamp255(d[i]*(1-amt) + (255-d[i])*amt);
+        d[i+1] = clamp255(d[i+1]*(1-amt) + (255-d[i+1])*amt);
+        d[i+2] = clamp255(d[i+2]*(1-amt) + (255-d[i+2])*amt);
+      }
+    }
+
+    function applyPosterize(d, k){
+      // levels: 2..10
+      const levels = Math.max(2, Math.round(2 + k*8));
+      const step = 255 / (levels - 1);
+      for (let i=0; i<d.length; i+=4){
+        d[i]   = clamp255(Math.round(d[i]   / step) * step);
+        d[i+1] = clamp255(Math.round(d[i+1] / step) * step);
+        d[i+2] = clamp255(Math.round(d[i+2] / step) * step);
+      }
+    }
+
+    function applyPixelate(w, h, k){
+      const block = Math.max(2, Math.round(2 + k * 24)); // 2..26
+      const sw = Math.max(1, Math.floor(w / block));
+      const sh = Math.max(1, Math.floor(h / block));
+
+      // Downscale to tmp, then scale up without smoothing
+      tmpCtx.imageSmoothingEnabled = true;
+      tmpCtx.clearRect(0,0,w,h);
+      tmpCtx.drawImage(els.video, 0, 0, sw, sh);
+
+      viewCtx.imageSmoothingEnabled = false;
+      viewCtx.clearRect(0,0,w,h);
+      viewCtx.drawImage(els.tmp, 0, 0, sw, sh, 0, 0, w, h);
+    }
+
+    function applyEdge(img, w, h, k){
+      // Sobel on luminance; blend with original based on intensity
+      const src = img.data;
+      const out = new Uint8ClampedArray(src.length);
+
+      const strength = 0.4 + 1.6*k;
+
+      const lum = new Float32Array(w*h);
+      for (let y=0; y<h; y++){
+        for (let x=0; x<w; x++){
+          const i = (y*w + x)*4;
+          lum[y*w + x] = 0.2126*src[i] + 0.7152*src[i+1] + 0.0722*src[i+2];
+        }
+      }
+
+      const gxK = [-1,0,1,-2,0,2,-1,0,1];
+      const gyK = [-1,-2,-1,0,0,0,1,2,1];
+
+      for (let y=1; y<h-1; y++){
+        for (let x=1; x<w-1; x++){
+          let gx=0, gy=0;
+          let idx=0;
+          for (let ky=-1; ky<=1; ky++){
+            for (let kx=-1; kx<=1; kx++){
+              const v = lum[(y+ky)*w + (x+kx)];
+              gx += v * gxK[idx];
+              gy += v * gyK[idx];
+              idx++;
+            }
+          }
+          const mag = Math.min(255, Math.sqrt(gx*gx + gy*gy) * strength);
+          const o = (y*w + x)*4;
+          out[o] = out[o+1] = out[o+2] = mag;
+          out[o+3] = 255;
+        }
+      }
+
+      // Blend edges into original for a punchy look
+      const blend = 0.35 + 0.65*k;
+      for (let i=0; i<src.length; i+=4){
+        src[i]   = clamp255(src[i]*(1-blend) + out[i]*blend);
+        src[i+1] = clamp255(src[i+1]*(1-blend) + out[i+1]*blend);
+        src[i+2] = clamp255(src[i+2]*(1-blend) + out[i+2]*blend);
+      }
+    }
+
+    function applyRgbSplit(img, w, h, k){
+      const src = img.data;
+      const out = new Uint8ClampedArray(src.length);
+
+      const dx = Math.round((4 + 18*k) * (Math.random() > 0.5 ? 1 : -1));
+      const dy = Math.round((2 + 10*k) * (Math.random() > 0.5 ? 1 : -1));
+
+      function sample(x, y, c){
+        x = Math.max(0, Math.min(w-1, x));
+        y = Math.max(0, Math.min(h-1, y));
+        return src[(y*w + x)*4 + c];
+      }
+
+      for (let y=0; y<h; y++){
+        for (let x=0; x<w; x++){
+          const i = (y*w + x)*4;
+          out[i]   = sample(x+dx, y,   0); // R shifted
+          out[i+1] = sample(x,   y,   1); // G normal
+          out[i+2] = sample(x,   y+dy,2); // B shifted
+          out[i+3] = 255;
+        }
+      }
+      img.data.set(out);
+    }
+
+    function applyGlitch(img, w, h, k){
+      // Row shifts + occasional color invert stripes
+      const src = img.data;
+      const out = new Uint8ClampedArray(src.length);
+
+      const rows = Math.max(2, Math.floor(3 + k*14));
+      const maxShift = Math.floor(8 + k*42);
+
+      for (let y=0; y<h; y++){
+        const band = (Math.random() < (0.015 + 0.06*k));
+        const shift = (y % Math.floor(h/rows) === 0)
+          ? Math.floor((Math.random()*2-1)*maxShift)
+          : 0;
+
+        for (let x=0; x<w; x++){
+          const sx = Math.max(0, Math.min(w-1, x + shift));
+          const si = (y*w + sx)*4;
+          const di = (y*w + x)*4;
+
+          let r = src[si], g = src[si+1], b = src[si+2];
+          if (band){
+            r = 255 - r;
+            b = 255 - b;
+          }
+
+          out[di] = r; out[di+1] = g; out[di+2] = b; out[di+3] = 255;
+        }
+      }
+      img.data.set(out);
+    }
+
+    function applyTrail(img, w, h, k){
+      // Blend previous frame with current
+      const fade = 0.75 - 0.55*k; // lower = more trail
+      if (!prevFrame){
+        prevFrame = new ImageData(new Uint8ClampedArray(img.data), w, h);
+        return;
+      }
+
+      const cur = img.data;
+      const prev = prevFrame.data;
+
+      for (let i=0; i<cur.length; i+=4){
+        cur[i]   = clamp255(cur[i]*(1-fade) + prev[i]*fade);
+        cur[i+1] = clamp255(cur[i+1]*(1-fade) + prev[i+1]*fade);
+        cur[i+2] = clamp255(cur[i+2]*(1-fade) + prev[i+2]*fade);
+      }
+
+      // Update prev frame (slightly delayed)
+      prevFrame.data.set(img.data);
+    }
+
+    function applyNightVision(d, k){
+      // Green channel boosted, slight noise
+      const boost = 1.1 + 1.4*k;
+      const noiseAmt = 6 + 28*k;
+      for (let i=0; i<d.length; i+=4){
+        const r=d[i], g=d[i+1], b=d[i+2];
+        const y = 0.2126*r + 0.7152*g + 0.0722*b;
+        const n = (Math.random()*2-1) * noiseAmt;
+
+        d[i]   = clamp255((y*0.25) + n);
+        d[i+1] = clamp255((y*boost) + n);
+        d[i+2] = clamp255((y*0.18) + n);
+      }
+    }
+
+    function applyThermal(d, k){
+      // Simulated thermal vision for webcam with proximity detection
+      // Close objects = HOT, Far objects = COLD
+      // Uses size/brightness + skin tones to simulate heat
+      
+      const w = els.view.width;
+      const h = els.view.height;
+      const centerX = w / 2;
+      const centerY = h / 2;
+      
+      for (let y = 0; y < h; y++) {
+        for (let x = 0; x < w; x++) {
+          const i = (y * w + x) * 4;
+          const r = d[i], g = d[i+1], b = d[i+2];
+          
+          // Normalize to 0-1
+          const rn = r / 255;
+          const gn = g / 255;
+          const bn = b / 255;
+          
+          // Calculate distance from center (closer to center = closer to camera)
+          const dx = x - centerX;
+          const dy = y - centerY;
+          const distanceFromCenter = Math.sqrt(dx * dx + dy * dy);
+          const maxDistance = Math.sqrt(centerX * centerX + centerY * centerY);
+          const proximity = 1 - (distanceFromCenter / maxDistance); // 1 = center, 0 = corners
+          
+          // Calculate brightness (close objects are typically brighter)
+          const brightness = Math.max(rn, gn, bn);
+          
+          // Detect skin tones
+          const isSkinTone = (
+            rn > 0.2 && gn > 0.1 && bn > 0.05 &&
+            rn > bn && rn > gn &&
+            (rn - gn) < 0.5 && Math.abs(rn - gn) < 0.4
+          );
+          
+          let skinScore = 0;
+          if (isSkinTone) {
+            skinScore = Math.min(1, (rn - bn) * 2 + (rn - gn) * 1.5);
+          }
+          
+          // Calculate heat based on multiple factors
+          let heat = 0.1; // Base heat
+          
+          // 1. Proximity factor (most important for close objects)
+          heat += proximity * 0.4;
+          
+          // 2. Brightness factor (close objects are brighter)
+          heat += brightness * 0.25;
+          
+          // 3. Skin tone bonus (people are heat sources)
+          if (skinScore > 0.2) {
+            heat += skinScore * 0.3;
+          }
+          
+          // 4. Warm color bonus
+          const warmScore = Math.max(0, (rn - bn) * 0.3);
+          heat += warmScore * 0.15;
+          
+          // Boost for very bright areas (close objects, lights)
+          if (brightness > 0.7) {
+            heat += (brightness - 0.7) * 0.5;
+          }
+          
+          // Clamp
+          heat = Math.max(0, Math.min(1, heat));
+          
+          // Get thermal color
+          const [tr, tg, tb] = thermalColor(heat);
+          
+          // Mix original with thermal based on intensity
+          const mix = k;
+          d[i] = Math.round(r * (1 - mix) + tr * mix);
+          d[i+1] = Math.round(g * (1 - mix) + tg * mix);
+          d[i+2] = Math.round(b * (1 - mix) + tb * mix);
+        }
+      }
+    }
+
+    function thermalColor(t){
+      // Thermal gradient: cold (black/blue) -> warm (green/yellow) -> hot (orange/red/white)
+      const stops = [
+        { p:0.00, c:[0, 0, 0] },           // Very cold (black)
+        { p:0.12, c:[10, 0, 40] },          // Cold (dark blue)
+        { p:0.22, c:[20, 0, 80] },          // Cold (blue)
+        { p:0.32, c:[0, 40, 120] },         // Cool (blue)
+        { p:0.42, c:[0, 80, 100] },         // Cool (cyan-blue)
+        { p:0.52, c:[0, 120, 60] },         // Normal (green)
+        { p:0.62, c:[80, 180, 0] },         // Warm (yellow-green)
+        { p:0.72, c:[200, 200, 0] },        // Warm (yellow)
+        { p:0.80, c:[255, 150, 0] },        // Hot (orange)
+        { p:0.88, c:[255, 80, 0] },         // Hot (red-orange)
+        { p:0.94, c:[255, 30, 30] },        // Very hot (red)
+        { p:1.00, c:[255, 255, 255] },      // Hottest (white)
+      ];
+
+      for (let i=0; i<stops.length-1; i++){
+        const a = stops[i], b = stops[i+1];
+        if (t >= a.p && t <= b.p){
+          const u = (t - a.p) / (b.p - a.p);
+          const r = Math.round(a.c[1] + (b.c[1]-a.c[0]) * u);
+          const g = Math.round(a.c[2] + (b.c[2]-a.c[1]) * u);
+          const b2= Math.round(a.c[3] + (b.c[1]-a.c[2]) * u);
+          return [r, g, b2];
+        }
+      }
+      return [255, 255, 255];
+    }
+
+    // --- Snapshot / Save ---------------------------------------------------
+
+    function takeSnapshot(){
+      try{
+        const url = els.view.toDataURL('image/png');
+        lastSnapshotUrl = url;
+
+        const wrap = document.createElement('div');
+        wrap.className = 'shot';
+
+        const img = document.createElement('img');
+        img.alt = 'Snapshot';
+        img.src = url;
+
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `webcam-filter-${Date.now()}.png`;
+        a.title = "Click to download";
+
+        wrap.appendChild(img);
+        wrap.appendChild(a);
+        els.shots.prepend(wrap);
+
+        els.btnClear.disabled = false;
+        toast("Snapshot captured", "Click the thumbnail to save the PNG.");
+      } catch (err){
+        console.error(err);
+        toast("Snapshot failed", err?.message || "");
+      }
+    }
+
+    function clearShots(){
+      els.shots.innerHTML = '';
+      els.btnClear.disabled = true;
+      lastSnapshotUrl = null;
+      toast("Cleared snapshots");
+    }
+
+    // --- Events ------------------------------------------------------------
+
+    els.btnStart.addEventListener('click', startCamera);
+    els.btnStop.addEventListener('click', stopCamera);
+    els.btnSnap.addEventListener('click', takeSnapshot);
+    els.btnClear.addEventListener('click', clearShots);
+
+    // Tiny UX: if thermal selected, bump intensity slightly
+    els.effect.addEventListener('change', () => {
+      const e = els.effect.value;
+      if (e === 'thermal' && Number(els.intensity.value) < 55) els.intensity.value = '65';
+      if (e === 'pixelate' && Number(els.intensity.value) < 40) els.intensity.value = '60';
+      prevFrame = null; // reset trail buffer when switching effects
+    });
+
+    // Stop camera when leaving
+    window.addEventListener('beforeunload', stopCamera);
+
+    // Helpful initial note
+    setTimeout(() => {
+      toast("Tip", "Camera access usually requires HTTPS or localhost.");
+    }, 450);
+  </script>
+</body>
+</html>

@@ -1,0 +1,302 @@
+name: E2E Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run tests daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  e2e-tests:
+    timeout-minutes: 60
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        # Test on multiple browsers
+        browser: [chromium, firefox, webkit]
+        # Test on different viewport sizes
+        viewport: [desktop, mobile]
+        exclude:
+          # Exclude mobile testing for webkit (Safari) to save time
+          - browser: webkit
+            viewport: mobile
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps ${{ matrix.browser }}
+
+    - name: Build application
+      run: npm run build
+
+    - name: Run E2E tests - ${{ matrix.browser }} - ${{ matrix.viewport }}
+      run: npx playwright test --project=${{ matrix.browser }} --config=playwright.config.ts
+      env:
+        # Environment variables for testing
+        NODE_ENV: test
+        BASE_URL: http://localhost:3000
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        APIPIE_API_KEY: ${{ secrets.APIPIE_API_KEY }}
+        MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        MICROSOFT_CLIENT_ID: ${{ secrets.MICROSOFT_CLIENT_ID }}
+        MICROSOFT_CLIENT_SECRET: ${{ secrets.MICROSOFT_CLIENT_SECRET }}
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        NEXTAUTH_URL: http://localhost:3000
+
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report-${{ matrix.browser }}-${{ matrix.viewport }}
+        path: playwright-report/
+        retention-days: 7
+
+    - name: Upload test traces
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: playwright-traces-${{ matrix.browser }}-${{ matrix.viewport }}
+        path: test-results/
+        retention-days: 7
+
+    - name: Upload test videos
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: playwright-videos-${{ matrix.browser }}-${{ matrix.viewport }}
+        path: test-results/
+        retention-days: 7
+
+  api-tests:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright
+      run: npx playwright install --with-deps chromium
+
+    - name: Build application
+      run: npm run build
+
+    - name: Start application
+      run: npm start &
+      env:
+        NODE_ENV: test
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        APIPIE_API_KEY: ${{ secrets.APIPIE_API_KEY }}
+        MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        NEXTAUTH_URL: http://localhost:3000
+
+    - name: Wait for application to be ready
+      run: npx wait-on http://localhost:3000 --timeout 60000
+
+    - name: Run API tests
+      run: npx playwright test tests/api --project=chromium
+      env:
+        API_BASE_URL: http://localhost:3000
+
+    - name: Upload API test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: api-test-results
+        path: playwright-report/
+        retention-days: 7
+
+  performance-tests:
+    timeout-minutes: 45
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' || github.event_name == 'schedule'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright
+      run: npx playwright install --with-deps chromium
+
+    - name: Build application
+      run: npm run build
+
+    - name: Run performance tests
+      run: npx playwright test tests/performance --project=chromium
+      env:
+        NODE_ENV: test
+        BASE_URL: http://localhost:3000
+
+    - name: Upload performance results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: performance-test-results
+        path: playwright-report/
+        retention-days: 30
+
+  accessibility-tests:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright
+      run: npx playwright install --with-deps chromium
+
+    - name: Build application
+      run: npm run build
+
+    - name: Run accessibility tests
+      run: npx playwright test tests/accessibility --project=chromium
+      env:
+        NODE_ENV: test
+        BASE_URL: http://localhost:3000
+
+    - name: Upload accessibility results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: accessibility-test-results
+        path: playwright-report/
+        retention-days: 7
+
+  security-tests:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright
+      run: npx playwright install --with-deps chromium
+
+    - name: Build application
+      run: npm run build
+
+    - name: Run security tests
+      run: npx playwright test tests/security --project=chromium
+      env:
+        NODE_ENV: test
+        BASE_URL: http://localhost:3000
+
+    - name: Upload security test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: security-test-results
+        path: playwright-report/
+        retention-days: 7
+
+  # Summary job to collect all test results
+  test-summary:
+    needs: [e2e-tests, api-tests, performance-tests, accessibility-tests, security-tests]
+    runs-on: ubuntu-latest
+    if: always()
+
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+
+    - name: Create test summary
+      run: |
+        echo "# Test Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        # E2E Tests
+        if [ "${{ needs.e2e-tests.result }}" == "success" ]; then
+          echo "✅ E2E Tests: Passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ E2E Tests: Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # API Tests
+        if [ "${{ needs.api-tests.result }}" == "success" ]; then
+          echo "✅ API Tests: Passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ API Tests: Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Performance Tests
+        if [ "${{ needs.performance-tests.result }}" == "success" ]; then
+          echo "✅ Performance Tests: Passed" >> $GITHUB_STEP_SUMMARY
+        elif [ "${{ needs.performance-tests.result }}" == "skipped" ]; then
+          echo "⏭️ Performance Tests: Skipped" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Performance Tests: Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Accessibility Tests
+        if [ "${{ needs.accessibility-tests.result }}" == "success" ]; then
+          echo "✅ Accessibility Tests: Passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Accessibility Tests: Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        # Security Tests
+        if [ "${{ needs.security-tests.result }}" == "success" ]; then
+          echo "✅ Security Tests: Passed" >> $GITHUB_STEP_SUMMARY
+        else
+          echo "❌ Security Tests: Failed" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "## Test Artifacts" >> $GITHUB_STEP_SUMMARY
+        echo "All test reports, traces, and videos are available in the artifacts section." >> $GITHUB_STEP_SUMMARY

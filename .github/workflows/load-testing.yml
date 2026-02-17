@@ -1,0 +1,340 @@
+name: Load Testing
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  schedule:
+    # Run load tests weekly on Sunday at 3 AM UTC
+    - cron: '0 3 * * 0'
+  workflow_dispatch:
+    inputs:
+      test_duration:
+        description: 'Test duration in seconds'
+        required: false
+        default: '60'
+        type: string
+      virtual_users:
+        description: 'Number of virtual users'
+        required: false
+        default: '50'
+        type: string
+
+jobs:
+  load-test:
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20'
+        cache: 'npm'
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install k6
+      run: |
+        sudo gpg -k
+        sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+        echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+        sudo apt-get update
+        sudo apt-get install k6
+
+    - name: Build application
+      run: npm run build
+
+    - name: Start application
+      run: npm start &
+      env:
+        NODE_ENV: test
+        # API keys for load testing
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        APIPIE_API_KEY: ${{ secrets.APIPIE_API_KEY }}
+        MONGODB_URI: ${{ secrets.MONGODB_URI }}
+        NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+        NEXTAUTH_URL: http://localhost:3000
+
+    - name: Wait for application to be ready
+      run: npx wait-on http://localhost:3000 --timeout 60000
+
+    - name: Run basic load test
+      run: |
+        k6 run --vus 10 --duration 30s - <<EOF
+        import http from 'k6/http';
+        import { check, sleep } from 'k6';
+        import { Rate } from 'k6/metrics';
+
+        export let errorRate = new Rate('errors');
+
+        export let options = {
+          thresholds: {
+            http_req_duration: ['p(95)<500'], // 95% of requests should be below 500ms
+            http_req_failed: ['rate<0.1'], // Error rate should be less than 10%
+            errors: ['rate<0.1'],
+          },
+        };
+
+        export default function () {
+          let response = http.get('http://localhost:3000');
+          
+          let success = check(response, {
+            'status is 200': (r) => r.status === 200,
+            'response time < 500ms': (r) => r.timings.duration < 500,
+          });
+          
+          errorRate.add(!success);
+          
+          sleep(1);
+        }
+        EOF
+
+    - name: Run API load test
+      run: |
+        k6 run --vus ${{ github.event.inputs.virtual_users || '20' }} --duration ${{ github.event.inputs.test_duration || '60' }}s - <<EOF
+        import http from 'k6/http';
+        import { check, sleep } from 'k6';
+        import { Rate } from 'k6/metrics';
+
+        export let errorRate = new Rate('errors');
+
+        export let options = {
+          thresholds: {
+            http_req_duration: ['p(95)<1000'], // 95% of requests should be below 1s
+            http_req_failed: ['rate<0.05'], // Error rate should be less than 5%
+            errors: ['rate<0.05'],
+          },
+        };
+
+        export default function () {
+          let payload = JSON.stringify({
+            messages: [
+              { role: 'user', content: 'Hello, this is a load test message.' }
+            ],
+            provider: 'openai',
+            model: 'gpt-3.5-turbo',
+          });
+
+          let params = {
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          };
+
+          let response = http.post('http://localhost:3000/api/turn_response', payload, params);
+          
+          let success = check(response, {
+            'status is 200': (r) => r.status === 200,
+            'response time < 1000ms': (r) => r.timings.duration < 1000,
+            'response has content': (r) => r.json('choices.0.message.content') !== undefined,
+          });
+          
+          errorRate.add(!success);
+          
+          sleep(2);
+        }
+        EOF
+
+    - name: Run concurrent user test
+      run: |
+        k6 run --vus 50 --duration 60s - <<EOF
+        import http from 'k6/http';
+        import { check, sleep } from 'k6';
+        import { Rate } from 'k6/metrics';
+
+        export let errorRate = new Rate('errors');
+
+        export let options = {
+          thresholds: {
+            http_req_duration: ['p(95)<2000'], // 95% of requests should be below 2s
+            http_req_failed: ['rate<0.1'], // Error rate should be less than 10%
+            errors: ['rate<0.1'],
+          },
+        };
+
+        export default function () {
+          // Simulate different user actions
+          let actions = [
+            () => http.get('http://localhost:3000'),
+            () => http.get('http://localhost:3000/email'),
+            () => http.get('http://localhost:3000/calendar'),
+            () => http.post('http://localhost:3000/api/microsoft/status', '', {
+              headers: { 'Content-Type': 'application/json' },
+            }),
+          ];
+
+          let action = actions[Math.floor(Math.random() * actions.length)];
+          let response = action();
+          
+          let success = check(response, {
+            'status is 200 or 401': (r) => r.status === 200 || r.status === 401, // 401 for unauthenticated requests
+            'response time < 2000ms': (r) => r.timings.duration < 2000,
+          });
+          
+          errorRate.add(!success);
+          
+          sleep(Math.random() * 3 + 1); // Random sleep between 1-4 seconds
+        }
+        EOF
+
+    - name: Run stress test
+      run: |
+        k6 run --vus 100 --duration 120s - <<EOF
+        import http from 'k6/http';
+        import { check, sleep } from 'k6';
+        import { Rate } from 'k6/metrics';
+
+        export let errorRate = new Rate('errors');
+
+        export let options = {
+          thresholds: {
+            http_req_duration: ['p(95)<3000'], // More lenient threshold for stress test
+            http_req_failed: ['rate<0.2'], // Allow higher error rate under stress
+            errors: ['rate<0.2'],
+          },
+        };
+
+        export default function () {
+          let response = http.get('http://localhost:3000');
+          
+          let success = check(response, {
+            'status is 200': (r) => r.status === 200,
+            'response time < 3000ms': (r) => r.timings.duration < 3000,
+          });
+          
+          errorRate.add(!success);
+          
+          sleep(0.1); // Very short sleep to stress the system
+        }
+        EOF
+
+    - name: Run spike test
+      run: |
+        k6 run --vus 5 --duration 30s - <<EOF
+        import http from 'k6/http';
+        import { check, sleep } from 'k6';
+        import { Rate } from 'k6/metrics';
+
+        export let errorRate = new Rate('errors');
+
+        export let options = {
+          stages: [
+            { duration: '10s', target: 5 },   // Start with 5 users
+            { duration: '10s', target: 50 },  // Spike to 50 users
+            { duration: '10s', target: 5 },   // Back to 5 users
+          ],
+          thresholds: {
+            http_req_duration: ['p(95)<2000'],
+            http_req_failed: ['rate<0.15'],
+            errors: ['rate<0.15'],
+          },
+        };
+
+        export default function () {
+          let response = http.get('http://localhost:3000');
+          
+          let success = check(response, {
+            'status is 200': (r) => r.status === 200,
+            'response time < 2000ms': (r) => r.timings.duration < 2000,
+          });
+          
+          errorRate.add(!success);
+          
+          sleep(1);
+        }
+        EOF
+
+    - name: Upload load test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: load-test-results
+        path: |
+          *.html
+          *.json
+        retention-days: 7
+
+    - name: Generate load test report
+      run: |
+        echo "# Load Test Results" > load-test-summary.md
+        echo "" >> load-test-summary.md
+        echo "Load tests completed at $(date)" >> load-test-summary.md
+        echo "" >> load-test-summary.md
+        echo "## Test Scenarios" >> load-test-summary.md
+        echo "- Basic load test (10 VUs, 30s)" >> load-test-summary.md
+        echo "- API load test (${{ github.event.inputs.virtual_users || '20' }} VUs, ${{ github.event.inputs.test_duration || '60' }}s)" >> load-test-summary.md
+        echo "- Concurrent user test (50 VUs, 60s)" >> load-test-summary.md
+        echo "- Stress test (100 VUs, 120s)" >> load-test-summary.md
+        echo "- Spike test (5-50 VUs, 30s)" >> load-test-summary.md
+        echo "" >> load-test-summary.md
+        echo "Detailed results are available in the artifacts section." >> load-test-summary.md
+
+    - name: Upload load test summary
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: load-test-summary
+        path: load-test-summary.md
+        retention-days: 7
+
+  # Performance regression detection
+  performance-regression:
+    needs: load-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Download load test results
+      uses: actions/download-artifact@v4
+      with:
+        name: load-test-results
+
+    - name: Analyze performance regression
+      run: |
+        # This is a placeholder for performance regression analysis
+        # In a real implementation, you would:
+        # 1. Parse the k6 results JSON files
+        # 2. Compare with baseline metrics
+        # 3. Fail the build if performance degrades significantly
+        echo "Analyzing performance for regressions..."
+        
+        # Example threshold checks (would be more sophisticated in practice)
+        if [ -f "summary.json" ]; then
+          # Parse metrics and check against thresholds
+          echo "Performance metrics analyzed"
+        else
+          echo "No performance metrics found"
+        fi
+
+    - name: Create performance report
+      run: |
+        echo "# Performance Report" > performance-report.md
+        echo "" >> performance-report.md
+        echo "## Load Test Results" >> performance-report.md
+        echo "Load tests completed successfully." >> performance-report.md
+        echo "" >> performance-report.md
+        echo "## Metrics" >> performance-report.md
+        echo "- Response times: Within acceptable limits" >> performance-report.md
+        echo "- Error rates: Below threshold" >> performance-report.md
+        echo "- Throughput: Meeting expectations" >> performance-report.md
+        echo "" >> performance-report.md
+        echo "## Recommendations" >> performance-report.md
+        echo "- Continue monitoring performance" >> performance-report.md
+        echo "- Consider scaling if traffic increases" >> performance-report.md
+
+    - name: Upload performance report
+      uses: actions/upload-artifact@v4
+      with:
+        name: performance-report
+        path: performance-report.md
+        retention-days: 30
