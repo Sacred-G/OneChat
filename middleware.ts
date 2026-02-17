@@ -5,13 +5,14 @@ import type { NextRequest } from "next/server";
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Allow auth routes, API routes, static files, and public assets
+  // Allow auth routes, API routes, static files, public assets, and Sentry example page
   if (
     pathname.startsWith("/auth") ||
     pathname.startsWith("/api/") ||
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
-    pathname === "/openai_logo.svg"
+    pathname === "/openai_logo.svg" ||
+    pathname.startsWith("/sentry-example")
   ) {
     return NextResponse.next();
   }

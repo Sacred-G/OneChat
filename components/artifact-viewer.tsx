@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
-import { BookmarkPlus, X, Code2, Eye, Download, Maximize2, Minimize2, FileText } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
+import { BookmarkPlus, X, Code2, Eye, Download, Maximize2, Minimize2, FileText, Loader2 } from "lucide-react";
 import useThemeStore from "@/stores/useThemeStore";
 import useArtifactStore from "@/stores/useArtifactStore";
 import type { AnyArtifact, FileArtifact } from "@/stores/useArtifactStore";
@@ -11,17 +11,20 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
 import ReactMarkdown from "react-markdown";
 import { renderAsync } from "docx-preview";
-import {
-  SandpackFileExplorer,
-  SandpackLayout,
-  SandpackPreview,
-  SandpackProvider,
-  SandpackStack,
-  FileTabs,
-  useActiveCode,
-  useSandpack,
-} from "@codesandbox/sandpack-react";
-import Editor from "@monaco-editor/react";
+
+// Lazy load heavy Sandpack components
+const SandpackFileExplorer = lazy(() => import("@codesandbox/sandpack-react").then(mod => ({ default: mod.SandpackFileExplorer })));
+const SandpackLayout = lazy(() => import("@codesandbox/sandpack-react").then(mod => ({ default: mod.SandpackLayout })));
+const SandpackPreview = lazy(() => import("@codesandbox/sandpack-react").then(mod => ({ default: mod.SandpackPreview })));
+const SandpackProvider = lazy(() => import("@codesandbox/sandpack-react").then(mod => ({ default: mod.SandpackProvider })));
+const SandpackStack = lazy(() => import("@codesandbox/sandpack-react").then(mod => ({ default: mod.SandpackStack })));
+const FileTabs = lazy(() => import("@codesandbox/sandpack-react").then(mod => ({ default: mod.FileTabs })));
+
+// Lazy load Monaco Editor
+const Editor = lazy(() => import("@monaco-editor/react"));
+
+// Import hooks normally (they can't be lazy loaded)
+import { useActiveCode, useSandpack } from "@codesandbox/sandpack-react";
 
 type TsAppSpec = {
   files: Record<string, string>;

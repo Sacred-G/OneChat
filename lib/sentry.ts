@@ -55,11 +55,12 @@ import { Replay } from '@sentry/replay';
 
 // Sentry configuration for OneChat
 export const initSentry = () => {
-  const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
+  const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN;
   const SENTRY_ENVIRONMENT = process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || 'development';
   
   if (!SENTRY_DSN) {
     console.warn('Sentry DSN not found. Error monitoring disabled.');
+    console.warn('Please set NEXT_PUBLIC_SENTRY_DSN or SENTRY_DSN in your environment variables.');
     return;
   }
 
