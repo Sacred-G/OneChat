@@ -6,7 +6,8 @@
     "node": ">=20 <23"
   },
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --turbopack",
+    "dev:webpack": "next dev",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -58,7 +59,6 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@reach/visually-hidden": "^0.18.0",
     "@sentry/nextjs": "^10.39.0",
-    "@sentry/replay": "^7.116.0",
     "@supabase/supabase-js": "^2.90.1",
     "@tailwindcss/typography": "^0.5.19",
     "@xyflow/react": "^12.3.0",
@@ -74,6 +74,7 @@
     "next": "^15.5.9",
     "next-auth": "^4.24.13",
     "node-pty": "^1.1.0",
+    "nodemailer": "^7.0.13",
     "openai": "^4.87.3",
     "openid-client": "^6.6.4",
     "partial-json": "^0.1.7",

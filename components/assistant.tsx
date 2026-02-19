@@ -68,9 +68,9 @@ export default function Assistant({
   };
 
   // Extract memories from the current conversation and save them
-  const extractAndSaveMemories = async () => {
+  const _extractAndSaveMemories = async () => {
     try {
-      const { chatMessages, conversationItems, activeConversationId } =
+      const { chatMessages, conversationItems: _conversationItems, activeConversationId } =
         useConversationStore.getState();
 
       // Only extract if there are meaningful messages (at least 1 user + 1 assistant)

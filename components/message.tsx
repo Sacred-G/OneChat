@@ -30,6 +30,12 @@ const Message: React.FC<MessageProps> = ({ message }) => {
     .replace(/\n{3,}/g, "\n\n")
     .trim();
 
+  // Cache extractArtifacts result — expensive regex parsing, avoid running twice per render
+  const { artifacts: parsedArtifacts, cleanedContent } = React.useMemo(
+    () => extractArtifacts(messageText),
+    [messageText]
+  );
+
   useEffect(() => {
     const text = message.content
       .map((c: any) => (c && typeof c.text === "string" ? c.text : ""))
@@ -41,14 +47,13 @@ const Message: React.FC<MessageProps> = ({ message }) => {
     if (message.role === "assistant" && text && messageKey !== processedMessageRef.current) {
       processedMessageRef.current = messageKey;
       
-      const { artifacts } = extractArtifacts(text);
-      if (artifacts.length > 0) {
-        setMessageArtifacts(artifacts);
+      if (parsedArtifacts.length > 0) {
+        setMessageArtifacts(parsedArtifacts);
         const { currentArtifact } = useArtifactStore.getState();
         // Don't auto-switch to a plain code artifact if a URL artifact
         // (e.g. a running Streamlit app) is currently displayed.
         const isUrlArtifactActive = currentArtifact?.type === "url";
-        artifacts.forEach((artifact, idx) => {
+        parsedArtifacts.forEach((artifact, idx) => {
           // Use upsertArtifact so updated versions (same stable ID) replace existing ones
           upsertArtifact(artifact);
           // Auto-show the first artifact from the latest message,
@@ -59,10 +64,9 @@ const Message: React.FC<MessageProps> = ({ message }) => {
         });
       }
     }
-  }, [message.content, message.role, setCurrentArtifact, upsertArtifact]);
+  }, [message.content, message.role, parsedArtifacts, setCurrentArtifact, upsertArtifact]);
 
   const renderContent = () => {
-    const { cleanedContent } = extractArtifacts(messageText);
     
     return (
       <ReactMarkdown
@@ -342,4 +346,17 @@ const Message: React.FC<MessageProps> = ({ message }) => {
   );
 };
 
-export default Message;
+export default React.memo(Message, (prev, next) => {
+  // Only re-render if the message content actually changed
+  if (prev.message === next.message) return true;
+  if (prev.message.role !== next.message.role) return false;
+  if (prev.message.content.length !== next.message.content.length) return false;
+  for (let i = 0; i < prev.message.content.length; i++) {
+    const a = prev.message.content[i];
+    const b = next.message.content[i];
+    if (a.text !== b.text) return false;
+    if (a.type !== b.type) return false;
+    if (a.image !== b.image) return false;
+  }
+  return true;
+});

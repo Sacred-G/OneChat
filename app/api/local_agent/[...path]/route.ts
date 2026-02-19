@@ -34,7 +34,7 @@ async function proxy(request: Request, ctx: { params: Promise<{ path: string[] }
       if (!healthCheck.ok) {
         throw new Error("Local agent not healthy");
       }
-    } catch (e) {
+    } catch (_e) {
       return json(503, { 
         ok: false, 
         error: "Local agent server not running",

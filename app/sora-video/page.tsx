@@ -5,13 +5,10 @@ import { useEffect, useMemo, useState } from "react";
 import { 
   Download, 
   Loader2, 
-  Play, 
   Trash2, 
   RefreshCw,
   Video,
   Sparkles,
-  Settings,
-  Clock,
   CheckCircle,
   AlertCircle,
   Film,
@@ -61,7 +58,7 @@ const EXAMPLE_PROMPTS = [
 ];
 
 export default function SoraVideoPage() {
-  const { theme } = useThemeStore();
+  const { theme: _theme } = useThemeStore();
   const [prompt, setPrompt] = useState("");
   const [size, setSize] = useState<"720x1280" | "1280x720" | "1024x1792" | "1792x1024">("1280x720");
   const [model, setModel] = useState<"sora-2" | "sora-2-pro">("sora-2");
@@ -74,7 +71,7 @@ export default function SoraVideoPage() {
   const [videos, setVideos] = useState<VideoItem[]>([]);
   const [loadingVideos, setLoadingVideos] = useState(false);
   const [pollingIds, setPollingIds] = useState<Set<string>>(new Set());
-  const [failedVideos, setFailedVideos] = useState<Set<string>>(new Set());
+  const [_failedVideos, setFailedVideos] = useState<Set<string>>(new Set());
 
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
 
@@ -264,7 +261,7 @@ export default function SoraVideoPage() {
                 Sora Video Studio
               </h1>
               <p className={`${textDim} text-lg`}>
-                OpenAI's advanced video generation with cinematic quality
+                OpenAI&apos;s advanced video generation with cinematic quality
               </p>
             </div>
           </div>

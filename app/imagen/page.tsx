@@ -8,18 +8,13 @@ import {
   Camera, 
   Wand2, 
   Download,
-  Settings,
-  Image as ImageIcon,
-  RefreshCw,
   CheckCircle,
   AlertCircle,
   Upload,
   Sparkles,
-  Zap
 } from "lucide-react";
 
 import useThemeStore from "@/stores/useThemeStore";
-import PromptEnhancer from "@/components/prompt-enhancer";
 
 type AspectRatio = "1:1" | "3:4" | "4:3" | "9:16" | "16:9";
 type PersonGeneration = "dont_allow" | "allow_adult" | "allow_all";
@@ -130,7 +125,7 @@ export default function ImagenPage() {
     ].filter((p) => typeof p === "string" && p.trim().length > 0);
 
     return parts.join(", ");
-  }, [basePrompt, cameraProximity, cameraPosition, lighting, cameraSettings, lensType, filmType, artStyle, customModifiers]);
+  }, [basePrompt, cameraProximity, cameraPosition, lighting, cameraSettings, lensType, filmType, artStyle, customModifiers, mode]);
 
   const canSubmit = useMemo(() => {
     if (submitting) return false;
@@ -244,7 +239,7 @@ export default function ImagenPage() {
                 Imagen Studio
               </h1>
               <p className={`${textDim} text-lg`}>
-                Google's advanced image generation with creative controls
+                Google&apos;s advanced image generation with creative controls
               </p>
             </div>
           </div>

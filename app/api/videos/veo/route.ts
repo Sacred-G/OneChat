@@ -31,7 +31,7 @@ function parseDataUrl(dataUrl: string): { mimeType: string; base64: string } {
   return { mimeType, base64 };
 }
 
-function extFromMime(mimeType: string) {
+function _extFromMime(mimeType: string) {
   const m = mimeType.toLowerCase();
   if (m === "video/mp4") return "mp4";
   if (m === "video/webm") return "webm";

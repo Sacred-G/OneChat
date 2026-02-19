@@ -1,154 +1,19 @@
-// Placeholder for Sentry integration
-// Install with: npm install @sentry/nextjs @sentry/tracing
+// Sentry utility functions for OneChat
+// NOTE: Sentry.init() is handled by:
+//   - instrumentation-client.ts (browser)
+//   - sentry.server.config.ts (Node.js server)
+//   - sentry.edge.config.ts (edge runtime)
+// Do NOT call Sentry.init() here to avoid duplicate initialization.
 
-interface SentryEvent {
-  exception?: {
-    values?: Array<{
-      stacktrace?: {
-        frames?: Array<{
-          filename?: string;
-        }>;
-      };
-    }>;
-  };
-  tags?: Record<string, string>;
-  contexts?: Record<string, any>;
-  request?: {
-    headers?: Record<string, string>;
-  };
-  user?: {
-    id?: string;
-    email?: string;
-    username?: string;
-  };
-}
-
-interface SentryHint {
-  originalException?: Error;
-}
-
-interface SentryScope {
-  setContext: (key: string, context: any) => void;
-  setTag: (key: string, value: string) => void;
-  setUser: (user: any) => void;
-  setTransactionName: (name: string) => void;
-}
-
-interface SentryTransaction {
-  finish: () => void;
-  setTag: (key: string, value: string) => void;
-  setData: (key: string, value: any) => void;
-}
-
-interface SentryUserFeedback {
-  email?: string;
-  name?: string;
-  comments: string;
-  associatedEventId?: string;
-}
+import * as Sentry from '@sentry/nextjs';
 
 type SeverityLevel = 'fatal' | 'error' | 'warning' | 'log' | 'info' | 'debug';
 
-// Real Sentry implementation
-import * as Sentry from '@sentry/nextjs';
-import { Replay } from '@sentry/replay';
-
-// Sentry configuration for OneChat
-export const initSentry = () => {
-  const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN || process.env.SENTRY_DSN;
-  const SENTRY_ENVIRONMENT = process.env.NEXT_PUBLIC_SENTRY_ENVIRONMENT || 'development';
-  
-  if (!SENTRY_DSN) {
-    console.warn('Sentry DSN not found. Error monitoring disabled.');
-    console.warn('Please set NEXT_PUBLIC_SENTRY_DSN or SENTRY_DSN in your environment variables.');
-    return;
-  }
-
-  Sentry.init({
-    dsn: SENTRY_DSN,
-    environment: SENTRY_ENVIRONMENT,
-    
-    // Set tracesSampleRate to 1.0 to capture 100%
-    // of transactions for performance monitoring.
-    // We recommend adjusting this value in production
-    tracesSampleRate: SENTRY_ENVIRONMENT === 'production' ? 0.1 : 1.0,
-    
-    // Capture Replay for 10% of all sessions,
-    // plus for 100% of sessions with an error
-    replaysSessionSampleRate: 0.1,
-    replaysOnErrorSampleRate: 1.0,
-    
-    // Performance monitoring - BrowserTracing is included by default in v8
-    integrations: [
-      new Replay({
-        // Additional SDK configuration goes in here, for example:
-        maskAllText: true,
-        blockAllMedia: true,
-      }),
-    ],
-    
-    // Before sending events, add custom context
-    beforeSend: (event: any, hint: any) => {
-      // Add user context if available
-      const userContext = getUserContext();
-      if (userContext) {
-        event.user = { ...event.user, ...userContext };
-      }
-      
-      // Filter out sensitive information
-      if (event.exception) {
-        event.exception.values?.forEach((exception: any) => {
-          if (exception.stacktrace) {
-            exception.stacktrace.frames?.forEach((frame: any) => {
-              // Remove sensitive data from stack traces
-              if (frame.filename && frame.filename.includes('api-key')) {
-                frame.filename = '[FILTERED]';
-              }
-            });
-          }
-        });
-      }
-      
-      // Add custom tags for better filtering
-      event.tags = {
-        ...event.tags,
-        component: 'onechat',
-        version: process.env.NEXT_PUBLIC_APP_VERSION || 'unknown',
-      };
-      
-      return event;
-    },
-    
-    // Custom context and breadcrumbs
-    attachStacktrace: true,
-    debug: SENTRY_ENVIRONMENT !== 'production',
-    
-    // Ignore specific errors that are not actionable
-    ignoreErrors: [
-      // Random browser extensions
-      'Non-Error promise rejection captured',
-      // Network errors that are expected
-      'Network request failed',
-      'Request aborted',
-      // ResizeObserver loop limit exceeded
-      'ResizeObserver loop limit exceeded',
-    ],
-    
-    // Deny URLs that should not be sent to Sentry
-    denyUrls: [
-      // Chrome extensions
-      /extensions\//i,
-      // Local files
-      /^file:\/\//i,
-      // Third-party scripts
-      /analytics\.com/i,
-      /googletagmanager\.com/i,
-    ],
-  });
-};
+// No-op kept for backward compatibility if anything still imports it
+export const initSentry = () => {};
 
 // Get user context from local storage or session
-const getUserContext = () => {
+export const getUserContext = () => {
   if (typeof window === 'undefined') return null;
   
   try {
@@ -170,7 +35,7 @@ const getUserContext = () => {
 
 // Custom error reporting functions
 export const reportError = (error: Error, context?: Record<string, any>) => {
-  Sentry.withScope((scope: SentryScope) => {
+  Sentry.withScope((scope) => {
     if (context) {
       Object.keys(context).forEach(key => {
         scope.setContext(key, context[key]);
@@ -184,12 +49,6 @@ export const reportError = (error: Error, context?: Record<string, any>) => {
 
 export const reportMessage = (message: string, level: SeverityLevel = 'info') => {
   Sentry.captureMessage(message, level);
-};
-
-// Performance monitoring - startTransaction is deprecated in v8
-export const startTransaction = (name: string, op: string = 'navigation') => {
-  console.warn('startTransaction is deprecated in Sentry v8. Use manual spans instead.');
-  return null as any;
 };
 
 export const setTransactionName = (name: string) => {
@@ -241,16 +100,6 @@ export const setFeatureFlag = (flag: string, value: boolean) => {
   Sentry.setContext('features', { [flag]: value });
 };
 
-// Release health - setRelease is deprecated in v8, use init() parameter instead
-export const setRelease = (release: string) => {
-  // Note: In v8, release should be set during init()
-  console.warn('setRelease is deprecated in Sentry v8. Set release during init() instead.');
-};
-
-export const setEnvironment = (environment: string) => {
-  // Note: In v8, environment should be set during init()
-  console.warn('setEnvironment is deprecated in Sentry v8. Set environment during init() instead.');
-};
 
 // Error boundaries helper
 export const handleReactError = (error: Error, errorInfo: any) => {

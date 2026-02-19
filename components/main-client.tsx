@@ -643,7 +643,7 @@ export default function MainClient() {
   };
 
 return (
-  <div className="flex min-h-[100dvh] w-full overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+  <div className="flex h-[100dvh] w-full overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
     <div
       onMouseLeave={() => setSidebarCollapsed(true)}
       className={`hidden shrink-0 md:flex md:flex-col transition-[width] duration-200 ${
@@ -700,11 +700,11 @@ return (
 
     <div ref={splitContainerRef} className="flex-1 flex min-h-0 bg-background">
       <div
-        className="flex flex-col min-h-0 transition-all bg-background"
+        className="flex flex-col min-h-0 overflow-hidden transition-all bg-background"
         style={{ flex: currentArtifact ? splitRatio : 1, minWidth: 0 }}
       >
         <div
-          className={`sticky top-0 z-30 flex flex-wrap items-center justify-between gap-2 px-4 py-4 border-b backdrop-blur-sm ${
+          className={`shrink-0 z-30 flex flex-wrap items-center justify-between gap-2 px-4 py-4 border-b ${
             theme === "dark" 
               ? "border-white/10 bg-[#0a0a0a]/80" 
               : "border-black/10 bg-white/80"

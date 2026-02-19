@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 
-import React, { useEffect, useMemo, useRef, useState, lazy, Suspense } from "react";
-import { BookmarkPlus, X, Code2, Eye, Download, Maximize2, Minimize2, FileText, Loader2 } from "lucide-react";
+import React, { useEffect, useMemo, useRef, useState, lazy } from "react";
+import { BookmarkPlus, X, Code2, Eye, Download, Maximize2, Minimize2, FileText } from "lucide-react";
 import useThemeStore from "@/stores/useThemeStore";
 import useArtifactStore from "@/stores/useArtifactStore";
 import type { AnyArtifact, FileArtifact } from "@/stores/useArtifactStore";

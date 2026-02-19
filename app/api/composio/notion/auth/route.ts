@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getOAuthUrl, handleOAuthCallback, setApiKeyConnector } from '@/lib/composio/client';
+import { getOAuthUrl, setApiKeyConnector } from '@/lib/composio/client';
 import { SupportedConnector, ApiKeyConnector } from '@/lib/composio/config';
 
 export async function GET(request: NextRequest) {

@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { MessageSquare, Plus, Trash2 } from "lucide-react";
 import useConversationStore from "@/stores/useConversationStore";
 import useThemeStore from "@/stores/useThemeStore";
@@ -32,40 +32,55 @@ export default function ConversationHistory({ onNewConversation }: ConversationH
     setIsClient(true);
   }, []);
 
+  const loadListRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevMsgCountRef = useRef(chatMessages.length);
+
+  const loadConversations = useCallback(async () => {
+    setIsLoadingList(true);
+    try {
+      const wsParam = activeWorkspaceId ? `&workspaceId=${encodeURIComponent(activeWorkspaceId)}` : "";
+      const res = await fetch(`/api/conversation?list=1${wsParam}`);
+      if (!res.ok) return;
+      const data = await res.json().catch(() => null);
+      const list = Array.isArray(data?.conversations) ? data.conversations : [];
+      setConversations(
+        list
+          .filter((c: any) => typeof c?.id === "string")
+          .map((c: any) => ({
+            id: c.id,
+            title: typeof c?.title === "string" ? c.title : null,
+            updatedAt: c.updatedAt,
+            createdAt: c.createdAt,
+          }))
+      );
+    } catch {
+      // ignore failures
+    } finally {
+      setIsLoadingList(false);
+    }
+  }, [activeWorkspaceId]);
+
+  // Load on mount and workspace change
   useEffect(() => {
     if (!isClient) return;
-    let cancelled = false;
-    const loadList = async () => {
-      setIsLoadingList(true);
-      try {
-        const wsParam = activeWorkspaceId ? `&workspaceId=${encodeURIComponent(activeWorkspaceId)}` : "";
-        const res = await fetch(`/api/conversation?list=1${wsParam}`);
-        if (!res.ok) return;
-        const data = await res.json().catch(() => null);
-        const list = Array.isArray(data?.conversations) ? data.conversations : [];
-        if (!cancelled) {
-          setConversations(
-            list
-              .filter((c: any) => typeof c?.id === "string")
-              .map((c: any) => ({
-                id: c.id,
-                title: typeof c?.title === "string" ? c.title : null,
-                updatedAt: c.updatedAt,
-                createdAt: c.createdAt,
-              }))
-          );
-        }
-      } catch {
-        // ignore failures
-      } finally {
-        if (!cancelled) setIsLoadingList(false);
-      }
-    };
-    loadList();
+    loadConversations();
+  }, [isClient, activeWorkspaceId, loadConversations]);
+
+  // Debounced reload when message count changes (avoids hammering during streaming)
+  useEffect(() => {
+    if (!isClient) return;
+    const prev = prevMsgCountRef.current;
+    prevMsgCountRef.current = chatMessages.length;
+    // Only trigger on actual count changes, not initial render
+    if (chatMessages.length === prev) return;
+    if (loadListRef.current) clearTimeout(loadListRef.current);
+    loadListRef.current = setTimeout(() => {
+      loadConversations();
+    }, 2000);
     return () => {
-      cancelled = true;
+      if (loadListRef.current) clearTimeout(loadListRef.current);
     };
-  }, [isClient, chatMessages.length, activeWorkspaceId]);
+  }, [isClient, chatMessages.length, loadConversations]);
 
   const handleClearHistory = async () => {
     if (confirm("Are you sure you want to clear all conversation history?")) {

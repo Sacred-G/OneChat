@@ -3,7 +3,7 @@
 
 import { NextApiRequest, NextApiResponse } from 'next';
 
-interface SentryEvent {
+interface _SentryEvent {
   contexts?: Record<string, any>;
   request?: {
     headers?: Record<string, string>;
@@ -15,7 +15,7 @@ interface SentryEvent {
   tags?: Record<string, string>;
 }
 
-interface SentryHint {
+interface _SentryHint {
   originalException?: Error;
 }
 
@@ -31,12 +31,12 @@ interface SentryTransaction {
   setData: (key: string, value: any) => void;
 }
 
-type SeverityLevel = 'fatal' | 'error' | 'warning' | 'log' | 'info' | 'debug';
+type _SeverityLevel = 'fatal' | 'error' | 'warning' | 'log' | 'info' | 'debug';
 
 // Real Sentry implementation
 import * as Sentry from '@sentry/node';
 
-const SentryInstance = Sentry;
+const _SentryInstance = Sentry;
 
 // Server-side Sentry configuration
 export const initServerSentry = () => {
@@ -56,10 +56,10 @@ export const initServerSentry = () => {
     tracesSampleRate: SENTRY_ENVIRONMENT === 'production' ? 0.1 : 1.0,
     
     // Server-side specific settings
-    autoSessionTracking: true,
+    // autoSessionTracking is not available in Node.js environment
     
     // Before sending events, add server context
-    beforeSend: (event: any, hint: any) => {
+    beforeSend: (event: any, _hint: any) => {
       // Add server context
       event.contexts = {
         ...event.contexts,
@@ -73,7 +73,7 @@ export const initServerSentry = () => {
       // Filter sensitive information
       if (event.request?.headers) {
         // Remove sensitive headers
-        const { authorization, cookie, ...safeHeaders } = event.request.headers;
+        const { authorization: _authorization, cookie: _cookie, ...safeHeaders } = event.request.headers;
         event.request.headers = safeHeaders;
       }
       
@@ -265,7 +265,7 @@ export const reportApiError = (error: Error, endpoint: string, method: string, s
 };
 
 // Performance monitoring for API calls - startTransaction is deprecated in v8
-export const startApiTransaction = (operation: string, endpoint: string) => {
+export const startApiTransaction = (_operation: string, _endpoint: string) => {
   console.warn('startApiTransaction is deprecated in Sentry v8. Use manual spans instead.');
   return {
     finish: () => {},

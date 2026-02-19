@@ -138,7 +138,7 @@ export async function getComposioMetaTools(
 }
 
 // Legacy export for backward compatibility (returns empty now)
-export function getComposioConnectorTools(connectedAccounts: any[], requireApproval: "always" | "never" = "never"): any[] {
+export function getComposioConnectorTools(connectedAccounts: any[], _requireApproval: "always" | "never" = "never"): any[] {
   console.warn('[Composio] getComposioConnectorTools is deprecated, use getComposioMetaTools instead');
   return [];
 }

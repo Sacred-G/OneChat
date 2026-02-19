@@ -1,6 +1,11 @@
 import * as Sentry from "@sentry/nextjs";
 
 export async function register() {
+  // Skip Sentry instrumentation in dev — it pulls in Prisma/OpenTelemetry and slows compilation
+  if (process.env.NODE_ENV === "development") {
+    return;
+  }
+
   if (process.env.NEXT_RUNTIME === "nodejs") {
     await import("./sentry.server.config");
   }

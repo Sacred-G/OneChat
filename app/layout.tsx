@@ -4,11 +4,6 @@ import "xterm/css/xterm.css";
 import "./globals.css";
 import SandpackStyleInjector from "@/components/sandpack-style-injector";
 import SessionProvider from "@/components/session-provider";
-import { initSentry } from "@/lib/sentry";
-import SentryErrorBoundary from "@/components/sentry-error-boundary";
-
-// Initialize Sentry for error monitoring
-initSentry();
 
 const geistSans = localFont({
   src: "./fonts/GeistVF.woff",

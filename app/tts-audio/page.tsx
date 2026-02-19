@@ -3,15 +3,11 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import { 
-  Mic, 
   Download, 
-  Play, 
-  Pause,
   Volume2,
   Sparkles,
   Upload,
   FileText,
-  Settings,
   CheckCircle,
   AlertCircle,
   Headphones,
@@ -93,7 +89,7 @@ function fileToText(file: File): Promise<string> {
 }
 
 export default function TTSAudioPage() {
-  const { theme } = useThemeStore();
+  const { theme: _theme } = useThemeStore();
 
   const [mode, setMode] = useState<Mode>("prompt");
   const [voice, setVoice] = useState<(typeof VOICES)[number]>("Zephyr");

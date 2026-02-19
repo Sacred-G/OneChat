@@ -89,7 +89,7 @@ export async function setApiKeyConnector(
 }
 
 // Get connected accounts for a user
-export async function getConnectedAccounts(userId: string): Promise<ConnectedAccount[]> {
+export async function getConnectedAccounts(_userId: string): Promise<ConnectedAccount[]> {
   try {
     // Mock implementation - in production this would use Composio SDK
     // For now, return empty array - will be populated when actual connections are made

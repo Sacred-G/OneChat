@@ -6,10 +6,7 @@ import {
   Video, 
   Upload, 
   Download, 
-  Play,
-  Image as ImageIcon,
   Sparkles,
-  Settings,
   CheckCircle,
   AlertCircle,
   Film,
@@ -63,7 +60,7 @@ function fileToDataUrl(file: File): Promise<string> {
 }
 
 export default function VeoVideoPage() {
-  const { theme } = useThemeStore();
+  const { theme: _theme } = useThemeStore();
   const [prompt, setPrompt] = useState("");
   const [aspectRatio, setAspectRatio] = useState<"16:9" | "9:16">("16:9");
   const [resolution, setResolution] = useState<"720p" | "1080p" | "4k">("720p");
@@ -172,7 +169,7 @@ export default function VeoVideoPage() {
                 Veo Video Studio
               </h1>
               <p className={`${textDim} text-lg`}>
-                Google's advanced video generation with image-to-video capabilities
+                Google&apos;s advanced video generation with image-to-video capabilities
               </p>
             </div>
           </div>
@@ -258,6 +255,7 @@ export default function VeoVideoPage() {
                         onChange={(e) => setRefFile(idx, e.target.files?.[0] || null)}
                       />
                       {ref.dataUrl ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
                         <img
                           src={ref.dataUrl}
                           alt={`Reference ${idx + 1}`}

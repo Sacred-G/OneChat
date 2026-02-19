@@ -10,7 +10,6 @@ import {
   Loader2,
   Package,
   ChevronDown,
-  ChevronUp,
   Zap,
   Info
 } from 'lucide-react';
@@ -296,6 +295,7 @@ export default function ConnectorManager() {
               {/* Logo or fallback */}
               <div className="shrink-0 w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center overflow-hidden">
                 {tk.logo ? (
+                  /* eslint-disable-next-line @next/next/no-img-element */
                   <img
                     src={tk.logo}
                     alt={tk.name}

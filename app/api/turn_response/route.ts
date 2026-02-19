@@ -124,7 +124,6 @@ function generateSafeId(originalId: string): string {
     return originalId;
   }
   const safeId = `fc_${originalId.replace(/[^a-zA-Z0-9_]/g, '').substring(0, 20)}`;
-  console.log(`ID conversion: ${originalId} -> ${safeId}`);
   return safeId;
 }
 
@@ -359,13 +358,9 @@ function toApipieChatMessages(messages: any[]): Array<{ role: string; content: a
 export const POST = withSentryAppRouter(async (request: Request) => {
   const { messages, toolsState, selectedSkill, provider, apipieModel, agentPrompt, agentName, agentTemperature, memoryContext } = await request.json();
   
-  console.log("Request received - Provider:", provider, "Model:", apipieModel || "default");
-
   try {
     if (provider === "apipie") {
       const apiKey = process.env.APIPIE_API_KEY;
-      
-      console.log("APIPie Request - Original model:", apipieModel);
       
       if (!apiKey) {
         return new Response(
@@ -463,25 +458,21 @@ export const POST = withSentryAppRouter(async (request: Request) => {
       // APIPie expects just the model name without provider prefix
       const finalModelName = modelName || apipieModel;
       
-      console.log("APIPie - Provider:", providerName, "Model name:", modelName, "Final model:", finalModelName);
-      
       const requestBody = {
         messages: apipieMessages,
         model: finalModelName,
-        stream: false,
+        stream: true,
         temperature: typeof agentTemperature === "number" ? agentTemperature : 1,
         top_p: 1,
-        max_tokens: 800,
+        max_tokens: 4096,
         ...(toolsForApipie.length > 0 ? { tools: toolsForApipie, tool_choice: "auto" } : {}),
       };
-
-      console.log("APIPie Request Body:", JSON.stringify(requestBody, null, 2));
 
       const apipieRes = await fetch("https://apipie.ai/v1/chat/completions", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Accept: "application/json",
+          Accept: "text/event-stream",
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify(requestBody),
@@ -503,107 +494,125 @@ export const POST = withSentryAppRouter(async (request: Request) => {
         );
       }
 
-      const completion = await apipieRes.json().catch(() => null);
-      
-      console.log("APIPie Response:", {
-        provider: completion?.provider,
-        model: completion?.model,
-        id: completion?.id
-      });
-      
-      const apipieMessage = completion?.choices?.[0]?.message;
-      const assistantText = typeof apipieMessage?.content === "string" ? apipieMessage.content : "";
-
-      const toolCalls = Array.isArray(apipieMessage?.tool_calls)
-        ? apipieMessage.tool_calls
-        : apipieMessage?.function_call
-          ? [
-              {
-                id: completion?.id ? String(completion.id) : `apipie-toolcall-${Date.now()}`,
-                type: "function",
-                function: apipieMessage.function_call,
-              },
-            ]
-          : [];
+      // Stream APIPie SSE chunks and translate to our event format
+      const encoder = new TextEncoder();
+      const itemId = `apipie-${Date.now()}`;
+      // Track tool calls being assembled across chunks
+      const pendingToolCalls: Record<number, { id: string; name: string; arguments: string }> = {};
 
       const stream = new ReadableStream({
-        start(controller) {
-          const itemId = completion?.id ?? "apipie-message";
+        async start(controller) {
+          try {
+            const reader = apipieRes.body!.getReader();
+            const decoder = new TextDecoder();
+            let sseBuffer = "";
+            let textStarted = false;
 
-          if (assistantText) {
-            const deltaPayload = JSON.stringify({
-              event: "response.output_text.delta",
-              data: {
-                delta: assistantText,
-                item_id: itemId,
-              },
-            });
-            controller.enqueue(`data: ${deltaPayload}\n\n`);
-          }
+            while (true) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              sseBuffer += decoder.decode(value, { stream: true });
 
-          for (let i = 0; i < toolCalls.length; i++) {
-            const tc = toolCalls[i];
-            const name = typeof tc?.function?.name === "string" ? tc.function.name : "";
-            const args = typeof tc?.function?.arguments === "string" ? tc.function.arguments : "";
-            const callId = typeof tc?.id === "string" && tc.id.trim()
-              ? tc.id.trim()
-              : `apipie-call-${Date.now()}-${i + 1}`;
-            const toolItemId = callId;
+              const lines = sseBuffer.split("\n");
+              sseBuffer = lines.pop() || "";
 
-            if (!name) continue;
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || !trimmed.startsWith("data: ")) continue;
+                const payload = trimmed.slice(6);
+                if (payload === "[DONE]") continue;
 
-            controller.enqueue(
-              `data: ${JSON.stringify({
-                event: "response.output_item.added",
-                data: {
-                  item: {
-                    type: "function_call",
-                    id: toolItemId,
-                    call_id: callId,
-                    name,
-                    arguments: args,
+                let chunk: any;
+                try { chunk = JSON.parse(payload); } catch { continue; }
+
+                const delta = chunk?.choices?.[0]?.delta;
+                if (!delta) continue;
+
+                // Handle text content deltas
+                const textDelta = typeof delta.content === "string" ? delta.content : "";
+                if (textDelta) {
+                  if (!textStarted) {
+                    textStarted = true;
+                  }
+                  controller.enqueue(encoder.encode(
+                    `data: ${JSON.stringify({
+                      event: "response.output_text.delta",
+                      data: { delta: textDelta, item_id: itemId },
+                    })}\n\n`
+                  ));
+                }
+
+                // Handle tool call deltas (streamed incrementally)
+                if (Array.isArray(delta.tool_calls)) {
+                  for (const tc of delta.tool_calls) {
+                    const idx = typeof tc.index === "number" ? tc.index : 0;
+                    if (!pendingToolCalls[idx]) {
+                      pendingToolCalls[idx] = {
+                        id: tc.id || `apipie-call-${Date.now()}-${idx}`,
+                        name: tc.function?.name || "",
+                        arguments: "",
+                      };
+                    }
+                    if (tc.id) pendingToolCalls[idx].id = tc.id;
+                    if (tc.function?.name) pendingToolCalls[idx].name = tc.function.name;
+                    if (tc.function?.arguments) pendingToolCalls[idx].arguments += tc.function.arguments;
+                  }
+                }
+              }
+            }
+
+            // Emit assembled tool calls after stream ends
+            const toolCallEntries = Object.values(pendingToolCalls).filter(tc => tc.name);
+            for (const tc of toolCallEntries) {
+              const callId = tc.id || `apipie-call-${Date.now()}`;
+              controller.enqueue(encoder.encode(
+                `data: ${JSON.stringify({
+                  event: "response.output_item.added",
+                  data: {
+                    item: {
+                      type: "function_call",
+                      id: callId,
+                      call_id: callId,
+                      name: tc.name,
+                      arguments: tc.arguments || "{}",
+                    },
                   },
-                },
-              })}\n\n`
-            );
-
-            controller.enqueue(
-              `data: ${JSON.stringify({
-                event: "response.function_call_arguments.done",
-                data: {
-                  item_id: toolItemId,
-                  arguments: args,
-                },
-              })}\n\n`
-            );
-
-            controller.enqueue(
-              `data: ${JSON.stringify({
-                event: "response.output_item.done",
-                data: {
-                  item: {
-                    type: "function_call",
-                    id: toolItemId,
-                    call_id: callId,
-                    name,
-                    arguments: args,
+                })}\n\n`
+              ));
+              controller.enqueue(encoder.encode(
+                `data: ${JSON.stringify({
+                  event: "response.function_call_arguments.done",
+                  data: { item_id: callId, arguments: tc.arguments || "{}" },
+                })}\n\n`
+              ));
+              controller.enqueue(encoder.encode(
+                `data: ${JSON.stringify({
+                  event: "response.output_item.done",
+                  data: {
+                    item: {
+                      type: "function_call",
+                      id: callId,
+                      call_id: callId,
+                      name: tc.name,
+                      arguments: tc.arguments || "{}",
+                    },
                   },
-                },
-              })}\n\n`
-            );
-          }
+                })}\n\n`
+              ));
+            }
 
-          const completedPayload = JSON.stringify({
-            event: "response.completed",
-            data: {
-              response: {
-                output: [],
-              },
-            },
-          });
-          controller.enqueue(`data: ${completedPayload}\n\n`);
-          controller.enqueue("data: [DONE]\n\n");
-          controller.close();
+            controller.enqueue(encoder.encode(
+              `data: ${JSON.stringify({
+                event: "response.completed",
+                data: { response: { output: [] } },
+              })}\n\n`
+            ));
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+          } catch (err) {
+            console.error("APIPie streaming error:", err);
+            controller.error(err);
+          }
         },
       });
 

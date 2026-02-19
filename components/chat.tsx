@@ -4,15 +4,12 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Image from "next/image";
 import ToolCall from "./tool-call";
 import Message from "./message";
-import Annotations from "./annotations";
 import McpToolsList from "./mcp-tools-list";
 import McpApproval from "./mcp-approval";
 import FunctionApproval from "./function-approval";
 import {
   FunctionApprovalAction,
-  FunctionApprovalRequestItem,
   Item,
-  McpApprovalRequestItem,
 } from "@/lib/assistant";
 import LoadingMessage from "./loading-message";
 import useConversationStore from "@/stores/useConversationStore";
@@ -22,7 +19,7 @@ import useToolsStore from "@/stores/useToolsStore";
 import useConnectorsStore from "@/stores/useConnectorsStore";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 import { Switch } from "./ui/switch";
-import { Plus, Settings2, Mic, ChevronDown, ChevronRight, FileText, Loader2, X } from "lucide-react";
+import { Plus, Settings2, Mic, FileText, Loader2, X } from "lucide-react";
 import AgentSelector from "./agent-selector";
 import { toolsList } from "@/config/tools-list";
 import useAgentStore from "@/stores/useAgentStore";
@@ -43,7 +40,7 @@ const Chat: React.FC<ChatProps> = ({
   onApprovalResponse,
   onFunctionApprovalResponse,
   voiceModeEnabled = false,
-  showVoiceAgent = false,
+  showVoiceAgent: _showVoiceAgent = false,
   setShowVoiceAgent,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -57,7 +54,7 @@ const Chat: React.FC<ChatProps> = ({
   const [isNearBottom, setIsNearBottom] = useState(true);
   // This state is used to provide better user experience for non-English IMEs such as Japanese
   const [isComposing, setIsComposing] = useState(false);
-  const [showFunctionsList, setShowFunctionsList] = useState(false);
+  const [showFunctionsList, _setShowFunctionsList] = useState(false);
   const [uploadedDocName, setUploadedDocName] = useState<string | null>(null);
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [skillsPopoverOpen, setSkillsPopoverOpen] = useState(false);
@@ -303,16 +300,16 @@ const Chat: React.FC<ChatProps> = ({
               description: typeof s?.description === "string" ? s.description : "",
             }))
         );
-        console.log("Available skills set:", availableSkills); // Debug log
       })
       .catch((e) => {
         console.error("Failed to load skills:", e);
         setAvailableSkills([]);
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
-    <div className="flex flex-col h-screen">
+    <div className="flex flex-col h-full">
       {/* Messages area */}
       <div ref={scrollContainerRef} className="flex-1 overflow-y-auto overflow-x-hidden">
         <div className="mx-auto w-full max-w-3xl px-4 min-w-0 pb-32">

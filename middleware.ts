@@ -12,7 +12,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
     pathname === "/openai_logo.svg" ||
-    pathname.startsWith("/sentry-example")
+    pathname.startsWith("/sentry-example") ||
+    pathname.startsWith("/monitoring")
   ) {
     return NextResponse.next();
   }

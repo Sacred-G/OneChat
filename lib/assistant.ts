@@ -369,6 +369,33 @@ export const processMessages = async () => {
   // For streaming MCP tool call arguments
   let mcpArguments = "";
 
+  // Throttled setChatMessages: batch updates during streaming to reduce re-renders.
+  // Mutate chatMessages in place and flush to React at most every 50ms.
+  let flushTimer: ReturnType<typeof setTimeout> | null = null;
+  let pendingFlush = false;
+  const FLUSH_INTERVAL_MS = 50;
+
+  const throttledSetChatMessages = () => {
+    pendingFlush = true;
+    if (flushTimer) return; // already scheduled
+    flushTimer = setTimeout(() => {
+      flushTimer = null;
+      if (pendingFlush) {
+        pendingFlush = false;
+        setChatMessages([...chatMessages]);
+      }
+    }, FLUSH_INTERVAL_MS);
+  };
+
+  const flushChatMessagesNow = () => {
+    if (flushTimer) {
+      clearTimeout(flushTimer);
+      flushTimer = null;
+    }
+    pendingFlush = false;
+    setChatMessages([...chatMessages]);
+  };
+
   await handleTurn(
     allConversationItems,
     toolsState,
@@ -416,7 +443,7 @@ export const processMessages = async () => {
             }
           }
 
-          setChatMessages([...chatMessages]);
+          throttledSetChatMessages();
           setAssistantLoading(false);
           break;
         }
@@ -455,7 +482,7 @@ export const processMessages = async () => {
                   },
                 ],
               });
-              setChatMessages([...chatMessages]);
+              flushChatMessagesNow();
               setConversationItems([...conversationItems]);
               break;
             }
@@ -471,7 +498,7 @@ export const processMessages = async () => {
                 parsedArguments: {},
                 output: null,
               });
-              setChatMessages([...chatMessages]);
+              flushChatMessagesNow();
               break;
             }
             case "web_search_call": {
@@ -481,7 +508,7 @@ export const processMessages = async () => {
                 status: item.status || "in_progress",
                 id: item.id,
               });
-              setChatMessages([...chatMessages]);
+              flushChatMessagesNow();
               break;
             }
             case "file_search_call": {
@@ -491,7 +518,7 @@ export const processMessages = async () => {
                 status: item.status || "in_progress",
                 id: item.id,
               });
-              setChatMessages([...chatMessages]);
+              flushChatMessagesNow();
               break;
             }
             case "mcp_call": {
@@ -506,7 +533,7 @@ export const processMessages = async () => {
                 parsedArguments: item.arguments ? parse(item.arguments) : {},
                 output: null,
               });
-              setChatMessages([...chatMessages]);
+              flushChatMessagesNow();
               break;
             }
             case "code_interpreter_call": {
@@ -518,7 +545,7 @@ export const processMessages = async () => {
                 code: "",
                 files: [],
               });
-              setChatMessages([...chatMessages]);
+              flushChatMessagesNow();
               break;
             }
           }
@@ -531,7 +558,7 @@ export const processMessages = async () => {
           const toolCallMessage = chatMessages.find((m) => m.id === item.id);
           if (toolCallMessage && toolCallMessage.type === "tool_call") {
             toolCallMessage.call_id = item.call_id;
-            setChatMessages([...chatMessages]);
+            flushChatMessagesNow();
           }
           conversationItems.push(item);
           setConversationItems([...conversationItems]);
@@ -568,7 +595,7 @@ export const processMessages = async () => {
 
             if (files.length > 0) {
               toolCallMessage.files = files as any;
-              setChatMessages([...chatMessages]);
+              flushChatMessagesNow();
 
               try {
                 const { currentArtifact, addArtifact } = useArtifactStore.getState() as any;
@@ -610,7 +637,7 @@ export const processMessages = async () => {
 
             if (needsApproval && !alwaysApproved) {
               toolCallMessage.status = "pending_approval" as any;
-              setChatMessages([...chatMessages]);
+              flushChatMessagesNow();
               chatMessages.push({
                 type: "function_approval_request",
                 id: `function-approval-${toolCallMessage.id}`,
@@ -627,13 +654,13 @@ export const processMessages = async () => {
                         }
                       })(),
               });
-              setChatMessages([...chatMessages]);
+              flushChatMessagesNow();
               break;
             }
 
             // Handle tool call (execute function)
             toolCallMessage.status = "in_progress";
-            setChatMessages([...chatMessages]);
+            flushChatMessagesNow();
             const toolResult = await handleTool(
               toolCallMessage.name as keyof typeof functionsMap,
               toolCallMessage.parsedArguments
@@ -642,7 +669,7 @@ export const processMessages = async () => {
             // Record tool output
             toolCallMessage.status = "completed";
             toolCallMessage.output = JSON.stringify(toolResult);
-            setChatMessages([...chatMessages]);
+            flushChatMessagesNow();
 
             if (toolName === "launch_streamlit_app" || toolName === "deploy_streamlit_app") {
               try {
@@ -685,7 +712,7 @@ export const processMessages = async () => {
           ) {
             toolCallMessage.output = item.output;
             toolCallMessage.status = "completed";
-            setChatMessages([...chatMessages]);
+            flushChatMessagesNow();
           }
           break;
         }
@@ -708,7 +735,7 @@ export const processMessages = async () => {
             } catch {
               // partial JSON can fail parse; ignore
             }
-            setChatMessages([...chatMessages]);
+            throttledSetChatMessages();
           }
           break;
         }
@@ -725,7 +752,7 @@ export const processMessages = async () => {
             toolCallMessage.arguments = finalArgs;
             toolCallMessage.parsedArguments = parse(finalArgs);
             toolCallMessage.status = "completed";
-            setChatMessages([...chatMessages]);
+            flushChatMessagesNow();
           }
           break;
         }
@@ -747,7 +774,7 @@ export const processMessages = async () => {
             } catch {
               // partial JSON can fail parse; ignore
             }
-            setChatMessages([...chatMessages]);
+            throttledSetChatMessages();
           }
           break;
         }
@@ -760,7 +787,7 @@ export const processMessages = async () => {
             toolCallMessage.arguments = finalArgs;
             toolCallMessage.parsedArguments = parse(finalArgs);
             toolCallMessage.status = "completed";
-            setChatMessages([...chatMessages]);
+            flushChatMessagesNow();
           }
           break;
         }
@@ -771,7 +798,7 @@ export const processMessages = async () => {
           if (toolCallMessage && toolCallMessage.type === "tool_call") {
             toolCallMessage.output = output;
             toolCallMessage.status = "completed";
-            setChatMessages([...chatMessages]);
+            flushChatMessagesNow();
           }
           break;
         }
@@ -782,7 +809,7 @@ export const processMessages = async () => {
           if (toolCallMessage && toolCallMessage.type === "tool_call") {
             toolCallMessage.output = output;
             toolCallMessage.status = "completed";
-            setChatMessages([...chatMessages]);
+            flushChatMessagesNow();
           }
           break;
         }
@@ -801,7 +828,7 @@ export const processMessages = async () => {
           // Accumulate deltas to show the code streaming
           if (toolCallMessage) {
             toolCallMessage.code = (toolCallMessage.code || "") + delta;
-            setChatMessages([...chatMessages]);
+            throttledSetChatMessages();
             try {
               const { upsertArtifact } = useArtifactStore.getState() as any;
               if (typeof upsertArtifact === "function") {
@@ -838,7 +865,7 @@ export const processMessages = async () => {
           if (toolCallMessage) {
             toolCallMessage.code = code;
             toolCallMessage.status = "completed";
-            setChatMessages([...chatMessages]);
+            flushChatMessagesNow();
 
             try {
               const { upsertArtifact } = useArtifactStore.getState() as any;
@@ -868,7 +895,7 @@ export const processMessages = async () => {
           ) as ToolCallItem | undefined;
           if (toolCallMessage) {
             toolCallMessage.status = "completed";
-            setChatMessages([...chatMessages]);
+            flushChatMessagesNow();
           }
           break;
         }
@@ -891,7 +918,7 @@ export const processMessages = async () => {
                 tools: msg.tools || [],
               });
             }
-            setChatMessages([...chatMessages]);
+            flushChatMessagesNow();
           }
 
           // Handle MCP approval request
@@ -907,7 +934,7 @@ export const processMessages = async () => {
               name: mcpApprovalRequestMessage.name,
               arguments: mcpApprovalRequestMessage.arguments,
             });
-            setChatMessages([...chatMessages]);
+            flushChatMessagesNow();
           }
 
           try {
@@ -959,6 +986,9 @@ export const processMessages = async () => {
       }
     }
   );
+
+  // Final flush to ensure any pending throttled updates are committed
+  flushChatMessagesNow();
 };
 
 export type FunctionApprovalAction = "deny" | "allow_once" | "always_allow";

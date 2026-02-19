@@ -5,13 +5,11 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { 
   Sparkles, 
-  Zap, 
   Camera, 
   Palette, 
   Wand2, 
   Download,
   Settings,
-  Image as ImageIcon,
   RefreshCw,
   CheckCircle,
   AlertCircle,
@@ -230,7 +228,7 @@ export default function NanoBananaPage() {
                 Nano Banana Studio
               </h1>
               <p className={`${textDim} text-lg`}>
-                Gemini's native image generation capabilities
+                Gemini&apos;s native image generation capabilities
               </p>
             </div>
           </div>
