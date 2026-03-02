@@ -24,6 +24,35 @@ export const toolsList = [
     parameters: {},
   },
   {
+    name: "create_ts_app",
+    description:
+      "Create a new TypeScript app (ts_app) artifact. Use this when the user asks for a landing page, webpage, dashboard, or any React/interactive UI. Provide the files, dependencies, and entry point.",
+    strict: false,
+    parameters: {
+      files: {
+        type: "object",
+        description:
+          "Map of file paths to full file contents. Paths should look like /src/App.tsx.",
+        additionalProperties: { type: "string" },
+      },
+      dependencies: {
+        type: "object",
+        description:
+          "npm dependencies map { packageName: version }.",
+        additionalProperties: { type: "string" },
+      },
+      entry: {
+        type: "string",
+        description: "Entry file path, e.g. /src/index.tsx.",
+      },
+      title: {
+        type: "string",
+        description: "Title for the app artifact.",
+      },
+    },
+    required: ["files"],
+  },
+  {
     name: "update_ts_app",
     description:
       "Update the currently open TypeScript app (ts_app) by modifying files and/or dependencies. Use this to apply changes directly to the open app.",

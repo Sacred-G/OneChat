@@ -11,6 +11,9 @@ import {
 import useToolsStore from "@/stores/useToolsStore";
 import useWorkspaceStore from "@/stores/useWorkspaceStore";
 
+let memoryFetchInFlight: Promise<void> | null = null;
+let memorySaveInFlight: Promise<void> | null = null;
+
 interface AssistantProps {
   voiceModeEnabled?: boolean;
   showVoiceAgent?: boolean;
@@ -68,9 +71,9 @@ export default function Assistant({
   };
 
   // Extract memories from the current conversation and save them
-  const _extractAndSaveMemories = async () => {
+  const extractAndSaveMemories = async () => {
     try {
-      const { chatMessages, conversationItems: _conversationItems, activeConversationId } =
+      const { chatMessages, activeConversationId } =
         useConversationStore.getState();
 
       // Only extract if there are meaningful messages (at least 1 user + 1 assistant)
@@ -109,6 +112,21 @@ export default function Assistant({
     } catch (err) {
       console.error("Failed to extract memories:", err);
     }
+  };
+
+  const scheduleMemoryExtraction = () => {
+    if (memorySaveInFlight) return;
+    const next = extractAndSaveMemories()
+      .catch(() => {
+        // Ignore extraction failures so response timing stays fast.
+      })
+      .finally(() => {
+        if (memorySaveInFlight === next) {
+          memorySaveInFlight = null;
+        }
+      });
+    memorySaveInFlight = next;
+    void memorySaveInFlight;
   };
 
   const persistConversation = async () => {
@@ -173,7 +191,16 @@ export default function Assistant({
     // Fetch memories on the first user message of a new conversation
     const { memoriesFetched } = useConversationStore.getState();
     if (!memoriesFetched) {
-      await fetchAndSetMemories();
+      if (!memoryFetchInFlight) {
+        memoryFetchInFlight = fetchAndSetMemories()
+          .catch(() => {
+            // Ignore memory fetch failures so message send stays fast.
+          })
+          .finally(() => {
+            memoryFetchInFlight = null;
+          });
+      }
+      void memoryFetchInFlight;
     }
 
     // Trim history to keep the UI lightweight and avoid browser slowdowns
@@ -239,6 +266,7 @@ export default function Assistant({
           addChatMessage(assistantItem);
           setAssistantLoading(false);
           await persistConversation();
+          scheduleMemoryExtraction();
           return;
         }
 
@@ -273,23 +301,25 @@ export default function Assistant({
         addChatMessage(assistantItem);
         setAssistantLoading(false);
         await persistConversation();
+        scheduleMemoryExtraction();
         return;
       }
 
       if (provider === "apipie" && trimmed.startsWith("/image")) {
         const prompt = trimmed.replace(/^\/image\s*/i, "").trim();
         if (!prompt) {
-          const assistantItem: Item = {
-            type: "message",
-            role: "assistant",
-            content: [{ type: "output_text", text: "Please provide a prompt after /image." } as any],
-          };
-          addConversationItem(assistantItem);
-          addChatMessage(assistantItem);
-          setAssistantLoading(false);
-          await persistConversation();
-          return;
-        }
+        const assistantItem: Item = {
+          type: "message",
+          role: "assistant",
+          content: [{ type: "output_text", text: "Please provide a prompt after /image." } as any],
+        };
+        addConversationItem(assistantItem);
+        addChatMessage(assistantItem);
+        setAssistantLoading(false);
+        await persistConversation();
+        scheduleMemoryExtraction();
+        return;
+      }
 
         const value = apipieImageModel || "dall-e-3";
         const [maybeProvider, maybeModel] = value.includes("::")
@@ -326,10 +356,12 @@ export default function Assistant({
         addChatMessage(assistantItem);
         setAssistantLoading(false);
         await persistConversation();
+        scheduleMemoryExtraction();
         return;
       }
 
       await processMessages();
+      scheduleMemoryExtraction();
     } catch (error) {
       console.error("Error processing message:", error);
     }

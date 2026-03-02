@@ -132,46 +132,8 @@ export const handleTurn = async (
         effectiveToolsState = { ...effectiveToolsState, ...overrides };
       }
     }
-    // Preserve any agent-level overrides when falling back to storeState for MCP
-    const agentOverrides = selectedAgent ? (() => {
-      const o: Partial<ToolsState> = {};
-      if (selectedAgent.vectorStoreId) {
-        o.fileSearchEnabled = true;
-        o.vectorStore = { id: selectedAgent.vectorStoreId, name: selectedAgent.vectorStoreName || "" } as any;
-      } else if (selectedAgent.fileSearchEnabled) {
-        o.fileSearchEnabled = true;
-      }
-      if (selectedAgent.webSearchEnabled) o.webSearchEnabled = true;
-      if (selectedAgent.codeInterpreterEnabled) o.codeInterpreterEnabled = true;
-      return Object.keys(o).length > 0 ? o : null;
-    })() : null;
-
-    if (
-      (!effectiveToolsState?.mcpEnabled &&
-        Array.isArray(storeState?.mcpConfigs) &&
-        storeState.mcpConfigs.length > 0) ||
-      (!effectiveToolsState?.mcpEnabled &&
-        Array.isArray(storeState?.commandMcpConfigs) &&
-        storeState.commandMcpConfigs.some((c: any) => c && c.disabled !== true))
-    ) {
-      effectiveToolsState = { ...(storeState as ToolsState), ...agentOverrides };
-    }
-
-    if (
-      !effectiveToolsState?.mcpEnabled &&
-      Array.isArray((effectiveToolsState as any)?.mcpConfigs) &&
-      (effectiveToolsState as any).mcpConfigs.length === 0 &&
-      Array.isArray((effectiveToolsState as any)?.commandMcpConfigs) &&
-      (effectiveToolsState as any).commandMcpConfigs.length === 0 &&
-      typeof storeState?.hydrateMcpConfigFromFile === "function"
-    ) {
-      try {
-        await storeState.hydrateMcpConfigFromFile();
-        effectiveToolsState = { ...(useToolsStore.getState() as ToolsState), ...agentOverrides };
-      } catch {
-        // ignore
-      }
-    }
+    // MCP configs are hydrated on startup but only used when mcpEnabled is true.
+    // Do not auto-enable MCP just because configs exist.
 
     const { currentArtifact } = useArtifactStore.getState() as any;
     const artifactContextMessage = await (async () => {
@@ -375,6 +337,19 @@ export const processMessages = async () => {
   let pendingFlush = false;
   const FLUSH_INTERVAL_MS = 50;
 
+  const flushChatMessages = () => {
+    // Create a shallow copy of the last (streaming) message so React.memo detects the change.
+    const last = chatMessages[chatMessages.length - 1];
+    const updated = [...chatMessages];
+    if (last && last.type === "message") {
+      updated[updated.length - 1] = { ...last, content: last.content.map((c) => ({ ...c })) };
+    }
+    setChatMessages(updated);
+    // Keep our mutable reference in sync with the new array
+    chatMessages.length = 0;
+    chatMessages.push(...updated);
+  };
+
   const throttledSetChatMessages = () => {
     pendingFlush = true;
     if (flushTimer) return; // already scheduled
@@ -382,7 +357,7 @@ export const processMessages = async () => {
       flushTimer = null;
       if (pendingFlush) {
         pendingFlush = false;
-        setChatMessages([...chatMessages]);
+        flushChatMessages();
       }
     }, FLUSH_INTERVAL_MS);
   };

@@ -16,12 +16,9 @@ import useConversationStore from "@/stores/useConversationStore";
 import useThemeStore from "@/stores/useThemeStore";
 import ScreenCapture from "./screen-capture";
 import useToolsStore from "@/stores/useToolsStore";
-import useConnectorsStore from "@/stores/useConnectorsStore";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
-import { Switch } from "./ui/switch";
-import { Plus, Settings2, Mic, FileText, Loader2, X } from "lucide-react";
+import { Plus, Paperclip, Mic, FileText, Loader2, X } from "lucide-react";
 import AgentSelector from "./agent-selector";
-import { toolsList } from "@/config/tools-list";
 import useAgentStore from "@/stores/useAgentStore";
 
 interface ChatProps {
@@ -45,7 +42,7 @@ const Chat: React.FC<ChatProps> = ({
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const itemsEndRef = useRef<HTMLDivElement>(null);
-  const uploadInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [inputMessageText, setinputMessageText] = useState<string>("");
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [availableSkills, setAvailableSkills] = useState<
@@ -54,30 +51,11 @@ const Chat: React.FC<ChatProps> = ({
   const [isNearBottom, setIsNearBottom] = useState(true);
   // This state is used to provide better user experience for non-English IMEs such as Japanese
   const [isComposing, setIsComposing] = useState(false);
-  const [showFunctionsList, _setShowFunctionsList] = useState(false);
   const [uploadedDocName, setUploadedDocName] = useState<string | null>(null);
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
   const [skillsPopoverOpen, setSkillsPopoverOpen] = useState(false);
   const { isAssistantLoading, selectedSkill, setSelectedSkill } = useConversationStore();
   const { theme } = useThemeStore();
-  const {
-    webSearchEnabled,
-    setWebSearchEnabled,
-    fileSearchEnabled,
-    setFileSearchEnabled,
-    functionsEnabled,
-    setFunctionsEnabled,
-    codeInterpreterEnabled,
-    setCodeInterpreterEnabled,
-    mcpEnabled,
-    setMcpEnabled,
-    localAgentEnabled,
-    setLocalAgentEnabled,
-    disabledFunctions,
-    toggleFunction,
-  } = useToolsStore();
-
-  const { connectors, setConnectorEnabled, composioSelectedToolkits } = useConnectorsStore();
 
   const handleScreenCapture = (imageData: string) => {
     setCapturedImage(imageData);
@@ -88,7 +66,7 @@ const Chat: React.FC<ChatProps> = ({
   };
 
   const handleUploadClick = () => {
-    uploadInputRef.current?.click();
+    fileInputRef.current?.click();
   };
 
   const handleUploadFile = async (file: File) => {
@@ -236,25 +214,26 @@ const Chat: React.FC<ChatProps> = ({
     () => (
       <>
         {items.map((item, index) => {
+          const key = ('id' in item && item.id) ? `${item.type}-${item.id}` : `${item.type}-${index}`;
           switch (item.type) {
             case "message":
               return (
                 <Message
-                  key={index}
+                  key={key}
                   message={item}
                 />
               );
             case "tool_call":
               return (
                 <ToolCall
-                  key={index}
+                  key={key}
                   toolCall={item}
                 />
               );
             case "mcp_approval_request":
               return (
                 <McpApproval
-                  key={index}
+                  key={key}
                   item={item}
                   onRespond={onApprovalResponse}
                 />
@@ -262,7 +241,7 @@ const Chat: React.FC<ChatProps> = ({
             case "function_approval_request":
               return (
                 <FunctionApproval
-                  key={index}
+                  key={key}
                   item={item}
                   onRespond={onFunctionApprovalResponse}
                 />
@@ -270,7 +249,7 @@ const Chat: React.FC<ChatProps> = ({
             case "mcp_list_tools":
               return (
                 <McpToolsList
-                  key={index}
+                  key={key}
                   item={item}
                 />
               );
@@ -282,16 +261,16 @@ const Chat: React.FC<ChatProps> = ({
         <div ref={itemsEndRef} />
       </>
     ),
-    [items, isAssistantLoading, onApprovalResponse, onFunctionApprovalResponse]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [items, isAssistantLoading]
   );
 
   useEffect(() => {
-    fetch("/api/skills/list")
+    const controller = new AbortController();
+    fetch("/api/skills/list", { signal: controller.signal })
       .then((r) => r.json())
       .then((d) => {
-        console.log("Skills API response:", d); // Debug log
         const skills = Array.isArray(d?.skills) ? d.skills : [];
-        console.log("Parsed skills:", skills); // Debug log
         setAvailableSkills(
           skills
             .filter((s: any) => typeof s?.name === "string")
@@ -301,11 +280,10 @@ const Chat: React.FC<ChatProps> = ({
             }))
         );
       })
-      .catch((e) => {
-        console.error("Failed to load skills:", e);
-        setAvailableSkills([]);
+      .catch(() => {
+        if (!controller.signal.aborted) setAvailableSkills([]);
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    return () => controller.abort();
   }, []);
 
   return (
@@ -373,241 +351,65 @@ const Chat: React.FC<ChatProps> = ({
               : "bg-gradient-to-br from-white/95 to-gray-50/95 border-black/10 focus-within:border-black/20 shadow-gray-300/40"
           }`}
         >
-          {/* Screen capture button row */}
-          <div className="flex items-center gap-2 px-4 pt-3">
+          {/* Toolbar */}
+          <div className="flex items-center gap-1.5 px-4 pt-3">
             <AgentSelector />
             {availableSkills.length > 0 && (
               <Popover open={skillsPopoverOpen} onOpenChange={setSkillsPopoverOpen}>
                 <PopoverTrigger asChild>
                   <button
                     className={`p-2 rounded-lg transition-colors ${
-                      theme === "dark"
-                        ? "hover:bg-white/10 text-gray-300"
-                        : "hover:bg-gray-100 text-gray-600"
+                      selectedSkill
+                        ? theme === "dark" ? "bg-blue-600/20 text-blue-400" : "bg-blue-50 text-blue-600"
+                        : theme === "dark" ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-500"
                     }`}
-                    title="Skills"
+                    title={selectedSkill ? `Skill: ${selectedSkill}` : "Skills"}
                   >
                     <Plus size={16} />
                   </button>
                 </PopoverTrigger>
-                <PopoverContent side="top" align="start" className="w-64 max-h-60">
-                  <div className="space-y-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <Plus size={16} className={theme === "dark" ? "text-stone-300" : "text-stone-700"} />
-                      <div className={`text-sm font-medium ${theme === "dark" ? "text-stone-100" : "text-stone-900"}`}>Skills</div>
-                      <div className={`text-xs ${theme === "dark" ? "text-gray-400" : "text-gray-500"}`}>
-                        ({availableSkills.length} skills, selected: {selectedSkill || 'none'})
-                      </div>
-                    </div>
-                    <div className="max-h-48 overflow-y-auto space-y-1 pr-2">
+                <PopoverContent side="top" align="start" className="w-56 p-1">
+                  <div className="space-y-0.5">
+                    <button
+                      className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                        selectedSkill === null
+                          ? theme === "dark" ? "bg-white/10 text-white" : "bg-gray-100 text-gray-900"
+                          : theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"
+                      }`}
+                      onClick={() => { setSelectedSkill(null); setSkillsPopoverOpen(false); }}
+                    >
+                      None
+                    </button>
+                    {availableSkills.map((skill) => (
                       <button
-                        className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                          selectedSkill === null
-                            ? theme === "dark"
-                              ? "bg-blue-600 text-white"
-                              : "bg-blue-500 text-white"
-                            : theme === "dark"
-                            ? "hover:bg-white/10 text-gray-300"
-                            : "hover:bg-gray-100 text-gray-700"
+                        key={skill.name}
+                        className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
+                          selectedSkill === skill.name
+                            ? theme === "dark" ? "bg-blue-600 text-white" : "bg-blue-500 text-white"
+                            : theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"
                         }`}
-                        onClick={() => {
-                          console.log("Setting skill to null");
-                          setSelectedSkill(null);
-                          setSkillsPopoverOpen(false); // Close popover after selection
-                        }}
+                        onClick={() => { setSelectedSkill(skill.name); setSkillsPopoverOpen(false); }}
                       >
-                        None
+                        {skill.name}
                       </button>
-                      {availableSkills.map((skill) => (
-                        <button
-                          key={skill.name}
-                          className={`w-full text-left px-3 py-2 rounded-lg text-sm transition-colors ${
-                            selectedSkill === skill.name
-                              ? theme === "dark"
-                                ? "bg-blue-600 text-white"
-                                : "bg-blue-500 text-white"
-                              : theme === "dark"
-                              ? "hover:bg-white/10 text-gray-300"
-                                : "hover:bg-gray-100 text-gray-700"
-                          }`}
-                          onClick={() => {
-                            console.log("Setting skill to:", skill.name);
-                            setSelectedSkill(skill.name);
-                            setSkillsPopoverOpen(false); // Close popover after selection
-                          }}
-                        >
-                          {skill.name}
-                        </button>
-                      ))}
-                    </div>
+                    ))}
                   </div>
                 </PopoverContent>
               </Popover>
             )}
-            <Popover>
-              <PopoverTrigger asChild>
-                <button
-                  className={`p-2 rounded-lg transition-colors ${
-                    theme === "dark"
-                      ? "hover:bg-white/10 text-gray-300"
-                      : "hover:bg-gray-100 text-gray-600"
-                  }`}
-                  title="Tools"
-                >
-                  <Settings2 size={16} />
-                </button>
-              </PopoverTrigger>
-              <PopoverContent side="top" align="start" className="w-80">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2 mb-2">
-                    <Settings2 size={16} className={theme === "dark" ? "text-stone-300" : "text-stone-700"} />
-                    <div className={`text-sm font-medium ${theme === "dark" ? "text-stone-100" : "text-stone-900"}`}>Tools</div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <div>
-                      <div className={`text-xs mb-2 ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Search</div>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm">Web search</div>
-                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Use web results</div>
-                          </div>
-                          <Switch checked={webSearchEnabled} onCheckedChange={(v) => setWebSearchEnabled(Boolean(v))} />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm">File search</div>
-                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Search your vector store</div>
-                          </div>
-                          <Switch checked={fileSearchEnabled} onCheckedChange={(v) => setFileSearchEnabled(Boolean(v))} />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className={`text-xs mb-2 ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Execution</div>
-                      <div className="space-y-2">
-                        <div>
-                          <div className="flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <div className="text-sm">Functions</div>
-                              <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>
-                                {(() => {
-                                  const d = Array.isArray(disabledFunctions) ? disabledFunctions : [];
-                                  const enabled = toolsList.filter((t) => !d.includes(t.name)).length;
-                                  return `${enabled}/${toolsList.length} enabled`;
-                                })()}
-                              </div>
-                            </div>
-                            <Switch checked={functionsEnabled} onCheckedChange={(v) => setFunctionsEnabled(Boolean(v))} />
-                          </div>
-                          {showFunctionsList && functionsEnabled && (
-                            <div className={`mt-2 ml-4 space-y-1.5 max-h-48 overflow-y-auto rounded-md border p-2 ${
-                              theme === "dark" ? "border-white/10 bg-black/20" : "border-black/5 bg-stone-50"
-                            }`}>
-                              {toolsList.map((tool) => {
-                                const d = Array.isArray(disabledFunctions) ? disabledFunctions : [];
-                                const isOn = !d.includes(tool.name);
-                                return (
-                                  <div key={tool.name} className="flex items-center justify-between gap-2">
-                                    <span className={`text-xs font-mono truncate ${isOn ? "" : "opacity-50"}`}>{tool.name}</span>
-                                    <Switch
-                                      checked={isOn}
-                                      onCheckedChange={() => toggleFunction(tool.name)}
-                                      className="scale-75"
-                                    />
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm">Code interpreter</div>
-                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Run Python code</div>
-                          </div>
-                          <Switch checked={codeInterpreterEnabled} onCheckedChange={(v) => setCodeInterpreterEnabled(Boolean(v))} />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm">Local agent</div>
-                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Dev-only filesystem + commands</div>
-                          </div>
-                          <Switch checked={localAgentEnabled} onCheckedChange={(v) => setLocalAgentEnabled(Boolean(v))} />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm">MCP</div>
-                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Remote MCP server tools</div>
-                          </div>
-                          <Switch checked={mcpEnabled} onCheckedChange={(v) => setMcpEnabled(Boolean(v))} />
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <div className={`text-xs mb-2 ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Connectors</div>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm">Google</div>
-                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Gmail + Calendar</div>
-                          </div>
-                          <Switch
-                            checked={Boolean(connectors?.google?.enabled)}
-                            onCheckedChange={(v) => setConnectorEnabled("google", Boolean(v))}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm">Outlook</div>
-                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>Outlook Email + Calendar</div>
-                          </div>
-                          <Switch
-                            checked={Boolean(connectors?.outlook?.enabled)}
-                            onCheckedChange={(v) => setConnectorEnabled("outlook", Boolean(v))}
-                          />
-                        </div>
-                        <div className="flex items-center justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-sm">Composio</div>
-                            <div className={`text-xs ${theme === "dark" ? "text-stone-300" : "text-stone-600"}`}>
-                              {composioSelectedToolkits.length > 0
-                                ? `${composioSelectedToolkits.length} toolkit${composioSelectedToolkits.length !== 1 ? 's' : ''} selected`
-                                : 'No toolkits selected'}
-                            </div>
-                          </div>
-                          <Switch
-                            checked={Boolean(connectors?.composio?.enabled)}
-                            onCheckedChange={(v) => setConnectorEnabled("composio", Boolean(v))}
-                          />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </PopoverContent>
-            </Popover>
-
             <ScreenCapture onCapture={handleScreenCapture} />
             <button
-              ref={uploadInputRef as React.RefObject<HTMLButtonElement>}
               type="button"
               onClick={handleUploadClick}
               className={`p-2 rounded-lg transition-colors ${
-                theme === "dark"
-                  ? "hover:bg-white/10 text-gray-300"
-                  : "hover:bg-gray-100 text-gray-600"
+                theme === "dark" ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-500"
               }`}
-              title="Upload"
+              title="Attach file"
             >
-              <span className="hidden sm:inline">Upload</span>
-              <span className="sm:hidden">📎</span>
+              <Paperclip size={16} />
             </button>
             <input
-              ref={uploadInputRef}
+              ref={fileInputRef}
               type="file"
               accept="image/*,.c,.cpp,.cs,.css,.doc,.docx,.go,.html,.java,.js,.json,.md,.pdf,.php,.pptx,.py,.rb,.sh,.tex,.ts,.txt"
               className="hidden"
@@ -620,9 +422,7 @@ const Chat: React.FC<ChatProps> = ({
               <button
                 onClick={() => setShowVoiceAgent?.(true)}
                 className={`p-2 rounded-lg transition-colors ${
-                  theme === "dark"
-                    ? "hover:bg-white/10 text-gray-300"
-                    : "hover:bg-gray-100 text-gray-600"
+                  theme === "dark" ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-500"
                 }`}
                 title="Voice Mode"
               >

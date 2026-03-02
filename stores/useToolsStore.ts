@@ -345,8 +345,7 @@ const useToolsStore = create<StoreState>()(
               }));
           }
           
-          const hasAnyMcp = configs.length > 0 || commandConfigs.filter(c => !c.disabled).length > 0;
-          set({ mcpConfigs: configs, commandMcpConfigs: commandConfigs, mcpEnabled: hasAnyMcp });
+          set({ mcpConfigs: configs, commandMcpConfigs: commandConfigs });
         } catch {
           // ignore
         }
@@ -433,6 +432,12 @@ const useToolsStore = create<StoreState>()(
     }),
     {
       name: "tools-store",
+      onRehydrateStorage: () => (state) => {
+        // Always start with MCP disabled — user must opt in each session
+        if (state) {
+          state.mcpEnabled = false;
+        }
+      },
     }
   )
 );

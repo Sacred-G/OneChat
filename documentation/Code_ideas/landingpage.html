@@ -1,0 +1,1010 @@
+Chats
+Custom GPT built by SBouldin
+OneChatAI
+
+Hi, how can I help you?
+
+using gsap creat an animated website for JFSB Consulting Group. Specialize in ai automation and business process along with security awaremess training
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>JFSB Consulting Group — AI Automation, Process Improvement, Security Awareness</title>
+  <meta name="description" content="JFSB Consulting Group specializes in AI automation, business process optimization, and security awareness training." />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root{
+      --bg0:#06070b;
+      --bg1:#0b0f1a;
+      --card: rgba(255,255,255,.06);
+      --card2: rgba(255,255,255,.085);
+      --border: rgba(255,255,255,.12);
+      --text:#eaf0ff;
+      --muted: rgba(234,240,255,.72);
+      --muted2: rgba(234,240,255,.55);
+      --accent:#6ae4ff;
+      --accent2:#8b5cff;
+      --good:#4CFF9A;
+      --warn:#ffd36a;
+      --shadow: 0 20px 60px rgba(0,0,0,.45);
+      --radius: 18px;
+      --max: 1120px;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 10% 15%, rgba(106,228,255,.16), transparent 55%),
+        radial-gradient(700px 420px at 80% 25%, rgba(139,92,255,.18), transparent 55%),
+        radial-gradient(600px 480px at 55% 95%, rgba(76,255,154,.10), transparent 55%),
+        linear-gradient(180deg, var(--bg0), var(--bg1) 60%, #070914);
+      font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      overflow-x:hidden;
+    }
+    a{color:inherit; text-decoration:none}
+    .container{width:min(var(--max), calc(100% - 44px)); margin:0 auto}
+
+    /* Ambient noise */
+    .noise{
+      position:fixed; inset:0; pointer-events:none; opacity:.07; mix-blend-mode:overlay;
+      background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.45'/%3E%3C/svg%3E");
+      background-size:220px 220px;
+    }
+
+    /* Header */
+    header{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(14px);
+      background: linear-gradient(180deg, rgba(6,7,11,.78), rgba(6,7,11,.35));
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    .nav{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 0;
+      gap:16px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:12px;
+      min-width: 220px;
+    }
+    .mark{
+      width:38px; height:38px; border-radius:12px;
+      background: radial-gradient(18px 18px at 30% 30%, rgba(255,255,255,.85), rgba(255,255,255,.12)),
+                  linear-gradient(135deg, rgba(106,228,255,.9), rgba(139,92,255,.85));
+      box-shadow: 0 10px 30px rgba(106,228,255,.15);
+      position:relative;
+      overflow:hidden;
+    }
+    .mark:after{
+      content:"";
+      position:absolute; inset:-40%;
+      background: conic-gradient(from 180deg, rgba(255,255,255,.0), rgba(255,255,255,.65), rgba(255,255,255,0));
+      transform: rotate(0deg);
+      opacity:.35;
+    }
+    .brand strong{
+      font-family: "Space Grotesk", Inter, sans-serif;
+      font-weight: 700;
+      letter-spacing: .2px;
+      display:block;
+      line-height:1.05;
+    }
+    .brand span{
+      display:block;
+      font-size:12px;
+      color:var(--muted2);
+      margin-top:2px;
+    }
+
+    .navlinks{
+      display:flex; align-items:center; gap:18px;
+      padding:10px 14px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      border-radius: 999px;
+    }
+    .navlinks a{
+      font-size:13px;
+      color: var(--muted);
+      padding:8px 10px;
+      border-radius: 999px;
+      transition: background .2s ease, color .2s ease;
+      position:relative;
+    }
+    .navlinks a:hover{
+      color: var(--text);
+      background: rgba(255,255,255,.06);
+    }
+
+    .ctaRow{display:flex; align-items:center; gap:10px}
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      gap:10px;
+      padding:10px 14px;
+      border-radius: 999px;
+      border:1px solid rgba(255,255,255,.14);
+      background: rgba(255,255,255,.05);
+      color: var(--text);
+      font-weight: 600;
+      font-size: 13px;
+      cursor:pointer;
+      transition: transform .2s ease, background .2s ease, border-color .2s ease;
+      user-select:none;
+      white-space:nowrap;
+    }
+    .btn:hover{ transform: translateY(-1px); background: rgba(255,255,255,.07); border-color: rgba(255,255,255,.22); }
+    .btn.primary{
+      border-color: rgba(106,228,255,.38);
+      background: linear-gradient(135deg, rgba(106,228,255,.18), rgba(139,92,255,.16));
+      box-shadow: 0 18px 40px rgba(0,0,0,.35);
+    }
+    .btn .dot{
+      width:8px; height:8px; border-radius:99px;
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      box-shadow: 0 0 0 4px rgba(106,228,255,.10);
+    }
+
+    /* Hero */
+    .hero{padding:70px 0 24px}
+    .heroGrid{
+      display:grid;
+      grid-template-columns: 1.2fr .8fr;
+      gap:24px;
+      align-items:stretch;
+    }
+    @media (max-width: 960px){
+      .heroGrid{grid-template-columns:1fr; gap:18px}
+      .navlinks{display:none}
+      .brand{min-width:auto}
+    }
+    .kicker{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      font-size: 13px;
+      width: fit-content;
+    }
+    .pulse{
+      width:10px; height:10px; border-radius:99px;
+      background: var(--good);
+      box-shadow: 0 0 0 0 rgba(76,255,154,.35);
+    }
+
+    h1{
+      margin:14px 0 12px;
+      font-family: "Space Grotesk", Inter, sans-serif;
+      font-size: clamp(34px, 5vw, 56px);
+      line-height: 1.02;
+      letter-spacing: -0.8px;
+    }
+    .lead{
+      margin:0;
+      color: var(--muted);
+      font-size: 16px;
+      line-height: 1.6;
+      max-width: 58ch;
+    }
+    .heroActions{
+      display:flex; gap:12px; flex-wrap:wrap;
+      margin-top:18px;
+    }
+
+    .statRow{
+      margin-top:22px;
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:12px;
+      max-width: 560px;
+    }
+    @media (max-width: 560px){
+      .statRow{grid-template-columns:1fr}
+    }
+    .stat{
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.04);
+      border-radius: var(--radius);
+      padding:14px 14px;
+      box-shadow: 0 20px 60px rgba(0,0,0,.15);
+      overflow:hidden;
+      position:relative;
+    }
+    .stat:before{
+      content:"";
+      position:absolute; inset:-1px;
+      background: radial-gradient(320px 120px at 20% 20%, rgba(106,228,255,.16), transparent 60%),
+                  radial-gradient(260px 120px at 80% 30%, rgba(139,92,255,.12), transparent 60%);
+      opacity:.75;
+      pointer-events:none;
+    }
+    .stat strong{
+      font-size: 18px;
+      display:block;
+      position:relative;
+    }
+    .stat span{
+      position:relative;
+      font-size: 12px;
+      color: var(--muted2);
+      display:block;
+      margin-top:4px;
+      line-height:1.35;
+    }
+
+    /* Right hero card */
+    .heroCard{
+      border-radius: 22px;
+      border:1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      overflow:hidden;
+      position:relative;
+      min-height: 360px;
+    }
+    .heroCardTop{
+      padding:18px 18px 10px;
+      display:flex; align-items:flex-start; justify-content:space-between;
+      gap:10px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+      background: rgba(255,255,255,.03);
+    }
+    .heroCardTop .title{
+      font-weight:700;
+      font-family:"Space Grotesk", Inter, sans-serif;
+      letter-spacing:.2px;
+    }
+    .heroCardTop .sub{
+      color: var(--muted2);
+      font-size:12px;
+      margin-top:4px;
+      line-height:1.35;
+    }
+    .chipRow{display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end}
+    .chip{
+      font-size:12px;
+      padding:7px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+      white-space:nowrap;
+    }
+    .heroViz{
+      position:absolute; inset:0;
+      pointer-events:none;
+    }
+    .gridlines{
+      position:absolute; inset:0;
+      background-image:
+        linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+      background-size: 44px 44px;
+      opacity:.24;
+      transform: translateZ(0);
+    }
+    .orb{
+      position:absolute;
+      width: 260px; height:260px; border-radius: 50%;
+      filter: blur(0px);
+      background: radial-gradient(circle at 30% 30%, rgba(255,255,255,.70), rgba(255,255,255,.10) 38%, rgba(106,228,255,.24) 56%, rgba(139,92,255,.22) 72%, rgba(0,0,0,0) 76%);
+      opacity:.85;
+      mix-blend-mode: screen;
+      transform: translateZ(0);
+    }
+    .orb.one{ left:-80px; top:120px}
+    .orb.two{ right:-90px; top:40px; width:220px; height:220px; opacity:.70}
+    .scan{
+      position:absolute; left:0; right:0; top:-40%;
+      height: 34%;
+      background: linear-gradient(180deg, transparent, rgba(106,228,255,.14), rgba(139,92,255,.10), transparent);
+      opacity:.65;
+      transform: translateZ(0);
+    }
+
+    .heroCardBody{padding:16px 18px 18px; position:relative}
+    .mini{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+      margin-top: 10px;
+    }
+    .miniCard{
+      border-radius: 16px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.10);
+      padding:12px 12px;
+      overflow:hidden;
+      position:relative;
+    }
+    .miniCard .h{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+      margin-bottom:6px;
+    }
+    .miniCard .h strong{font-size:13px}
+    .tag{
+      font-size:11px;
+      color: var(--muted);
+      padding:6px 9px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.03);
+    }
+    .miniCard p{
+      margin:0;
+      color: var(--muted);
+      font-size:12.5px;
+      line-height:1.45;
+    }
+    .meter{
+      margin-top:10px;
+      height:9px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.08);
+      overflow:hidden;
+      border:1px solid rgba(255,255,255,.10);
+    }
+    .meter > i{
+      display:block;
+      height:100%;
+      width: 20%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(106,228,255,.95), rgba(139,92,255,.90));
+      box-shadow: 0 8px 24px rgba(106,228,255,.22);
+    }
+
+    /* Sections */
+    section{padding:46px 0}
+    .sectionHead{
+      display:flex; align-items:flex-end; justify-content:space-between;
+      gap:14px;
+      margin-bottom:18px;
+    }
+    h2{
+      margin:0;
+      font-family:"Space Grotesk", Inter, sans-serif;
+      font-size: clamp(22px, 3vw, 32px);
+      letter-spacing: -0.35px;
+      line-height:1.1;
+    }
+    .sectionHead p{
+      margin:0;
+      color: var(--muted);
+      max-width: 68ch;
+      line-height:1.55;
+      font-size: 14px;
+    }
+
+    .cards{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:14px;
+    }
+    @media (max-width: 960px){
+      .cards{grid-template-columns:1fr}
+    }
+    .card{
+      border-radius: var(--radius);
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      box-shadow: 0 22px 60px rgba(0,0,0,.18);
+      padding:16px;
+      position:relative;
+      overflow:hidden;
+      min-height: 168px;
+      transform: translateZ(0);
+    }
+    .card:before{
+      content:"";
+      position:absolute; inset:-2px;
+      background:
+        radial-gradient(260px 140px at 20% 10%, rgba(106,228,255,.12), transparent 60%),
+        radial-gradient(240px 140px at 90% 20%, rgba(139,92,255,.10), transparent 60%);
+      opacity:.9;
+      pointer-events:none;
+    }
+    .icon{
+      width:38px; height:38px;
+      border-radius: 14px;
+      display:grid; place-items:center;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.12);
+      position:relative;
+      z-index:1;
+    }
+    .card h3{
+      margin:12px 0 8px;
+      font-size:15px;
+      letter-spacing:.1px;
+      position:relative;
+      z-index:1;
+    }
+    .card p{
+      margin:0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      position:relative;
+      z-index:1;
+    }
+    .card ul{
+      margin:10px 0 0;
+      padding-left: 16px;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      position:relative;
+      z-index:1;
+    }
+
+    /* Process strip */
+    .strip{
+      border-radius: 22px;
+      border:1px solid rgba(255,255,255,.12);
+      background: linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03));
+      box-shadow: var(--shadow);
+      padding: 18px;
+      overflow:hidden;
+      position:relative;
+    }
+    .steps{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:12px;
+      margin-top: 10px;
+    }
+    @media (max-width: 960px){ .steps{grid-template-columns:1fr} }
+    .step{
+      border-radius: 18px;
+      border:1px solid rgba(255,255,255,.10);
+      background: rgba(0,0,0,.10);
+      padding: 14px;
+      position:relative;
+      overflow:hidden;
+    }
+    .num{
+      display:inline-flex; align-items:center; justify-content:center;
+      width:28px; height:28px; border-radius: 10px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.12);
+      font-weight:700;
+      font-size:12px;
+      color: rgba(234,240,255,.92);
+    }
+    .step strong{display:block; margin-top:8px; font-size:13px}
+    .step span{display:block; margin-top:6px; color: var(--muted); font-size:12.5px; line-height:1.45}
+
+    /* Contact */
+    .contactGrid{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+      align-items:stretch;
+    }
+    @media (max-width: 960px){ .contactGrid{grid-template-columns:1fr} }
+    .panel{
+      border-radius: 22px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      position:relative;
+      overflow:hidden;
+    }
+    .panel p{margin:8px 0 0; color: var(--muted); line-height:1.55; font-size: 13.5px}
+    .form{
+      margin-top: 12px;
+      display:grid; gap:10px;
+    }
+    .field{
+      display:grid; gap:6px;
+    }
+    label{font-size:12px; color: var(--muted2)}
+    input, textarea{
+      width:100%;
+      padding: 12px 12px;
+      border-radius: 14px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.18);
+      color: var(--text);
+      outline:none;
+      transition: border-color .2s ease, background .2s ease;
+      font-family: inherit;
+      font-size: 13px;
+    }
+    input:focus, textarea:focus{
+      border-color: rgba(106,228,255,.42);
+      background: rgba(0,0,0,.25);
+    }
+    textarea{min-height: 96px; resize: vertical}
+    .hint{font-size:12px; color: var(--muted2); margin-top:8px}
+
+    footer{
+      padding: 26px 0 40px;
+      color: var(--muted2);
+      border-top: 1px solid rgba(255,255,255,.08);
+      margin-top: 16px;
+    }
+    footer .row{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .tinyLinks{display:flex; gap:14px; flex-wrap:wrap}
+    .tinyLinks a{color: var(--muted2)}
+    .tinyLinks a:hover{color: var(--text)}
+    .kbd{
+      font-size:11px;
+      padding:6px 10px;
+      border-radius:999px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.04);
+      color: var(--muted);
+    }
+
+    /* Reduced motion */
+    @media (prefers-reduced-motion: reduce){
+      *{scroll-behavior:auto !important}
+    }
+  </style>
+</head>
+
+<body>
+  <div class="noise"></div>
+
+  <header>
+    <div class="container">
+      <div class="nav">
+        <a class="brand" href="#top" aria-label="JFSB Consulting Group">
+          <div class="mark" aria-hidden="true"></div>
+          <div>
+            <strong>JFSB Consulting Group</strong>
+            <span>AI Automation • Business Process • Security Awareness</span>
+          </div>
+        </a>
+
+        <nav class="navlinks" aria-label="Primary">
+          <a href="#services">Services</a>
+          <a href="#approach">Approach</a>
+          <a href="#security">Security</a>
+          <a href="#contact">Contact</a>
+        </nav>
+
+        <div class="ctaRow">
+          <a class="btn" href="#contact" id="btnSecondary">
+            <span class="dot" aria-hidden="true"></span>
+            Request a consult
+          </a>
+          <button class="btn primary" id="btnPrimary" type="button">
+            <span class="dot" aria-hidden="true"></span>
+            See our services
+          </button>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main id="top">
+    <section class="hero">
+      <div class="container">
+        <div class="heroGrid">
+          <div>
+            <div class="kicker heroKicker">
+              <span class="pulse" aria-hidden="true"></span>
+              Security-aware automation for real business outcomes
+            </div>
+
+            <h1 class="heroTitle">
+              Automate smarter.<br/>
+              Operate faster.<br/>
+              Train safer.
+            </h1>
+
+            <p class="lead heroLead">
+              JFSB Consulting Group helps teams deploy AI automation, streamline business processes, and run security awareness training that reduces risk without slowing the business down.
+            </p>
+
+            <div class="heroActions">
+              <a class="btn primary heroBtn" href="#contact">
+                <span class="dot" aria-hidden="true"></span>
+                Get a plan in 15 minutes
+              </a>
+              <a class="btn heroBtn ghost" href="#services">
+                View services
+              </a>
+              <span class="kbd" title="Tip">Press <b>G</b> to glide to Contact</span>
+            </div>
+
+            <div class="statRow">
+              <div class="stat stat1">
+                <strong>Automation-first</strong>
+                <span>AI agents, workflows, integrations, and SOPs that actually stick.</span>
+              </div>
+              <div class="stat stat2">
+                <strong>Process clarity</strong>
+                <span>Map → measure → improve, with clear ownership and controls.</span>
+              </div>
+              <div class="stat stat3">
+                <strong>Human-safe security</strong>
+                <span>Awareness training that targets real-world phishing and social engineering.</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="heroCard" aria-label="Live capability preview">
+            <div class="heroViz" aria-hidden="true">
+              <div class="gridlines"></div>
+              <div class="orb one"></div>
+              <div class="orb two"></div>
+              <div class="scan"></div>
+            </div>
+
+            <div class="heroCardTop">
+              <div>
+                <div class="title">Capability Snapshot</div>
+                <div class="sub">A security-aware delivery model across automation + process + training.</div>
+              </div>
+              <div class="chipRow">
+                <div class="chip chip1">AI Automation</div>
+                <div class="chip chip2">Process Design</div>
+                <div class="chip chip3">Security Awareness</div>
+              </div>
+            </div>
+
+            <div class="heroCardBody">
+              <div class="mini">
+                <div class="miniCard mini1">
+                  <div class="h">
+                    <strong>Automation readiness</strong>
+                    <span class="tag">Week 1</span>
+                  </div>
+                  <p>Identify high-ROI workflows, data constraints, and control points.</p>
+                  <div class="meter"><i class="bar bar1"></i></div>
+                </div>
+
+                <div class="miniCard mini2">
+                  <div class="h">
+                    <strong>Build & integrate</strong>
+                    <span class="tag">Weeks 2–4</span>
+                  </div>
+                  <p>Ship agents and automations with monitoring, guardrails, and handoffs.</p>
+                  <div class="meter"><i class="bar bar2"></i></div>
+                </div>
+
+                <div class="miniCard mini3">
+                  <div class="h">
+                    <strong>Train & harden</strong>
+                    <span class="tag">Ongoing</span>
+                  </div>
+                  <p>Role-based awareness: phishing, password hygiene, data handling, and reporting culture.</p>
+                  <div class="meter"><i class="bar bar3"></i></div>
+                </div>
+              </div>
+            </div>
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <section id="services">
+      <div class="container">
+        <div class="sectionHead">
+          <div>
+            <h2 class="reveal">Services</h2>
+            <p class="reveal">
+              Choose a starting point — or combine them into a single engagement for faster results and fewer gaps.
+            </p>
+          </div>
+        </div>
+
+        <div class="cards">
+          <article class="card reveal service1">
+            <div class="icon" aria-hidden="true">⚙️</div>
+            <h3>AI Automation & Agents</h3>
+            <p>Automate repetitive workflows across tools, teams, and data sources — with guardrails and measurable outcomes.</p>
+            <ul>
+              <li>Workflow automation & orchestration</li>
+              <li>AI agent enablement + human-in-the-loop</li>
+              <li>Monitoring, logging, and escalation paths</li>
+            </ul>
+          </article>
+
+          <article class="card reveal service2">
+            <div class="icon" aria-hidden="true">🧭</div>
+            <h3>Business Process Improvement</h3>
+            <p>Turn “tribal knowledge” into documented, scalable operations — then continuously improve with metrics.</p>
+            <ul>
+              <li>Process mapping + bottleneck analysis</li>
+              <li>SOPs, RACI, and governance</li>
+              <li>Change management + adoption</li>
+            </ul>
+          </article>
+
+          <article class="card reveal service3" id="security">
+            <div class="icon" aria-hidden="true">🛡️</div>
+            <h3>Security Awareness Training</h3>
+            <p>Build safer habits across the org with practical, repeatable training and realistic scenarios.</p>
+            <ul>
+              <li>Phishing & social engineering readiness</li>
+              <li>Data handling + access hygiene</li>
+              <li>Reporting culture and response muscle</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <section id="approach">
+      <div class="container">
+        <div class="strip">
+          <div class="sectionHead" style="margin-bottom:10px">
+            <div>
+              <h2 class="reveal">How we deliver</h2>
+              <p class="reveal">A simple operating rhythm to reduce ambiguity and ship value quickly — without sacrificing security.</p>
+            </div>
+          </div>
+
+          <div class="steps">
+            <div class="step reveal step1">
+              <div class="num">01</div>
+              <strong>Discover</strong>
+              <span>Assess workflows, risks, and constraints. Identify quick wins and long-term wins.</span>
+            </div>
+            <div class="step reveal step2">
+              <div class="num">02</div>
+              <strong>Design</strong>
+              <span>Map processes, define controls, pick tools, and design “safe automation” guardrails.</span>
+            </div>
+            <div class="step reveal step3">
+              <div class="num">03</div>
+              <strong>Build</strong>
+              <span>Implement automation + documentation, then test with real users and real scenarios.</span>
+            </div>
+            <div class="step reveal step4">
+              <div class="num">04</div>
+              <strong>Enable</strong>
+              <span>Train teams, monitor outcomes, and improve continuously with clear ownership.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="contact">
+      <div class="container">
+        <div class="sectionHead">
+          <div>
+            <h2 class="reveal">Contact</h2>
+            <p class="reveal">Send a note and we’ll respond with next steps and a suggested starting point.</p>
+          </div>
+        </div>
+
+        <div class="contactGrid">
+          <div class="panel reveal">
+            <h3 style="margin:0; font-size:15px;">What to include</h3>
+            <p>
+              Share your top 1–2 workflows to automate, any systems involved, and whether security awareness training is part of your near-term goals.
+            </p>
+            <p class="hint">
+              This demo form opens your email client (no backend). Replace with your preferred form tool later.
+            </p>
+
+            <div style="margin-top:14px; display:flex; gap:10px; flex-wrap:wrap">
+              <span class="chip">Automation discovery</span>
+              <span class="chip">Process mapping</span>
+              <span class="chip">Phishing readiness</span>
+              <span class="chip">Policy-to-practice</span>
+            </div>
+          </div>
+
+          <div class="panel reveal">
+            <h3 style="margin:0; font-size:15px;">Message JFSB</h3>
+            <form class="form" id="contactForm">
+              <div class="field">
+                <label for="name">Name</label>
+                <input id="name" name="name" placeholder="Your name" autocomplete="name" />
+              </div>
+              <div class="field">
+                <label for="email">Email</label>
+                <input id="email" name="email" placeholder="you@company.com" autocomplete="email" />
+              </div>
+              <div class="field">
+                <label for="topic">Topic</label>
+                <input id="topic" name="topic" placeholder="AI automation / process / security training" />
+              </div>
+              <div class="field">
+                <label for="message">Message</label>
+                <textarea id="message" name="message" placeholder="What are you trying to improve, and what systems are involved?"></textarea>
+              </div>
+
+              <button class="btn primary" type="submit" id="sendBtn">
+                <span class="dot" aria-hidden="true"></span>
+                Send message
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <footer>
+      <div class="container">
+        <div class="row">
+          <div>© <span id="year"></span> JFSB Consulting Group. All rights reserved.</div>
+          <div class="tinyLinks">
+            <a href="#services">Services</a>
+            <a href="#approach">Approach</a>
+            <a href="#security">Security</a>
+            <a href="#top">Back to top</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  </main>
+
+  <!-- GSAP -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.14.1/dist/ScrollToPlugin.min.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      gsap.registerPlugin(ScrollTrigger, ScrollToPlugin);
+
+      // Footer year
+      document.getElementById("year").textContent = new Date().getFullYear();
+
+      // Reduce motion support
+      const reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const easeOut = "power3.out";
+
+      // Subtle animated shine on logo mark
+      if (!reduceMotion) {
+        gsap.to(".mark:after", { rotation: 360, duration: 8, ease: "none", repeat: -1 });
+      }
+
+      // Hero ambient: pulse + scan + floating orbs
+      if (!reduceMotion) {
+        gsap.to(".pulse", {
+          boxShadow: "0 0 0 12px rgba(76,255,154,0)",
+          duration: 1.4,
+          ease: "power2.out",
+          repeat: -1
+        });
+
+        gsap.to(".scan", { yPercent: 190, duration: 3.8, ease: "none", repeat: -1 });
+
+        gsap.to(".orb.one", { y: -22, x: 14, duration: 6.2, ease: "sine.inOut", yoyo: true, repeat: -1 });
+        gsap.to(".orb.two", { y: 18, x: -10, duration: 7.2, ease: "sine.inOut", yoyo: true, repeat: -1 });
+      }
+
+      // Bars in mini meters
+      const barTargets = [
+        { sel: ".bar1", w: "72%" },
+        { sel: ".bar2", w: "86%" },
+        { sel: ".bar3", w: "62%" },
+      ];
+      barTargets.forEach(({sel, w}, i) => {
+        gsap.set(sel, { width: "10%" });
+        gsap.to(sel, {
+          width: w,
+          duration: reduceMotion ? 0 : 1.2,
+          ease: "power2.out",
+          delay: reduceMotion ? 0 : 0.25 + i * 0.12
+        });
+      });
+
+      // Hero intro timeline
+      const tl = gsap.timeline({ defaults: { ease: easeOut } });
+      tl.from(".heroKicker", { y: 14, opacity: 0, duration: 0.7 })
+        .from(".heroTitle", { y: 18, opacity: 0, duration: 0.9 }, "-=0.35")
+        .from(".heroLead", { y: 14, opacity: 0, duration: 0.8 }, "-=0.55")
+        .from(".heroActions .heroBtn, .heroActions .kbd", {
+          y: 10, opacity: 0, duration: 0.7, stagger: 0.08
+        }, "-=0.55")
+        .from(".stat", { y: 10, opacity: 0, duration: 0.7, stagger: 0.09 }, "-=0.45")
+        .from(".heroCard", { x: 14, opacity: 0, duration: 0.9 }, "-=0.85")
+        .from(".chip", { y: 8, opacity: 0, duration: 0.6, stagger: 0.07 }, "-=0.65")
+        .from(".miniCard", { y: 10, opacity: 0, duration: 0.6, stagger: 0.08 }, "-=0.55");
+
+      // Scroll reveals
+      const reveals = gsap.utils.toArray(".reveal");
+      reveals.forEach((el) => {
+        gsap.from(el, {
+          scrollTrigger: {
+            trigger: el,
+            start: "top 84%",
+            toggleActions: "play none none reverse",
+          },
+          y: 18,
+          opacity: 0,
+          duration: reduceMotion ? 0 : 0.8,
+          ease: easeOut,
+        });
+      });
+
+      // Stagger cards/steps on scroll
+      const groups = [
+        { trigger: "#services", targets: ".service1, .service2, .service3" },
+        { trigger: "#approach", targets: ".step1, .step2, .step3, .step4" },
+      ];
+      groups.forEach((g) => {
+        gsap.from(g.targets, {
+          scrollTrigger: { trigger: g.trigger, start: "top 75%" },
+          y: 16,
+          opacity: 0,
+          duration: reduceMotion ? 0 : 0.75,
+          stagger: reduceMotion ? 0 : 0.10,
+          ease: easeOut,
+        });
+      });
+
+      // Primary CTA scroll
+      const btnPrimary = document.getElementById("btnPrimary");
+      btnPrimary.addEventListener("click", () => {
+        gsap.to(window, { duration: reduceMotion ? 0 : 0.9, scrollTo: "#services", ease: "power2.out" });
+      });
+
+      // Keyboard shortcut: G -> Contact
+      window.addEventListener("keydown", (e) => {
+        if (e.key.toLowerCase() === "g" && !e.metaKey && !e.ctrlKey && !e.altKey) {
+          gsap.to(window, { duration: reduceMotion ? 0 : 0.9, scrollTo: "#contact", ease: "power2.out" });
+        }
+      });
+
+      // Button hover micro-interactions (GSAP)
+      const buttons = gsap.utils.toArray(".btn");
+      buttons.forEach((btn) => {
+        btn.addEventListener("mouseenter", () => {
+          if (reduceMotion) return;
+          gsap.to(btn, { y: -2, duration: 0.18, ease: "power2.out" });
+        });
+        btn.addEventListener("mouseleave", () => {
+          if (reduceMotion) return;
+          gsap.to(btn, { y: 0, duration: 0.22, ease: "power2.out" });
+        });
+      });
+
+      // Contact form (mailto)
+      const form = document.getElementById("contactForm");
+      form.addEventListener("submit", (e) => {
+        e.preventDefault();
+
+        const name = (document.getElementById("name").value || "").trim();
+        const email = (document.getElementById("email").value || "").trim();
+        const topic = (document.getElementById("topic").value || "").trim();
+        const message = (document.getElementById("message").value || "").trim();
+
+        const subject = encodeURIComponent(`JFSB Consult Request${topic ? " — " + topic : ""}`);
+        const body = encodeURIComponent(
+          `Name: ${name}\nEmail: ${email}\nTopic: ${topic}\n\nMessage:\n${message}\n`
+        );
+
+        // Replace with your business email address:
+        const to = "hello@jfsbconsulting.com";
+
+        // Animate submit feedback
+        if (!reduceMotion) {
+          gsap.fromTo("#sendBtn", { scale: 1 }, { scale: 1.03, duration: 0.12, yoyo: true, repeat: 1, ease: "power2.out" });
+        }
+
+        window.location.href = `mailto:${to}?subject=${subject}&body=${body}`;
+      });
+
+      // Keep ScrollTrigger refreshed (fonts / resize)
+      setTimeout(() => ScrollTrigger.refresh(), 300);
+    });
+  </script>
+</body>
+</html>

@@ -279,7 +279,7 @@ export default function ConnectorManager() {
       </div>
 
       {/* Toolkit grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4 max-h-[60vh] overflow-y-auto pr-1">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         {filteredToolkits.map(tk => {
           const isSelected = composioSelectedToolkits.includes(tk.slug);
           return (

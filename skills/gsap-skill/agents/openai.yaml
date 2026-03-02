@@ -1,0 +1,4 @@
+interface:
+  display_name: "GSAP Animator"
+  short_description: "Build polished GSAP animations quickly"
+  default_prompt: "Use $gsap-skill to implement production-ready GSAP motion for this UI."
