@@ -3,7 +3,8 @@
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { AudioLines, ExternalLink, Film, Images, ImagePlus, LayoutGrid, Mail, Moon, PanelLeft, Plus, Settings, Star, Sun, Terminal, Video, X, CalendarDays, Link } from "lucide-react";
+import { ChevronDown, Moon, PanelLeft, Plus, Settings, Star, Sun, X } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
 import Assistant from "@/components/assistant";
 import ConversationHistory from "@/components/conversation-history";
@@ -64,8 +65,6 @@ export default function MainClient() {
     toggleApipieFavoriteImageModel,
   } = useToolsStore();
   const [showVoiceAgent, setShowVoiceAgent] = useState(false);
-  const [showVibenIframe, setShowVibenIframe] = useState(false);
-  const [showSbouldinIframe, setShowSbouldinIframe] = useState(false);
   const [apipieModels, setApipieModels] = useState<string[]>([]);
   const [isLoadingApipieModels, setIsLoadingApipieModels] = useState(false);
   const [apipieImageModels, setApipieImageModels] = useState<string[]>([]);
@@ -140,16 +139,6 @@ export default function MainClient() {
       cancelled = true;
     };
   }, []);
-
-  const handleVibenApp = () => {
-    setShowVibenIframe(!showVibenIframe);
-  };
-
-  const handleSbouldinApp = () => {
-    // Open in new tab since iframe embedding is blocked
-    window.open('http://sbouldin.com:8443', '_blank');
-    setShowSbouldinIframe(false); // Don't show iframe, just open tab
-  };
 
   const beginResize = (e: React.MouseEvent) => {
     if (typeof window === "undefined") return;
@@ -704,469 +693,278 @@ return (
         style={{ flex: currentArtifact ? splitRatio : 1, minWidth: 0 }}
       >
         <div
-          className={`shrink-0 z-30 flex flex-wrap items-center justify-between gap-2 px-4 py-4 border-b ${
-            theme === "dark" 
-              ? "border-white/10 bg-[#0a0a0a]/80" 
+          className={`shrink-0 z-30 flex items-center justify-between gap-3 px-4 py-3 border-b ${
+            theme === "dark"
+              ? "border-white/10 bg-[#0a0a0a]/80"
               : "border-black/10 bg-white/80"
           }`}
         >
-        <h1
-          className={`text-sm font-semibold tracking-tight ${theme === "dark" ? "text-white" : "text-gray-900"}`}
-        >
-          OneChatAI
-        </h1>
-        <div className="flex min-w-0 flex-wrap items-center justify-end gap-2">
-          <button
-            onClick={() => setSidebarCollapsed((v) => !v)}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
-          >
-            <PanelLeft size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => setShowImagesLibrary(true)}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Images"
-          >
-            <Images size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => setShowAppsGallery(true)}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Gallery"
-          >
-            <LayoutGrid size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={handleVibenApp}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              showVibenIframe
-                ? theme === "dark" ? "bg-amber-700 hover:bg-amber-800" : "bg-amber-600 hover:bg-amber-700"
-                : theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-[#e8e2d5]"
-            }`}
-            title={showVibenIframe ? "Close Viben" : "Launch Viben"}
-          >
-            <ExternalLink size={20} className={showVibenIframe ? "text-white" : (theme === "dark" ? "text-gray-400" : "text-gray-600")} />
-          </button>
-          <button
-            onClick={handleSbouldinApp}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Launch Sbouldin App"
-          >
-            <ExternalLink size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => router.push("/email")}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Email"
-          >
-            <Mail size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => router.push("/calendar")}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Calendar"
-          >
-            <CalendarDays size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => window.open('/connectors', '_blank')}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Connectors"
-          >
-            <Link size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => setShowTerminal(true)}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Terminal"
-          >
-            <Terminal size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => router.push("/sora-video")}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Sora video"
-          >
-            <Video size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => router.push("/veo-video")}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Veo video"
-          >
-            <Film size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => router.push("/tts-audio")}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="TTS audio"
-          >
-            <AudioLines size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => router.push("/imagen")}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Imagen"
-          >
-            <ImagePlus size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => router.push("/nano-banana")}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Nano Banana"
-          >
-            <Images size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => setShowTools(true)}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Settings"
-          >
-            <Settings size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => {
-              try {
-                resetConversation();
-              } catch {
-                // ignore
-              }
-            }}
-            className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Clear chat history"
-          >
-            <X size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <UserMenu />
-          <div className="flex min-w-0 items-center gap-1">
+          {/* Left: sidebar toggle + title */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setSidebarCollapsed((v) => !v)}
+              className={`hidden md:inline-flex p-2 rounded-lg transition-colors ${
+                theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+              }`}
+              title={sidebarCollapsed ? "Show sidebar" : "Hide sidebar"}
+            >
+              <PanelLeft size={18} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+            </button>
+            <h1 className={`text-sm font-semibold tracking-tight ${theme === "dark" ? "text-white" : "text-gray-900"}`}>
+              OneChatAI
+            </h1>
+          </div>
+
+          {/* Center: provider + model selectors */}
+          <div className="flex items-center gap-2">
+            <div className="flex min-w-0 items-center gap-1">
+              <select
+                value={selectedProjectId}
+                onChange={(e) => setSelectedProjectId(e.target.value)}
+                className={`h-8 w-20 max-w-[30vw] rounded-md border px-1 text-xs outline-none sm:w-28 sm:px-2 ${
+                  theme === "dark"
+                    ? "bg-transparent border-white/10 text-white"
+                    : "bg-white border-black/10 text-gray-900"
+                }`}
+                title="Project"
+              >
+                <option value="">No project</option>
+                {(projects || []).map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleCreateProject}
+                className={`h-8 px-1.5 rounded-md border text-xs ${
+                  theme === "dark"
+                    ? "bg-transparent border-white/10 text-white hover:bg-white/5"
+                    : "bg-white border-black/10 text-gray-900 hover:bg-gray-50"
+                }`}
+                title="Create project"
+                disabled={isLoadingProjects}
+              >
+                +
+              </button>
+            </div>
+
             <select
-              value={selectedProjectId}
-              onChange={(e) => setSelectedProjectId(e.target.value)}
-              className={`h-9 w-20 max-w-[35vw] rounded-md border px-1 text-xs outline-none sm:w-32 sm:max-w-[45vw] sm:px-2 sm:text-sm ${
+              value={provider}
+              onChange={(e) => setProvider(e.target.value as any)}
+              className={`h-8 w-16 rounded-md border px-1 text-xs outline-none sm:w-24 sm:px-2 sm:text-sm ${
                 theme === "dark"
                   ? "bg-transparent border-white/10 text-white"
                   : "bg-white border-black/10 text-gray-900"
               }`}
-              title="Project"
+              title="Provider"
             >
-              <option value="">No project</option>
-              {(projects || []).map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
+              <option value="openai">OpenAI</option>
+              <option value="apipie">apipie.ai</option>
             </select>
+
+            {provider === "apipie" && (
+              <div className="flex items-center gap-1">
+                <select
+                  value={apipieModel}
+                  onChange={(e) => setApipieModel(e.target.value)}
+                  className={`h-8 max-w-[120px] sm:max-w-[160px] rounded-md border px-1 text-xs outline-none sm:px-2 sm:text-sm ${
+                    theme === "dark"
+                      ? "bg-transparent border-white/10 text-white"
+                      : "bg-white border-black/10 text-gray-900"
+                  }`}
+                  title="Model"
+                  disabled={isLoadingApipieModels || apipieModels.length === 0}
+                >
+                  {isLoadingApipieModels ? (
+                    <option value={apipieModel}>Loading…</option>
+                  ) : apipieModels.length === 0 ? (
+                    <option value={apipieModel}>No models</option>
+                  ) : (
+                    <>
+                      {favoriteApipieModels.length > 0 && (
+                        <optgroup label="Favorites">
+                          {favoriteApipieModels.map((m) => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="All models">
+                        {nonFavoriteApipieModels.map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => toggleApipieFavoriteModel(apipieModel)}
+                  className={`h-8 w-8 inline-flex items-center justify-center rounded-md border transition-colors ${
+                    theme === "dark" ? "border-white/10 hover:bg-white/10" : "border-black/10 hover:bg-black/5"
+                  }`}
+                  title={(apipieFavoriteModels || []).includes(apipieModel) ? "Unfavorite" : "Favorite"}
+                >
+                  <Star
+                    size={14}
+                    fill={(apipieFavoriteModels || []).includes(apipieModel) ? "currentColor" : "none"}
+                    className={(apipieFavoriteModels || []).includes(apipieModel) ? "text-yellow-400" : theme === "dark" ? "text-gray-400" : "text-gray-600"}
+                  />
+                </button>
+              </div>
+            )}
+
+            {provider === "apipie" && (
+              <div className="hidden sm:flex items-center gap-1">
+                <select
+                  value={apipieImageModel}
+                  onChange={(e) => setApipieImageModel(e.target.value)}
+                  className={`h-8 max-w-[120px] sm:max-w-[160px] rounded-md border px-1 text-xs outline-none sm:px-2 sm:text-sm ${
+                    theme === "dark"
+                      ? "bg-transparent border-white/10 text-white"
+                      : "bg-white border-black/10 text-gray-900"
+                  }`}
+                  title="Image model"
+                  disabled={isLoadingApipieImageModels || apipieImageModels.length === 0}
+                >
+                  {isLoadingApipieImageModels ? (
+                    <option value={apipieImageModel}>Loading…</option>
+                  ) : apipieImageModels.length === 0 ? (
+                    <option value={apipieImageModel}>No image models</option>
+                  ) : (
+                    <>
+                      {favoriteApipieImageModels.length > 0 && (
+                        <optgroup label="Favorites">
+                          {favoriteApipieImageModels.map((m) => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="All image models">
+                        {nonFavoriteApipieImageModels.map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => toggleApipieFavoriteImageModel(apipieImageModel)}
+                  className={`h-8 w-8 inline-flex items-center justify-center rounded-md border transition-colors ${
+                    theme === "dark" ? "border-white/10 hover:bg-white/10" : "border-black/10 hover:bg-black/5"
+                  }`}
+                  title={(apipieFavoriteImageModels || []).includes(apipieImageModel) ? "Unfavorite" : "Favorite"}
+                >
+                  <Star
+                    size={14}
+                    fill={(apipieFavoriteImageModels || []).includes(apipieImageModel) ? "currentColor" : "none"}
+                    className={(apipieFavoriteImageModels || []).includes(apipieImageModel) ? "text-yellow-400" : theme === "dark" ? "text-gray-400" : "text-gray-600"}
+                  />
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* Right: settings + more menu + theme */}
+          <div className="flex items-center gap-1">
             <button
-              type="button"
-              onClick={handleCreateProject}
-              className={`h-9 px-2 rounded-md border text-sm ${
-                theme === "dark"
-                  ? "bg-transparent border-white/10 text-white hover:bg-white/5"
-                  : "bg-white border-black/10 text-gray-900 hover:bg-gray-50"
+              onClick={() => setShowTools(true)}
+              className={`p-2 rounded-lg transition-colors ${
+                theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
               }`}
-              title="Create project"
-              disabled={isLoadingProjects}
+              title="Settings"
             >
-              +
+              <Settings size={18} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+            </button>
+
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  className={`p-2 rounded-lg transition-colors flex items-center gap-1 ${
+                    theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+                  }`}
+                  title="More features"
+                >
+                  <ChevronDown size={18} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
+                </button>
+              </PopoverTrigger>
+              <PopoverContent side="bottom" align="end" className="w-56 p-1">
+                <div className="space-y-1">
+                  <div className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
+                    Media
+                  </div>
+                  <button onClick={() => setShowImagesLibrary(true)} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"}`}>
+                    Images Library
+                  </button>
+                  <button onClick={() => router.push("/imagen")} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"}`}>
+                    Imagen
+                  </button>
+                  <button onClick={() => router.push("/sora-video")} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"}`}>
+                    Sora Video
+                  </button>
+                  <button onClick={() => router.push("/veo-video")} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"}`}>
+                    Veo Video
+                  </button>
+                  <button onClick={() => router.push("/tts-audio")} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"}`}>
+                    Text to Speech
+                  </button>
+                  <button onClick={() => router.push("/nano-banana")} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"}`}>
+                    Nano Banana
+                  </button>
+
+                  <div className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
+                    Integrations
+                  </div>
+                  <button onClick={() => router.push("/email")} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"}`}>
+                    Email
+                  </button>
+                  <button onClick={() => router.push("/calendar")} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"}`}>
+                    Calendar
+                  </button>
+                  <button onClick={() => window.open("/connectors", "_blank")} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"}`}>
+                    Connectors
+                  </button>
+
+                  <div className={`px-2 py-1 text-[10px] font-semibold uppercase tracking-wider ${theme === "dark" ? "text-gray-500" : "text-gray-400"}`}>
+                    Tools
+                  </div>
+                  <button onClick={() => setShowTerminal(true)} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"}`}>
+                    Terminal
+                  </button>
+                  <button onClick={() => setShowAppsGallery(true)} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"}`}>
+                    Apps Gallery
+                  </button>
+                  <button onClick={() => window.open("https://viben-peach.vercel.app/", "_blank")} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"}`}>
+                    Viben
+                  </button>
+                  <button onClick={() => window.open("http://sbouldin.com:8443", "_blank")} className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-gray-300" : "hover:bg-gray-100 text-gray-700"}`}>
+                    Sbouldin
+                  </button>
+
+                  <div className={`border-t ${theme === "dark" ? "border-white/10" : "border-black/10"}`} />
+                  <button
+                    onClick={() => { try { resetConversation(); } catch {} }}
+                    className={`w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${theme === "dark" ? "hover:bg-white/10 text-red-400" : "hover:bg-gray-100 text-red-500"}`}
+                  >
+                    Clear Chat
+                  </button>
+                </div>
+              </PopoverContent>
+            </Popover>
+
+            <UserMenu />
+
+            <button
+              onClick={toggleTheme}
+              className={`p-2 rounded-lg transition-colors ${
+                theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
+              }`}
+              title={theme === "dark" ? "Light mode" : "Dark mode"}
+            >
+              {theme === "dark" ? <Sun size={18} className="text-gray-400" /> : <Moon size={18} className="text-gray-600" />}
             </button>
           </div>
-          <select
-            value={provider}
-            onChange={(e) => setProvider(e.target.value as any)}
-            className={`h-9 w-16 rounded-md border px-1 text-xs outline-none sm:w-24 sm:px-2 sm:text-sm ${
-              theme === "dark"
-                ? "bg-transparent border-white/10 text-white"
-                : "bg-white border-black/10 text-gray-900"
-            }`}
-            title="Provider"
-          >
-            <option value="openai">OpenAI</option>
-            <option value="apipie">apipie.ai</option>
-          </select>
-
-          {provider === "apipie" && (
-            <div className="flex items-center gap-1">
-              <select
-                value={apipieModel}
-                onChange={(e) => setApipieModel(e.target.value)}
-                className={`h-9 max-w-[120px] sm:max-w-[160px] rounded-md border px-1 text-xs outline-none sm:px-2 sm:text-sm ${
-                  theme === "dark"
-                    ? "bg-transparent border-white/10 text-white"
-                    : "bg-white border-black/10 text-gray-900"
-                }`}
-                title="Model"
-                disabled={isLoadingApipieModels || apipieModels.length === 0}
-              >
-                {isLoadingApipieModels ? (
-                  <option value={apipieModel}>Loading models…</option>
-                ) : apipieModels.length === 0 ? (
-                  <option value={apipieModel}>No models</option>
-                ) : (
-                  <>
-                    {favoriteApipieModels.length > 0 && (
-                      <optgroup label="Favorites">
-                        {favoriteApipieModels.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                    <optgroup label="All models">
-                      {nonFavoriteApipieModels.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </>
-                )}
-              </select>
-              <button
-                type="button"
-                onClick={() => toggleApipieFavoriteModel(apipieModel)}
-                className={`h-9 w-9 inline-flex items-center justify-center rounded-md border transition-colors ${
-                  theme === "dark" ? "border-white/10 hover:bg-white/10" : "border-black/10 hover:bg-black/5"
-                }`}
-                title={(apipieFavoriteModels || []).includes(apipieModel) ? "Unfavorite" : "Favorite"}
-              >
-                <Star
-                  size={16}
-                  fill={(apipieFavoriteModels || []).includes(apipieModel) ? "currentColor" : "none"}
-                  className={
-                    (apipieFavoriteModels || []).includes(apipieModel)
-                      ? "text-yellow-400"
-                      : theme === "dark"
-                        ? "text-gray-400"
-                        : "text-gray-600"
-                  }
-                />
-              </button>
-            </div>
-          )}
-
-          {provider === "apipie" && (
-            <div className="flex items-center gap-1">
-              <select
-                value={apipieImageModel}
-                onChange={(e) => setApipieImageModel(e.target.value)}
-                className={`h-9 max-w-[120px] sm:max-w-[160px] rounded-md border px-1 text-xs outline-none sm:px-2 sm:text-sm ${
-                  theme === "dark"
-                    ? "bg-transparent border-white/10 text-white"
-                    : "bg-white border-black/10 text-gray-900"
-                }`}
-                title="Image model"
-                disabled={isLoadingApipieImageModels || apipieImageModels.length === 0}
-              >
-                {isLoadingApipieImageModels ? (
-                  <option value={apipieImageModel}>Loading image models…</option>
-                ) : apipieImageModels.length === 0 ? (
-                  <option value={apipieImageModel}>No image models</option>
-                ) : (
-                  <>
-                    {favoriteApipieImageModels.length > 0 && (
-                      <optgroup label="Favorites">
-                        {favoriteApipieImageModels.map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </optgroup>
-                    )}
-                    <optgroup label="All image models">
-                      {nonFavoriteApipieImageModels.map((m) => (
-                        <option key={m} value={m}>
-                          {m}
-                        </option>
-                      ))}
-                    </optgroup>
-                  </>
-                )}
-              </select>
-              <button
-                type="button"
-                onClick={() => toggleApipieFavoriteImageModel(apipieImageModel)}
-                className={`h-9 w-9 inline-flex items-center justify-center rounded-md border transition-colors ${
-                  theme === "dark" ? "border-white/10 hover:bg-white/10" : "border-black/10 hover:bg-black/5"
-                }`}
-                title={(apipieFavoriteImageModels || []).includes(apipieImageModel) ? "Unfavorite" : "Favorite"}
-              >
-                <Star
-                  size={16}
-                  fill={(apipieFavoriteImageModels || []).includes(apipieImageModel) ? "currentColor" : "none"}
-                  className={
-                    (apipieFavoriteImageModels || []).includes(apipieImageModel)
-                      ? "text-yellow-400"
-                      : theme === "dark"
-                        ? "text-gray-400"
-                        : "text-gray-600"
-                  }
-                />
-              </button>
-            </div>
-          )}
-          <button
-            onClick={() => setShowTools(true)}
-            className={`p-2 rounded-lg transition-colors md:hidden ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Settings"
-          >
-            <Settings size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => setShowImagesLibrary(true)}
-            className={`p-2 rounded-lg transition-colors md:hidden ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Images"
-          >
-            <Images size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => setShowAppsGallery(true)}
-            className={`p-2 rounded-lg transition-colors md:hidden ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Gallery"
-          >
-            <LayoutGrid size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={handleVibenApp}
-            className={`p-2 rounded-lg transition-colors md:hidden ${
-              showVibenIframe
-                ? theme === "dark" ? "bg-purple-600 hover:bg-purple-700" : "bg-purple-500 hover:bg-purple-600"
-                : theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title={showVibenIframe ? "Close Viben" : "Launch Viben"}
-          >
-            <ExternalLink size={20} className={showVibenIframe ? "text-white" : (theme === "dark" ? "text-gray-400" : "text-gray-600")} />
-          </button>
-          <button
-            onClick={handleSbouldinApp}
-            className={`p-2 rounded-lg transition-colors md:hidden ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Launch Sbouldin App"
-          >
-            <ExternalLink size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => router.push("/email")}
-            className={`p-2 rounded-lg transition-colors md:hidden ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Email"
-          >
-            <Mail size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => router.push("/calendar")}
-            className={`p-2 rounded-lg transition-colors md:hidden ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Calendar"
-          >
-            <CalendarDays size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => window.open('/connectors', '_blank')}
-            className={`p-2 rounded-lg transition-colors md:hidden ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Connectors"
-          >
-            <Link size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => setShowTerminal(true)}
-            className={`p-2 rounded-lg transition-colors md:hidden ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Terminal"
-          >
-            <Terminal size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => router.push("/veo-video")}
-            className={`p-2 rounded-lg transition-colors md:hidden ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Veo video"
-          >
-            <Film size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => router.push("/tts-audio")}
-            className={`p-2 rounded-lg transition-colors md:hidden ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="TTS audio"
-          >
-            <AudioLines size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => router.push("/imagen")}
-            className={`p-2 rounded-lg transition-colors md:hidden ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Imagen"
-          >
-            <ImagePlus size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <button
-            onClick={() => router.push("/nano-banana")}
-            className={`p-2 rounded-lg transition-colors md:hidden ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title="Nano Banana"
-          >
-            <Images size={20} className={theme === "dark" ? "text-gray-400" : "text-gray-600"} />
-          </button>
-          <UserMenu />
-          <button
-            onClick={toggleTheme}
-            className={`p-2 rounded-lg transition-colors ${
-              theme === "dark" ? "hover:bg-[#2d2d30]" : "hover:bg-gray-100"
-            }`}
-            title={theme === "dark" ? "Light mode" : "Dark mode"}
-          >
-            {theme === "dark" ? <Sun size={20} className="text-gray-400" /> : <Moon size={20} className="text-gray-600" />}
-          </button>
         </div>
-      </div>
         <div className="flex-1 min-h-0 h-full">
           <Assistant
             voiceModeEnabled={voiceModeEnabled}
@@ -1285,114 +1083,6 @@ return (
               </button>
             </div>
             <ToolsPanel />
-          </div>
-        </div>
-      </div>
-    )}
-
-    {showVibenIframe && (
-      <div className="fixed inset-0 z-50 flex bg-black bg-opacity-30">
-        <div className={`w-full max-w-[95vw] h-[95vh] mx-auto my-auto ${theme === "dark" ? "bg-[#141414]" : "bg-white"} rounded-lg overflow-hidden`}>
-          <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: theme === "dark" ? "#333" : "#e5e7eb" }}>
-            <h2 className={`text-lg font-semibold ${theme === "dark" ? "text-white" : "text-stone-900"}`}>
-              Viben App
-            </h2>
-            <button
-              onClick={() => setShowVibenIframe(false)}
-              className={`p-1 rounded transition-colors ${
-                theme === "dark" ? "hover:bg-white/10" : "hover:bg-stone-100"
-              }`}
-            >
-              <X size={24} className={theme === "dark" ? "text-stone-400" : "text-stone-600"} />
-            </button>
-          </div>
-          <div className="h-full p-4">
-            <iframe
-              src="https://viben-peach.vercel.app/"
-              className="w-full h-full rounded"
-              style={{ minHeight: "600px" }}
-              title="Viben App"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
-          </div>
-        </div>
-      </div>
-    )}
-
-    {showSbouldinIframe && (
-      <div className="fixed inset-0 z-50 flex bg-black bg-opacity-30">
-        <div className={`w-full h-full ${theme === "dark" ? "bg-[#141414]" : "bg-white"}`}>
-          <div className="flex items-center justify-between p-4 border-b" style={{ borderColor: theme === "dark" ? "#333" : "#e5e7eb" }}>
-            <h2 className={`text-lg font-semibold ${theme === "dark" ? "text-white" : "text-stone-900"}`}>
-              Sbouldin App
-            </h2>
-            <button
-              onClick={() => setShowSbouldinIframe(false)}
-              className={`p-1 rounded transition-colors ${
-                theme === "dark" ? "hover:bg-white/10" : "hover:bg-stone-100"
-              }`}
-            >
-              <X size={24} className={theme === "dark" ? "text-stone-400" : "text-stone-600"} />
-            </button>
-          </div>
-          <div className="h-full relative" style={{ height: "calc(100vh - 73px)" }}>
-            <iframe
-              src="http://sbouldin.com:8443"
-              className="w-full h-full"
-              title="Sbouldin App"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-              sandbox="allow-same-origin allow-scripts allow-popups allow-forms allow-top-navigation"
-              onLoad={() => {
-                console.log('Sbouldin iframe loaded successfully');
-                console.log('Iframe src:', (document.querySelector('iframe[src*="sbouldin"]') as HTMLIFrameElement | null)?.src);
-                // Hide loading message when loaded
-                const loadingMsg = document.getElementById('sbouldin-loading');
-                if (loadingMsg) {
-                  setTimeout(() => {
-                    loadingMsg.style.display = 'none';
-                  }, 1000); // Give it a second to render
-                }
-              }}
-              onError={(e) => {
-                console.error('Failed to load sbouldin iframe:', e);
-                const loadingMsg = document.getElementById('sbouldin-loading');
-                if (loadingMsg) {
-                  loadingMsg.textContent = 'Failed to load http://sbouldin.com:8443 - Check if server is running';
-                  loadingMsg.className = `text-sm text-red-400 bg-black/50 px-3 py-1 rounded`;
-                }
-              }}
-            />
-            <div id="sbouldin-loading" className="absolute inset-0 flex items-center justify-center pointer-events-none">
-              <p className={`text-sm ${theme === "dark" ? "text-gray-400" : "text-gray-600"} bg-black/50 px-3 py-1 rounded`}>
-                Loading http://sbouldin.com:8443... If you see this message for more than 3 seconds, the app may be blocking iframe embedding
-              </p>
-            </div>
-            <div className="absolute top-4 right-4 flex gap-2">
-              <button
-                onClick={() => window.open('http://sbouldin.com:8443', '_blank')}
-                className={`px-3 py-1 rounded text-sm transition-colors ${
-                  theme === "dark" ? "bg-blue-600 hover:bg-blue-700 text-white" : "bg-blue-500 hover:bg-blue-600 text-white"
-                }`}
-              >
-                Open in New Tab
-              </button>
-              <button
-                onClick={() => {
-                  const iframe = document.querySelector('iframe[src*="sbouldin"]') as HTMLIFrameElement;
-                  if (iframe) {
-                    console.log('Current iframe src:', iframe.src);
-                    console.log('Iframe content loaded:', iframe.contentWindow ? 'Yes' : 'No (blocked by security)');
-                  }
-                }}
-                className={`px-3 py-1 rounded text-sm transition-colors ${
-                  theme === "dark" ? "bg-gray-600 hover:bg-gray-700 text-white" : "bg-gray-500 hover:bg-gray-600 text-white"
-                }`}
-              >
-                Debug
-              </button>
-            </div>
           </div>
         </div>
       </div>

@@ -53,25 +53,50 @@ const useConnectorsStore = create<StoreState>()(
           },
         })),
       setComposioSelectedToolkits: (slugs) =>
-        set({ composioSelectedToolkits: slugs }),
+        set((state) => ({
+          composioSelectedToolkits: slugs,
+          connectors: {
+            ...state.connectors,
+            composio: { ...state.connectors.composio, enabled: slugs.length > 0 },
+          },
+        })),
       addComposioToolkit: (slug) =>
-        set((state) => ({
-          composioSelectedToolkits: state.composioSelectedToolkits.includes(slug)
+        set((state) => {
+          const next = state.composioSelectedToolkits.includes(slug)
             ? state.composioSelectedToolkits
-            : [...state.composioSelectedToolkits, slug],
-        })),
+            : [...state.composioSelectedToolkits, slug];
+          return {
+            composioSelectedToolkits: next,
+            connectors: {
+              ...state.connectors,
+              composio: { ...state.connectors.composio, enabled: next.length > 0 },
+            },
+          };
+        }),
       removeComposioToolkit: (slug) =>
-        set((state) => ({
-          composioSelectedToolkits: state.composioSelectedToolkits.filter(
-            (s) => s !== slug
-          ),
-        })),
+        set((state) => {
+          const next = state.composioSelectedToolkits.filter((s) => s !== slug);
+          return {
+            composioSelectedToolkits: next,
+            connectors: {
+              ...state.connectors,
+              composio: { ...state.connectors.composio, enabled: next.length > 0 },
+            },
+          };
+        }),
       toggleComposioToolkit: (slug) =>
-        set((state) => ({
-          composioSelectedToolkits: state.composioSelectedToolkits.includes(slug)
+        set((state) => {
+          const next = state.composioSelectedToolkits.includes(slug)
             ? state.composioSelectedToolkits.filter((s) => s !== slug)
-            : [...state.composioSelectedToolkits, slug],
-        })),
+            : [...state.composioSelectedToolkits, slug];
+          return {
+            composioSelectedToolkits: next,
+            connectors: {
+              ...state.connectors,
+              composio: { ...state.connectors.composio, enabled: next.length > 0 },
+            },
+          };
+        }),
     }),
     {
       name: "connectors-store",

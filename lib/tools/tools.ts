@@ -175,54 +175,65 @@ export const getTools = async (toolsState: ToolsState) => {
   // Handle command-based MCP servers
   if (!mcpGloballyDisabled && mcpEnabled && commandMcpConfigs && commandMcpConfigs.length > 0) {
     const enabledCommandServers = commandMcpConfigs.filter((c) => !c.disabled);
-    
-    for (const config of enabledCommandServers) {
-      try {
-        console.log(`[MCP] Connecting to command-based server: ${config.id}`);
-        const instance = await mcpClientManager.connectServer(config);
-        
-        // Convert MCP tools to function tools
-        for (const mcpTool of instance.tools) {
-          // Create a unique tool name: mcp_<server_id>_<tool_name>
-          const toolName = `mcp_${config.id.replace(/[^a-zA-Z0-9_]/g, '_')}_${mcpTool.name.replace(/[^a-zA-Z0-9_]/g, '_')}`;
+    const commandToolsResults = await Promise.allSettled(
+      enabledCommandServers.map(async (config) => {
+        try {
+          console.log(`[MCP] Connecting to command-based server: ${config.id}`);
+          const instance = await mcpClientManager.connectServer(config);
           
-          // Build parameters from inputSchema
-          const inputSchema = mcpTool.inputSchema
-            ? JSON.parse(JSON.stringify(mcpTool.inputSchema))
-            : {};
-          sanitizeJsonSchema(inputSchema);
-          const properties = inputSchema.properties || {};
-          const required = inputSchema.required || [];
+          const normalizedServerId = config.id.replace(/[^a-zA-Z0-9_]/g, "_");
+          const normalizedTools = instance.tools.map((mcpTool) => {
+            // Create a unique tool name: mcp_<server_id>_<tool_name>
+            const toolName = `mcp_${normalizedServerId}_${mcpTool.name.replace(/[^a-zA-Z0-9_]/g, "_")}`;
+            
+            // Build parameters from inputSchema
+            const inputSchema = mcpTool.inputSchema
+              ? JSON.parse(JSON.stringify(mcpTool.inputSchema))
+              : {};
+            sanitizeJsonSchema(inputSchema);
+            const properties = inputSchema.properties || {};
+            const required = inputSchema.required || [];
+            
+            // Add server_id and original tool_name as hidden context
+            const wrappedProperties: Record<string, any> = {
+              ...properties,
+            };
+            
+            const functionTool = {
+              type: "function",
+              name: toolName,
+              description: `[MCP:${config.id}] ${mcpTool.description || mcpTool.name}`,
+              parameters: {
+                type: "object",
+                properties: wrappedProperties,
+                required: required,
+                additionalProperties: false,
+              },
+              strict: false, // MCP tools may have dynamic schemas
+              // Store metadata for tool handling
+              _mcp_server_id: config.id,
+              _mcp_tool_name: mcpTool.name,
+            };
+
+            registerMcpTool(toolName, config.id, mcpTool.name);
+            return functionTool;
+          });
           
-          // Add server_id and original tool_name as hidden context
-          const wrappedProperties: Record<string, any> = {
-            ...properties,
-          };
-          
-          const functionTool = {
-            type: "function",
-            name: toolName,
-            description: `[MCP:${config.id}] ${mcpTool.description || mcpTool.name}`,
-            parameters: {
-              type: "object",
-              properties: wrappedProperties,
-              required: required,
-              additionalProperties: false,
-            },
-            strict: false, // MCP tools may have dynamic schemas
-            // Store metadata for tool handling
-            _mcp_server_id: config.id,
-            _mcp_tool_name: mcpTool.name,
-          };
-          
-          // Register the tool for handling
-          registerMcpTool(toolName, config.id, mcpTool.name);
-          
-          console.log(`[MCP] Added tool: ${toolName} from server ${config.id}`);
-          tools.push(functionTool);
+          return normalizedTools;
+        } catch (e) {
+          console.error(`[MCP] Failed to connect to command-based server ${config.id}:`, e);
+          return [];
         }
-      } catch (e) {
-        console.error(`[MCP] Failed to connect to command-based server ${config.id}:`, e);
+      })
+    );
+
+    for (const result of commandToolsResults) {
+      if (result.status === "rejected") {
+        continue;
+      }
+
+      for (const tool of result.value) {
+        tools.push(tool);
       }
     }
   }
@@ -235,26 +246,53 @@ export const getTools = async (toolsState: ToolsState) => {
   const outlookApproval = (connectors?.outlook?.requireApproval ?? "never") as "always" | "never";
   const composioApproval = (connectors?.composio?.requireApproval ?? "never") as "always" | "never";
 
-  if (googleEnabled) {
-    // Get fresh tokens (refresh if near expiry or missing access token when refresh exists)
-    const { accessToken } = await getFreshAccessToken();
-    tools.push(...getGoogleConnectorTools(accessToken!, googleApproval));
-  }
+  const [googleTools, outlookTools, composioTools] = await Promise.all([
+    googleEnabled
+      ? (async () => {
+          try {
+            const { accessToken } = await getFreshAccessToken();
+            if (!accessToken) return [];
+            return getGoogleConnectorTools(accessToken, googleApproval);
+          } catch {
+            return [];
+          }
+        })()
+      : Promise.resolve([] as any[]),
+    outlookEnabled
+      ? (async () => {
+          try {
+            const { accessToken } = await getFreshMsAccessToken();
+            if (!accessToken) return [];
+            return getMicrosoftConnectorTools(accessToken, outlookApproval);
+          } catch {
+            return [];
+          }
+        })()
+      : Promise.resolve([] as any[]),
+    composioEnabled
+      ? (async () => {
+          try {
+            const selectedToolkits = (connectors as any)?.composioSelectedToolkits || [];
+            return getComposioMetaTools(
+              selectedToolkits,
+              undefined,
+              composioApproval
+            );
+          } catch {
+            return [];
+          }
+        })()
+      : Promise.resolve([] as any[]),
+  ]);
 
-  if (outlookEnabled) {
-    const { accessToken } = await getFreshMsAccessToken();
-    tools.push(...getMicrosoftConnectorTools(accessToken!, outlookApproval));
+  if (googleTools.length > 0) {
+    tools.push(...googleTools);
   }
-
-  // Add Composio meta tools if enabled
-  if (composioEnabled) {
-    try {
-      const selectedToolkits = (connectors as any)?.composioSelectedToolkits || [];
-      const composioTools = await getComposioMetaTools(selectedToolkits, undefined, composioApproval);
-      tools.push(...composioTools);
-    } catch (error) {
-      console.error('Error loading Composio meta tools:', error);
-    }
+  if (outlookTools.length > 0) {
+    tools.push(...outlookTools);
+  }
+  if (composioTools.length > 0) {
+    tools.push(...composioTools);
   }
 
   return tools;

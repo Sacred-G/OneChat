@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 import ConnectorManager from '@/components/connector-manager';
 import { Card } from '@/components/ui/card';
 
@@ -35,13 +36,21 @@ export default function ConnectorsPage() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+    <div className="min-h-[100dvh] bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 overflow-y-auto">
       <div className="container mx-auto px-4 py-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Connector Management</h1>
-          <p className="text-gray-200">
-            Connect your favorite tools and services to enable AI-powered automation.
-          </p>
+        <div className="flex items-center justify-between mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-white mb-2">Connector Management</h1>
+            <p className="text-gray-200">
+              Connect your favorite tools and services to enable AI-powered automation.
+            </p>
+          </div>
+          <Link
+            href="/"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 backdrop-blur-sm transition-all duration-200 shrink-0"
+          >
+            Back to chat
+          </Link>
         </div>
 
         <div className="max-w-6xl mx-auto">
@@ -80,11 +89,7 @@ export default function ConnectorsPage() {
                     <p>Browse and select the toolkits you want above. Use Search, category filters, or Select All.</p>
                   </div>
                   <div>
-                    <h4 className="font-medium text-white mb-1">2. Enable Composio</h4>
-                    <p>Toggle the Composio option in the chat tools menu to activate the meta tools.</p>
-                  </div>
-                  <div>
-                    <h4 className="font-medium text-white mb-1">3. Ask the Agent</h4>
+                    <h4 className="font-medium text-white mb-1">2. Ask the Agent</h4>
                     <p>Just ask — the agent will search for the right tool, prompt you to authenticate if needed, and execute the action.</p>
                   </div>
                 </div>

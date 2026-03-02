@@ -230,6 +230,41 @@ export const deploy_streamlit_app = async ({ code }: { code: string }) => {
   return res;
 };
 
+export const create_ts_app = async ({
+  files,
+  dependencies,
+  entry,
+  title,
+}: {
+  files: Record<string, string>;
+  dependencies?: Record<string, string>;
+  entry?: string;
+  title?: string;
+}) => {
+  const { upsertArtifact, setCurrentArtifact } =
+    useArtifactStore.getState() as any;
+
+  const spec: any = {
+    entry: typeof entry === "string" && entry.trim() ? entry.trim() : "/src/index.tsx",
+    dependencies: dependencies && typeof dependencies === "object" ? dependencies : {},
+    files: files && typeof files === "object" ? files : {},
+  };
+
+  const artifact = {
+    id: `ts_app_${Date.now()}`,
+    title: typeof title === "string" && title.trim() ? title.trim() : "TypeScript App",
+    type: "ts_app",
+    language: "ts_app",
+    code: JSON.stringify(spec, null, 2),
+    revision: Date.now(),
+  };
+
+  if (typeof upsertArtifact === "function") upsertArtifact(artifact);
+  if (typeof setCurrentArtifact === "function") setCurrentArtifact(artifact);
+
+  return { ok: true };
+};
+
 export const update_ts_app = async ({
   files,
   deleteFiles,
@@ -325,6 +360,7 @@ export const functionsMap: Record<string, (params: any) => Promise<any>> = {
   read_skill_reference: read_skill_reference,
   launch_streamlit_app: launch_streamlit_app,
   deploy_streamlit_app: deploy_streamlit_app,
+  create_ts_app: create_ts_app,
   update_ts_app: update_ts_app,
   web_search_query: web_search_query,
 };

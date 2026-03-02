@@ -8,9 +8,23 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'mozpjfbozubrpjpkirwv.supabase.co',
+        hostname: 'wtehqbptexuonyseoqsp.supabase.co',
         port: '',
         pathname: '/storage/v1/object/public/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'apipie.ai',
+        port: '',
+        pathname: '/temp/**',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.blob.core.windows.net',
+      },
+      {
+        protocol: 'https',
+        hostname: '*.openai.com',
       },
     ],
   },

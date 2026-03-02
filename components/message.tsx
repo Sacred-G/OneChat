@@ -348,7 +348,6 @@ const Message: React.FC<MessageProps> = ({ message }) => {
 
 export default React.memo(Message, (prev, next) => {
   // Only re-render if the message content actually changed
-  if (prev.message === next.message) return true;
   if (prev.message.role !== next.message.role) return false;
   if (prev.message.content.length !== next.message.content.length) return false;
   for (let i = 0; i < prev.message.content.length; i++) {

@@ -219,7 +219,7 @@ export default function ImagenPage() {
   }, [selectedCategory]);
 
   return (
-    <div className="min-h-[100dvh] w-full bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 relative overflow-hidden">
+    <div className="min-h-[100dvh] w-full bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 relative overflow-x-hidden">
       {/* Background decorative elements */}
       <div className="absolute inset-0">
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-purple-500/5 blur-3xl" />
@@ -748,11 +748,10 @@ export default function ImagenPage() {
               {results.map((url, idx) => (
                 <div key={idx} className="relative group">
                   <div className="relative aspect-square rounded-xl overflow-hidden bg-white/5 border border-white/10">
-                    <Image 
-                      src={url} 
-                      alt={`Generated image ${idx + 1}`} 
-                      width={512}
-                      height={512}
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={`Generated image ${idx + 1}`}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-all duration-200 rounded-xl flex items-center justify-center">

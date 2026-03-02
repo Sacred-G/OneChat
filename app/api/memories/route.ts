@@ -162,7 +162,6 @@ export async function POST(request: Request) {
     const openai = new OpenAI();
     const extraction = await openai.chat.completions.create({
       model: "gpt-5-nano",
-      temperature: 0.3,
       response_format: { type: "json_object" },
       messages: [
         {

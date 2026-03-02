@@ -104,7 +104,7 @@ export default function SoraVideoPage() {
     setError("");
 
     try {
-      const res = await fetch("/api/sora-video/generate", {
+      const res = await fetch("/api/videos/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -136,12 +136,12 @@ export default function SoraVideoPage() {
   const fetchVideos = async () => {
     setLoadingVideos(true);
     try {
-      const res = await fetch("/api/sora-video/list");
+      const res = await fetch("/api/videos");
       const data = await res.json().catch(() => null);
-      if (res.ok && Array.isArray(data?.videos)) {
-        setVideos(data.videos);
+      if (res.ok && Array.isArray(data?.data)) {
+        setVideos(data.data);
         // Start polling for incomplete videos
-        const incompleteIds = data.videos
+        const incompleteIds = data.data
           .filter((v: VideoItem) => v.status === "in_progress" || v.status === "pending")
           .map((v: VideoItem) => v.id);
         setPollingIds(new Set(incompleteIds));
@@ -155,7 +155,7 @@ export default function SoraVideoPage() {
 
   const deleteVideo = async (id: string) => {
     try {
-      const res = await fetch(`/api/sora-video/delete?id=${id}`, { method: "DELETE" });
+      const res = await fetch(`/api/videos?videoId=${id}`, { method: "DELETE" });
       if (res.ok) {
         setVideos((prev) => prev.filter((v) => v.id !== id));
         setPollingIds((prev) => {
@@ -176,7 +176,7 @@ export default function SoraVideoPage() {
 
   const downloadVideo = async (id: string) => {
     try {
-      const res = await fetch(`/api/sora-video/download?id=${id}`);
+      const res = await fetch(`/api/videos/download/${id}`);
       if (res.ok) {
         const blob = await res.blob();
         const url = URL.createObjectURL(blob);
@@ -200,17 +200,17 @@ export default function SoraVideoPage() {
 
       for (const id of pollingIds) {
         try {
-          const res = await fetch(`/api/sora-video/status?id=${id}`);
+          const res = await fetch(`/api/videos/status/${id}`);
           const data = await res.json().catch(() => null);
-          
-          if (res.ok && data?.video) {
+
+          if (res.ok && data) {
             setVideos((prev) =>
-              prev.map((v) => (v.id === id ? { ...v, ...data.video } : v))
+              prev.map((v) => (v.id === id ? { ...v, ...data } : v))
             );
 
-            if (data.video.status === "completed") {
+            if (data.status === "completed") {
               // Video completed
-            } else if (data.video.status === "failed") {
+            } else if (data.status === "failed") {
               setFailedVideos((prev) => new Set(prev).add(id));
             } else {
               stillPending.add(id);
@@ -241,7 +241,7 @@ export default function SoraVideoPage() {
   }, [selectedCategory]);
 
   return (
-    <div className="min-h-[100dvh] w-full bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 relative overflow-hidden">
+    <div className="min-h-[100dvh] w-full bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 relative overflow-x-hidden">
       {/* Background decorative elements */}
       <div className="absolute inset-0">
         <div className="absolute top-[-20%] left-[-10%] w-[600px] h-[600px] rounded-full bg-blue-500/5 blur-3xl" />

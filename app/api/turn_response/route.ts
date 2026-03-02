@@ -1,8 +1,49 @@
 import { getDeveloperPrompt, MODEL } from "@/config/constants";
 import { getTools } from "@/lib/tools/tools";
-import { getSkill, listSkills } from "@/lib/skills-registry";
+import { getSkill, listSkills, getSkillMeta } from "@/lib/skills-registry";
 import OpenAI from "openai";
 import { withSentryAppRouter, reportApiError } from "@/lib/sentry-server";
+
+const SKILL_LIST_CACHE_TTL_MS = 5 * 60 * 1000;
+
+type CachedSkillList = {
+  skills: Awaited<ReturnType<typeof listSkills>>;
+  expiresAt: number;
+};
+
+let cachedSkills: CachedSkillList | null = null;
+let skillListLoadPromise: Promise<CachedSkillList | null> | null = null;
+
+async function getCachedSkills(): Promise<Awaited<ReturnType<typeof listSkills>>> {
+  const now = Date.now();
+
+  if (cachedSkills && cachedSkills.expiresAt > now) {
+    return cachedSkills.skills;
+  }
+
+  if (skillListLoadPromise) {
+    return (await skillListLoadPromise)?.skills ?? [];
+  }
+
+  skillListLoadPromise = (async () => {
+    try {
+      const skills = await listSkills();
+      const next = {
+        skills,
+        expiresAt: Date.now() + SKILL_LIST_CACHE_TTL_MS,
+      };
+      cachedSkills = next;
+      return next;
+    } catch {
+      return null;
+    } finally {
+      skillListLoadPromise = null;
+    }
+  })();
+
+  const loaded = await skillListLoadPromise;
+  return loaded?.skills ?? [];
+}
 
 function extractTextFromMessages(messages: any[]): string {
   const arr = Array.isArray(messages) ? messages : [];
@@ -39,7 +80,7 @@ async function inferSkillName(messages: any[]): Promise<string | null> {
   const query = extractTextFromMessages(messages).toLowerCase();
   if (!query.trim()) return null;
 
-  const skills = await listSkills();
+  const skills = await getCachedSkills();
   if (!skills.length) return null;
 
   // Targeted aliases for common intents.
@@ -115,6 +156,15 @@ async function inferSkillName(messages: any[]): Promise<string | null> {
   // Require at least a small signal to avoid injecting unrelated skills.
   if (!best || best.score < 6) return null;
   return best.name;
+}
+
+async function resolveRequestedSkill(selectedSkill: unknown, messages: any[]): Promise<string | null> {
+  if (typeof selectedSkill === "string" && selectedSkill.trim()) {
+    const selectedMeta = await getSkillMeta(selectedSkill);
+    if (selectedMeta?.name) return selectedMeta.name;
+  }
+
+  return inferSkillName(messages);
 }
 
 // Helper function to generate consistent safe IDs
@@ -384,7 +434,7 @@ export const POST = withSentryAppRouter(async (request: Request) => {
             }))
             .filter((t: any) => t?.function?.name);
 
-          // Apipie uses Chat Completions API which only supports function tools.
+    // Apipie uses Chat Completions API which only supports function tools.
           // The native web_search tool (type "web_search") gets filtered out above.
           // Add a web_search_query function tool so apipie models can search the web.
           if (toolsState?.webSearchEnabled) {
@@ -428,10 +478,7 @@ export const POST = withSentryAppRouter(async (request: Request) => {
         const label = typeof agentName === "string" && agentName.trim() ? agentName.trim() : "Custom Agent";
         instructions = `# Agent: ${label}\n\n${agentPrompt.trim()}\n\n---\n\n${instructions}`;
       }
-      const effectiveSkill =
-        selectedSkill && typeof selectedSkill === "string"
-          ? selectedSkill
-          : await inferSkillName(messages);
+      const effectiveSkill = await resolveRequestedSkill(selectedSkill, messages);
       if (effectiveSkill && typeof effectiveSkill === "string") {
         try {
           const skill = await getSkill(effectiveSkill);
@@ -658,10 +705,7 @@ export const POST = withSentryAppRouter(async (request: Request) => {
       const label = typeof agentName === "string" && agentName.trim() ? agentName.trim() : "Custom Agent";
       instructions = `# Agent: ${label}\n\n${agentPrompt.trim()}\n\n---\n\n${instructions}`;
     }
-    const effectiveSkill =
-      selectedSkill && typeof selectedSkill === "string"
-        ? selectedSkill
-        : await inferSkillName(messages);
+    const effectiveSkill = await resolveRequestedSkill(selectedSkill, messages);
     if (effectiveSkill && typeof effectiveSkill === "string") {
       try {
         const skill = await getSkill(effectiveSkill);
@@ -723,6 +767,32 @@ export const POST = withSentryAppRouter(async (request: Request) => {
       return allTools.filter((t: any) => t?.type !== "mcp");
     };
 
+    // Helper: strip a specific function call (and its output) by call_id from input.
+    const stripCallById = (items: any[], callId: string): any[] => {
+      if (!Array.isArray(items)) return items;
+      return items.filter((item) => {
+        if (!item || typeof item !== "object") return true;
+        if (item.type === "function_call") {
+          if (item.call_id === callId || item.id === callId) return false;
+          // Also match sanitized versions
+          const safeId = generateSafeId(callId);
+          if (item.call_id === safeId || item.id === safeId) return false;
+        }
+        if (item.type === "function_call_output" && item.call_id === callId) return false;
+        return true;
+      });
+    };
+
+    // Check if error is an orphaned function call error and extract the call ID
+    const getOrphanedCallId = (error: any): string | null => {
+      const msg =
+        (typeof error?.message === "string" && error.message) ||
+        (typeof error?.error?.message === "string" && error.error.message) ||
+        "";
+      const match = msg.match(/No tool output found for function call (\S+)/);
+      return match ? match[1].replace(/\.$/, "") : null;
+    };
+
     // Preflight the stream by reading the first event. If MCP tool listing fails,
     // retry automatically without MCP tools (keeps local function tools working).
     let events = await createEvents(tools);
@@ -733,7 +803,15 @@ export const POST = withSentryAppRouter(async (request: Request) => {
     try {
       firstResult = await iterator.next();
     } catch (error) {
-      if (isMcpToolsFailure(error)) {
+      // Handle orphaned function call errors by stripping the offending call and retrying
+      const orphanedCallId = getOrphanedCallId(error);
+      if (orphanedCallId) {
+        console.warn(`[sanitize] Stripping orphaned function call ${orphanedCallId} and retrying`);
+        sanitizedMessages.splice(0, sanitizedMessages.length, ...stripCallById(sanitizedMessages, orphanedCallId));
+        events = await createEvents(tools);
+        iterator = events[Symbol.asyncIterator]();
+        firstResult = await iterator.next();
+      } else if (isMcpToolsFailure(error)) {
         console.error("MCP tool listing failed; retrying without failing server", error);
         const fixedTools = removeFailingMcpTools(tools, error);
         events = await createEvents(fixedTools);

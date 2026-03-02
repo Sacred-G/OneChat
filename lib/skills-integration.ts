@@ -60,9 +60,10 @@ When creating code artifacts (HTML, React, or other web content):
 
 1. **Mark artifacts clearly**: Use code blocks with appropriate language tags
 2. **Make them self-contained**: Include all necessary HTML, CSS, and JavaScript
-3. **Use modern stack**: React 18, Tailwind CSS, modern ES6+ JavaScript
-4. **Be production-ready**: Include proper error handling, accessibility, responsive design
-5. **Follow design principles**: Create visually striking, memorable interfaces
+3. **Prefer TypeScript app artifacts for React UIs**: Use the create_ts_app tool for interactive or multi-file React apps, with JSON keys entry, files, and optional dependencies.
+4. **Use modern stack**: React 18, Tailwind CSS, modern ES6+ JavaScript
+5. **Be production-ready**: Include proper error handling, accessibility, responsive design
+6. **Follow design principles**: Create visually striking, memorable interfaces
 
 Example artifact structure:
 \`\`\`html

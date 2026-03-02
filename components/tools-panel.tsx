@@ -17,7 +17,7 @@ import useThemeStore from "@/stores/useThemeStore";
 export default function ContextPanel() {
   const { resetConversation, setAssistantLoading } = useConversationStore();
   const { theme } = useThemeStore();
-  const [destinationsEnabled, setDestinationsEnabled] = React.useState(true);
+  const [destinationsEnabled, setDestinationsEnabled] = React.useState(false);
   const {
     fileSearchEnabled,
     setFileSearchEnabled,
