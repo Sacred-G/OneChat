@@ -138,13 +138,13 @@ export default function TTSAudioPage() {
     setAudioUrl("");
 
     try {
-      const res = await fetch("/api/tts-audio/generate", {
+      const res = await fetch("/api/tts/generate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           mode,
-          voice,
-          instructions: mode === "prompt" ? instructions.trim() : "",
+          voiceName: voice,
+          prompt: mode === "prompt" ? instructions.trim() : "",
           transcript: mode === "transcript" ? transcript.trim() : "",
         }),
       });
@@ -155,8 +155,8 @@ export default function TTSAudioPage() {
         throw new Error(msg);
       }
 
-      if (data?.audioUrl) {
-        setAudioUrl(data.audioUrl);
+      if (data?.url) {
+        setAudioUrl(data.url);
       }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Failed to generate audio");
