@@ -69,11 +69,14 @@ export interface ToolsState {
   selectedVoice: VoiceOption;
   videoGenerationEnabled: boolean;
   disabledFunctions: string[];
-  provider: "openai" | "apipie";
+  provider: "openai" | "apipie" | "ollama";
   apipieModel: string;
   apipieImageModel: string;
   apipieFavoriteModels: string[];
   apipieFavoriteImageModels: string[];
+  ollamaModel: string;
+  ollamaBaseUrl: string;
+  ollamaFavoriteModels: string[];
   composioConnectorsEnabled: boolean;
 }
 
@@ -128,8 +131,8 @@ interface StoreState {
   setLocalAgentCwd: (cwd: string) => void;
   approvedFunctionTools: string[];
   approveFunctionTool: (name: string) => void;
-  provider: "openai" | "apipie";
-  setProvider: (provider: "openai" | "apipie") => void;
+  provider: "openai" | "apipie" | "ollama";
+  setProvider: (provider: "openai" | "apipie" | "ollama") => void;
   apipieModel: string;
   setApipieModel: (model: string) => void;
   apipieImageModel: string;
@@ -138,6 +141,12 @@ interface StoreState {
   toggleApipieFavoriteModel: (model: string) => void;
   apipieFavoriteImageModels: string[];
   toggleApipieFavoriteImageModel: (model: string) => void;
+  ollamaModel: string;
+  setOllamaModel: (model: string) => void;
+  ollamaBaseUrl: string;
+  setOllamaBaseUrl: (url: string) => void;
+  ollamaFavoriteModels: string[];
+  toggleOllamaFavoriteModel: (model: string) => void;
   disabledFunctions: string[];
   toggleFunction: (name: string) => void;
   enableAllFunctions: () => void;
@@ -202,6 +211,23 @@ const useToolsStore = create<StoreState>()(
           if (next.has(model)) next.delete(model);
           else next.add(model);
           return { apipieFavoriteImageModels: Array.from(next) };
+        });
+      },
+      ollamaModel: "",
+      setOllamaModel: (model) => {
+        set({ ollamaModel: model });
+      },
+      ollamaBaseUrl: "http://localhost:11434",
+      setOllamaBaseUrl: (url) => {
+        set({ ollamaBaseUrl: url });
+      },
+      ollamaFavoriteModels: [],
+      toggleOllamaFavoriteModel: (model) => {
+        set((state) => {
+          const next = new Set(state.ollamaFavoriteModels || []);
+          if (next.has(model)) next.delete(model);
+          else next.add(model);
+          return { ollamaFavoriteModels: Array.from(next) };
         });
       },
       fileSearchEnabled: false,

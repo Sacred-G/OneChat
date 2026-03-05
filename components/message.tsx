@@ -50,15 +50,15 @@ const Message: React.FC<MessageProps> = ({ message }) => {
       if (parsedArtifacts.length > 0) {
         setMessageArtifacts(parsedArtifacts);
         const { currentArtifact } = useArtifactStore.getState();
-        // Don't auto-switch to a plain code artifact if a URL artifact
-        // (e.g. a running Streamlit app) is currently displayed.
-        const isUrlArtifactActive = currentArtifact?.type === "url";
+        // Don't auto-switch to a plain code artifact if a URL or ts_app artifact
+        // is currently displayed — those are managed by tool calls, not markdown parsing.
+        const isSpecialArtifactActive = currentArtifact?.type === "url" || currentArtifact?.type === "ts_app";
         parsedArtifacts.forEach((artifact, idx) => {
           // Use upsertArtifact so updated versions (same stable ID) replace existing ones
           upsertArtifact(artifact);
           // Auto-show the first artifact from the latest message,
-          // but skip if it's a plain code block and a URL artifact is active.
-          if (idx === 0 && !(isUrlArtifactActive && artifact.type === "code")) {
+          // but skip if it's a plain code block and a special artifact is active.
+          if (idx === 0 && !(isSpecialArtifactActive && artifact.type === "code")) {
             setCurrentArtifact(artifact);
           }
         });

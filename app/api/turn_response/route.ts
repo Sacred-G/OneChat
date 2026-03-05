@@ -169,11 +169,11 @@ async function resolveRequestedSkill(selectedSkill: unknown, messages: any[]): P
 
 // Helper function to generate consistent safe IDs
 function generateSafeId(originalId: string): string {
-  // Already safe if starts with fc_ and contains only valid characters
-  if (/^fc_[a-zA-Z0-9_]+$/.test(originalId)) {
+  // Already safe if starts with fc_ or call_ and contains only valid characters
+  if (/^(fc_|call_)[a-zA-Z0-9_]+$/.test(originalId)) {
     return originalId;
   }
-  const safeId = `fc_${originalId.replace(/[^a-zA-Z0-9_]/g, '').substring(0, 20)}`;
+  const safeId = `fc_${originalId.replace(/[^a-zA-Z0-9_]/g, '')}`;
   return safeId;
 }
 
@@ -406,7 +406,7 @@ function toApipieChatMessages(messages: any[]): Array<{ role: string; content: a
 }
 
 export const POST = withSentryAppRouter(async (request: Request) => {
-  const { messages, toolsState, selectedSkill, provider, apipieModel, agentPrompt, agentName, agentTemperature, memoryContext } = await request.json();
+  const { messages, toolsState, selectedSkill, provider, apipieModel, ollamaModel, ollamaBaseUrl, agentPrompt, agentName, agentTemperature, memoryContext } = await request.json();
   
   try {
     if (provider === "apipie") {
@@ -668,6 +668,202 @@ export const POST = withSentryAppRouter(async (request: Request) => {
           "Content-Type": "text/event-stream",
           "Cache-Control": "no-cache",
         },
+      });
+    }
+
+    if (provider === "ollama") {
+      const baseUrl = (typeof ollamaBaseUrl === "string" && ollamaBaseUrl.trim()) ? ollamaBaseUrl.trim() : (process.env.OLLAMA_BASE_URL || "http://localhost:11434");
+      const model = (typeof ollamaModel === "string" && ollamaModel.trim()) ? ollamaModel.trim() : "llama3.2";
+
+      const toolsForOllama = await (async () => {
+        try {
+          const tools = await getTools(toolsState);
+          return (tools ?? [])
+            .filter((t: any) => t && typeof t === "object" && t.type === "function")
+            .map((t: any) => ({
+              type: "function",
+              function: {
+                name: t.name,
+                description: t.description,
+                parameters: t.parameters,
+              },
+            }))
+            .filter((t: any) => t?.function?.name);
+        } catch {
+          return [];
+        }
+      })();
+
+      let instructions = getDeveloperPrompt();
+      if (typeof memoryContext === "string" && memoryContext.trim()) {
+        instructions = `${instructions}\n\n# User Memory Context\n\nHere is what you know about this user from previous conversations:\n${memoryContext.trim()}`;
+      }
+      if (typeof agentPrompt === "string" && agentPrompt.trim()) {
+        const label = typeof agentName === "string" && agentName.trim() ? agentName.trim() : "Custom Agent";
+        instructions = `# Agent: ${label}\n\n${agentPrompt.trim()}\n\n---\n\n${instructions}`;
+      }
+      const effectiveSkill = await resolveRequestedSkill(selectedSkill, messages);
+      if (effectiveSkill && typeof effectiveSkill === "string") {
+        try {
+          const skill = await getSkill(effectiveSkill);
+          if (skill?.content) {
+            instructions = `${instructions}\n\n# Skill: ${skill.name}\n\n${skill.content}`;
+          }
+        } catch (e) {
+          console.error("Failed to load selected skill", e);
+        }
+      }
+
+      const sanitizedMessages = stripOrphanedFunctionCalls(sanitizeToolOutputs(sanitizeMessages(messages)));
+      const ollamaMessages = [
+        { role: "system", content: instructions },
+        ...toApipieChatMessages(sanitizedMessages),
+      ];
+
+      const requestBody: any = {
+        messages: ollamaMessages,
+        model,
+        stream: true,
+        temperature: typeof agentTemperature === "number" ? agentTemperature : 0.7,
+      };
+      if (toolsForOllama.length > 0) {
+        requestBody.tools = toolsForOllama;
+        requestBody.tool_choice = "auto";
+      }
+
+      let ollamaRes: Response;
+      try {
+        ollamaRes = await fetch(`${baseUrl}/v1/chat/completions`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "text/event-stream",
+          },
+          body: JSON.stringify(requestBody),
+        });
+      } catch (err: any) {
+        const msg = err?.cause?.code === "ECONNREFUSED"
+          ? "Cannot connect to Ollama. Is it running?"
+          : err?.message || "Failed to connect to Ollama";
+        return new Response(
+          JSON.stringify({ error: msg }),
+          { status: 502, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      if (!ollamaRes.ok) {
+        const errText = await ollamaRes.text().catch(() => "");
+        return new Response(
+          JSON.stringify({
+            error: "Ollama request failed",
+            upstream_status: ollamaRes.status,
+            upstream_body: errText || null,
+          }),
+          { status: ollamaRes.status >= 400 ? ollamaRes.status : 502, headers: { "Content-Type": "application/json" } }
+        );
+      }
+
+      const encoder = new TextEncoder();
+      const itemId = `ollama-${Date.now()}`;
+      const pendingToolCalls: Record<number, { id: string; name: string; arguments: string }> = {};
+
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            const reader = ollamaRes.body!.getReader();
+            const decoder = new TextDecoder();
+            let sseBuffer = "";
+            let textStarted = false;
+
+            while (true) {
+              const { value, done } = await reader.read();
+              if (done) break;
+              sseBuffer += decoder.decode(value, { stream: true });
+
+              const lines = sseBuffer.split("\n");
+              sseBuffer = lines.pop() || "";
+
+              for (const line of lines) {
+                const trimmed = line.trim();
+                if (!trimmed || !trimmed.startsWith("data: ")) continue;
+                const payload = trimmed.slice(6);
+                if (payload === "[DONE]") continue;
+
+                let chunk: any;
+                try { chunk = JSON.parse(payload); } catch { continue; }
+
+                const delta = chunk?.choices?.[0]?.delta;
+                if (!delta) continue;
+
+                const textDelta = typeof delta.content === "string" ? delta.content : "";
+                if (textDelta) {
+                  if (!textStarted) textStarted = true;
+                  controller.enqueue(encoder.encode(
+                    `data: ${JSON.stringify({
+                      event: "response.output_text.delta",
+                      data: { delta: textDelta, item_id: itemId },
+                    })}\n\n`
+                  ));
+                }
+
+                if (Array.isArray(delta.tool_calls)) {
+                  for (const tc of delta.tool_calls) {
+                    const idx = typeof tc.index === "number" ? tc.index : 0;
+                    if (!pendingToolCalls[idx]) {
+                      pendingToolCalls[idx] = {
+                        id: tc.id || `ollama-call-${Date.now()}-${idx}`,
+                        name: tc.function?.name || "",
+                        arguments: "",
+                      };
+                    }
+                    if (tc.id) pendingToolCalls[idx].id = tc.id;
+                    if (tc.function?.name) pendingToolCalls[idx].name = tc.function.name;
+                    if (tc.function?.arguments) pendingToolCalls[idx].arguments += tc.function.arguments;
+                  }
+                }
+              }
+            }
+
+            const toolCallEntries = Object.values(pendingToolCalls).filter(tc => tc.name);
+            for (const tc of toolCallEntries) {
+              const callId = tc.id || `ollama-call-${Date.now()}`;
+              controller.enqueue(encoder.encode(
+                `data: ${JSON.stringify({
+                  event: "response.output_item.added",
+                  data: { item: { type: "function_call", id: callId, call_id: callId, name: tc.name, arguments: tc.arguments || "{}" } },
+                })}\n\n`
+              ));
+              controller.enqueue(encoder.encode(
+                `data: ${JSON.stringify({
+                  event: "response.function_call_arguments.done",
+                  data: { item_id: callId, arguments: tc.arguments || "{}" },
+                })}\n\n`
+              ));
+              controller.enqueue(encoder.encode(
+                `data: ${JSON.stringify({
+                  event: "response.output_item.done",
+                  data: { item: { type: "function_call", id: callId, call_id: callId, name: tc.name, arguments: tc.arguments || "{}" } },
+                })}\n\n`
+              ));
+            }
+
+            controller.enqueue(encoder.encode(
+              `data: ${JSON.stringify({
+                event: "response.completed",
+                data: { response: { output: [] } },
+              })}\n\n`
+            ));
+            controller.enqueue(encoder.encode("data: [DONE]\n\n"));
+            controller.close();
+          } catch (err) {
+            console.error("Ollama streaming error:", err);
+            controller.error(err);
+          }
+        },
+      });
+
+      return new Response(stream, {
+        headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache" },
       });
     }
 

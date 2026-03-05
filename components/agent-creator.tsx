@@ -66,7 +66,7 @@ const AgentCreator: React.FC<AgentCreatorProps> = ({
   const [prompt, setPrompt] = useState("");
   const [icon, setIcon] = useState("bot");
   const [color, setColor] = useState("#6366f1");
-  const [preferredProvider, setPreferredProvider] = useState<"openai" | "apipie" | "none">("none");
+  const [preferredProvider, setPreferredProvider] = useState<"openai" | "apipie" | "ollama" | "none">("none");
   const [temperature, setTemperature] = useState(0.7);
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const [codeInterpreterEnabled, setCodeInterpreterEnabled] = useState(false);
@@ -156,7 +156,7 @@ const AgentCreator: React.FC<AgentCreatorProps> = ({
       icon,
       color,
       preferredProvider,
-      temperature: preferredProvider === "apipie" ? temperature : undefined,
+      temperature: (preferredProvider === "apipie" || preferredProvider === "ollama") ? temperature : undefined,
       webSearchEnabled,
       codeInterpreterEnabled,
       fileSearchEnabled,
@@ -307,6 +307,7 @@ const AgentCreator: React.FC<AgentCreatorProps> = ({
                 { value: "none" as const, label: "Use Chat Default" },
                 { value: "openai" as const, label: "OpenAI" },
                 { value: "apipie" as const, label: "APIPie" },
+                { value: "ollama" as const, label: "Ollama" },
               ]).map((opt) => (
                 <button
                   key={opt.value}
@@ -332,12 +333,12 @@ const AgentCreator: React.FC<AgentCreatorProps> = ({
             <p className={`text-xs ${isDark ? "text-gray-500" : "text-gray-400"}`}>
               {preferredProvider === "none"
                 ? "Agent will use whichever provider is active in the main chat."
-                : `Agent will default to ${preferredProvider === "openai" ? "OpenAI" : "APIPie"}. You can still switch in the chat.`}
+                : `Agent will default to ${preferredProvider === "openai" ? "OpenAI" : preferredProvider === "ollama" ? "Ollama" : "APIPie"}. You can still switch in the chat.`}
             </p>
           </div>
 
           {/* Temperature (apipie only) */}
-          {preferredProvider === "apipie" && (
+          {(preferredProvider === "apipie" || preferredProvider === "ollama") && (
           <div className="space-y-2">
             <label className={`text-xs font-medium ${isDark ? "text-gray-300" : "text-gray-600"}`}>
               Temperature <span className={`font-normal ${isDark ? "text-gray-500" : "text-gray-400"}`}>(APIPie only)</span>

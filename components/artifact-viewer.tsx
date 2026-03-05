@@ -29,8 +29,53 @@ import { useActiveCode, useSandpack } from "@codesandbox/sandpack-react";
 type TsAppSpec = {
   files: Record<string, string>;
   dependencies?: Record<string, string>;
+  devDependencies?: Record<string, string>;
+  externalResources?: string[];
+  template?: string;
   entry?: string;
 };
+
+const AUTO_DEPS: Record<string, string> = {
+  "react-router-dom": "^6.30.0",
+  "framer-motion": "^11.0.0",
+  "lucide-react": "^0.460.0",
+  "recharts": "^2.15.0",
+  "zustand": "^5.0.0",
+  "axios": "^1.7.0",
+  "date-fns": "^4.1.0",
+  "@tanstack/react-query": "^5.60.0",
+  "react-icons": "^5.4.0",
+  "clsx": "^2.1.0",
+  "tailwind-merge": "^2.6.0",
+  "class-variance-authority": "^0.7.0",
+  "react-hook-form": "^7.54.0",
+  "zod": "^3.24.0",
+  "sonner": "^1.7.0",
+  "swr": "^2.3.0",
+};
+
+function inferDependenciesFromFiles(files: Record<string, string>): Record<string, string> {
+  const fileText = Object.values(files || {})
+    .filter((code) => typeof code === "string")
+    .join("\n");
+
+  const next: Record<string, string> = {};
+  const hasImport = (dep: string) => {
+    const escaped = dep.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    return (
+      new RegExp(`\\bfrom\\s+["']${escaped}(/[^"']*)?["']`).test(fileText) ||
+      new RegExp(`require\\(\\s*["']${escaped}(/[^"']*)?["']\\)`).test(fileText)
+    );
+  };
+
+  for (const [name, version] of Object.entries(AUTO_DEPS)) {
+    if (hasImport(name) && version) {
+      next[name] = version;
+    }
+  }
+
+  return next;
+}
 
 function getDefaultTsAppSpec(): TsAppSpec {
   return {
@@ -125,16 +170,32 @@ function parseTsAppSpec(raw: string): { spec: TsAppSpec; error: string } {
     for (const [k, v] of Object.entries(files)) {
       if (typeof k === "string" && typeof v === "string") nextFiles[k] = v;
     }
-    const nextDeps: Record<string, string> = {};
+      const nextDeps: Record<string, string> = {};
     if (deps && typeof deps === "object") {
       for (const [k, v] of Object.entries(deps)) {
         if (typeof k === "string" && typeof v === "string") nextDeps[k] = v;
       }
     }
+    const inferredDeps = inferDependenciesFromFiles(nextFiles);
+    const mergedDeps = { ...inferredDeps, ...nextDeps };
+    const devDeps = parsed?.devDependencies;
+    const nextDevDeps: Record<string, string> = {};
+    if (devDeps && typeof devDeps === "object") {
+      for (const [k, v] of Object.entries(devDeps)) {
+        if (typeof k === "string" && typeof v === "string") nextDevDeps[k] = v;
+      }
+    }
+    const extRes = Array.isArray(parsed?.externalResources)
+      ? parsed.externalResources.filter((u: unknown) => typeof u === "string" && (u as string).trim())
+      : [];
+    const template = typeof parsed?.template === "string" ? parsed.template : undefined;
     return {
       spec: {
         entry,
-        dependencies: Object.keys(nextDeps).length > 0 ? nextDeps : undefined,
+        ...(template ? { template } : {}),
+        dependencies: Object.keys(mergedDeps).length > 0 ? mergedDeps : undefined,
+        ...(Object.keys(nextDevDeps).length > 0 ? { devDependencies: nextDevDeps } : {}),
+        ...(extRes.length > 0 ? { externalResources: extRes } : {}),
         files: Object.keys(nextFiles).length > 0 ? nextFiles : getDefaultTsAppSpec().files,
       },
       error: "",
@@ -327,7 +388,7 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
   );
 
   useEffect(() => {
-    if (artifact?.type === "code" || artifact?.type === "ts_app") {
+    if (artifact?.type === "code") {
       setViewMode("code");
     } else {
       setViewMode("preview");
@@ -704,11 +765,12 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
                 {tsAppError}
               </div>
             )}
-            <div className="h-full">
+            <div className="h-full flex flex-col" style={{ minHeight: 0 }}>
               <SandpackProvider
-                template="react-ts"
+                template={(tsAppSpec?.template as any) || "react-ts"}
                 theme="dark"
-                key={`${String((artifact as any)?.revision || "0")}:${JSON.stringify(tsAppSpec?.dependencies || {})}`}
+                style={{ height: "100%" }}
+                key={`${String((artifact as any)?.revision || "0")}:${JSON.stringify(tsAppSpec?.dependencies || {})}:${JSON.stringify(tsAppSpec?.externalResources || [])}`}
                 files={(() => {
                   const spec = tsAppSpec || getDefaultTsAppSpec();
                   const files: Record<string, any> = {};
@@ -716,11 +778,35 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
                     files[path] = { code };
                   }
                   const entry = spec.entry || "/src/index.tsx";
+                  // Auto-generate entry bootstrap if the AI didn't provide one
+                  if (!files[entry]) {
+                    // Find the main App file
+                    const appPath = Object.keys(spec.files || {}).find(p =>
+                      /\/App\.(tsx|jsx|ts|js)$/.test(p)
+                    );
+                    const appImport = appPath
+                      ? appPath.replace(/\.(tsx|jsx|ts|js)$/, "").replace(/^\/src/, ".")
+                      : "./App";
+                    files[entry] = {
+                      code: `import React from "react";\nimport { createRoot } from "react-dom/client";\nimport App from "${appImport}";\n\nconst root = document.getElementById("root");\nif (root) {\n  createRoot(root).render(\n    <React.StrictMode>\n      <App />\n    </React.StrictMode>\n  );\n}\n`,
+                    };
+                  }
                   if (files[entry]) files[entry] = { ...(files[entry] || {}), active: true };
                   return files;
                 })()}
-                customSetup={{ dependencies: tsAppSpec?.dependencies || {} }}
-                options={{ autorun: true }}
+                customSetup={{
+                  entry: (tsAppSpec?.entry || "/src/index.tsx"),
+                  dependencies: tsAppSpec?.dependencies || {},
+                  ...(tsAppSpec?.devDependencies && Object.keys(tsAppSpec.devDependencies).length > 0
+                    ? { devDependencies: tsAppSpec.devDependencies }
+                    : {}),
+                }}
+                options={{
+                  autorun: true,
+                  ...(tsAppSpec?.externalResources && tsAppSpec.externalResources.length > 0
+                    ? { externalResources: tsAppSpec.externalResources }
+                    : {}),
+                }}
               >
                 {viewMode === "preview" ? (
                   <SandpackLayout style={{ height: "100%" }}>

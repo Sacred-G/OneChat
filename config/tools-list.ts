@@ -26,20 +26,37 @@ export const toolsList = [
   {
     name: "create_ts_app",
     description:
-      "Create a new TypeScript app (ts_app) artifact. Use this when the user asks for a landing page, webpage, dashboard, or any React/interactive UI. Provide the files, dependencies, and entry point.",
+      "Create a new TypeScript app (ts_app) artifact. Use this when the user asks for a landing page, webpage, dashboard, or any React/interactive UI. IMPORTANT: Always include /src/index.tsx (the React bootstrap entry) and /src/App.tsx at minimum. The entry file must import and render the App component using createRoot. ALWAYS create reusable UI components in separate files under /src/components/ (e.g. /src/components/Button.tsx, /src/components/Card.tsx, /src/components/Header.tsx, /src/components/Footer.tsx). Break the UI into small, focused components rather than putting everything in App.tsx. Each component should be in its own file and exported as default. Use a /src/components/ directory structure for all UI pieces. For polished UIs, include Tailwind CSS via externalResources: [\"https://cdn.tailwindcss.com\"]. Popular deps like framer-motion, lucide-react, recharts, zustand, axios, date-fns, @tanstack/react-query are auto-detected from imports.",
     strict: false,
     parameters: {
       files: {
         type: "object",
         description:
-          "Map of file paths to full file contents. Paths should look like /src/App.tsx.",
+          'Map of file paths to full file contents. MUST include /src/index.tsx (entry bootstrap that imports App and calls createRoot), /src/App.tsx, and reusable UI components under /src/components/ (e.g. /src/components/Button.tsx, /src/components/Header.tsx). Break the UI into small, reusable component files — do NOT put all markup in App.tsx. Example entry: import React from "react"; import { createRoot } from "react-dom/client"; import App from "./App"; const root = document.getElementById("root"); if (root) { createRoot(root).render(<React.StrictMode><App /></React.StrictMode>); }',
         additionalProperties: { type: "string" },
       },
       dependencies: {
         type: "object",
         description:
-          "npm dependencies map { packageName: version }.",
+          "npm dependencies map { packageName: version }. Common packages like framer-motion, lucide-react, recharts, zustand, axios, date-fns are auto-detected from imports — only specify if you need a specific version.",
         additionalProperties: { type: "string" },
+      },
+      devDependencies: {
+        type: "object",
+        description:
+          "npm devDependencies map { packageName: version }. Use for CLI tools like shadcn@latest, tailwindcss, etc.",
+        additionalProperties: { type: "string" },
+      },
+      externalResources: {
+        type: "array",
+        description:
+          'External CSS/JS CDN URLs to load. Use for Tailwind CSS (\"https://cdn.tailwindcss.com\"), Google Fonts, icon libraries, etc.',
+        items: { type: "string" },
+      },
+      template: {
+        type: "string",
+        description: "Sandpack template. Defaults to react-ts.",
+        enum: ["react-ts", "react", "vanilla-ts", "vanilla", "vue", "vue-ts", "svelte", "angular", "nextjs", "vite-react", "vite-react-ts"],
       },
       entry: {
         type: "string",
@@ -55,7 +72,7 @@ export const toolsList = [
   {
     name: "update_ts_app",
     description:
-      "Update the currently open TypeScript app (ts_app) by modifying files and/or dependencies. Use this to apply changes directly to the open app.",
+      "Update an ALREADY EXISTING TypeScript app (ts_app) that was previously created with create_ts_app. ONLY use this if a ts_app is currently open. If no ts_app exists yet, you MUST use create_ts_app instead — do NOT call update_ts_app first.",
     strict: false,
     parameters: {
       files: {
@@ -74,6 +91,18 @@ export const toolsList = [
         description:
           "Optional npm dependencies map { packageName: version }. Provide to add/update dependencies.",
         additionalProperties: { type: "string" },
+      },
+      devDependencies: {
+        type: "object",
+        description:
+          "Optional npm devDependencies map { packageName: version }. Use for CLI tools like shadcn@latest, tailwindcss, etc.",
+        additionalProperties: { type: "string" },
+      },
+      externalResources: {
+        type: "array",
+        description:
+          'Optional external CSS/JS CDN URLs to add. Use for Tailwind CSS (\"https://cdn.tailwindcss.com\"), Google Fonts, icon libraries, etc.',
+        items: { type: "string" },
       },
       entry: {
         type: "string",

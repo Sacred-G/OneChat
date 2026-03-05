@@ -79,17 +79,53 @@ export default function TerminalPanel({ onClose }: { onClose: () => void }) {
       fontFamily: "ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace",
       theme:
         theme === "dark"
-          ? { background: "#0b0b0c", foreground: "#e5e7eb", cursor: "#e5e7eb" }
-          : { background: "#ffffff", foreground: "#111827", cursor: "#111827" },
+          ? {
+              background: "#0b0b0c",
+              foreground: "#e5e7eb",
+              cursor: "#e5e7eb",
+              cursorAccent: "#0b0b0c",
+              selectionBackground: "#3b82f650",
+              black: "#1e1e2e",
+              red: "#f87171",
+              green: "#4ade80",
+              yellow: "#facc15",
+              blue: "#60a5fa",
+              magenta: "#c084fc",
+              cyan: "#22d3ee",
+              white: "#e5e7eb",
+              brightBlack: "#6b7280",
+              brightRed: "#fca5a5",
+              brightGreen: "#86efac",
+              brightYellow: "#fde68a",
+              brightBlue: "#93c5fd",
+              brightMagenta: "#d8b4fe",
+              brightCyan: "#67e8f9",
+              brightWhite: "#f9fafb",
+            }
+          : {
+              background: "#ffffff",
+              foreground: "#111827",
+              cursor: "#111827",
+              cursorAccent: "#ffffff",
+              selectionBackground: "#3b82f630",
+              black: "#111827",
+              red: "#dc2626",
+              green: "#16a34a",
+              yellow: "#ca8a04",
+              blue: "#2563eb",
+              magenta: "#9333ea",
+              cyan: "#0891b2",
+              white: "#e5e7eb",
+              brightBlack: "#6b7280",
+              brightRed: "#ef4444",
+              brightGreen: "#22c55e",
+              brightYellow: "#eab308",
+              brightBlue: "#3b82f6",
+              brightMagenta: "#a855f7",
+              brightCyan: "#06b6d4",
+              brightWhite: "#f9fafb",
+            },
     });
-
-    term.open(el);
-    // Fixed initial size; avoids FitAddon renderer timing issues.
-    try {
-      term.resize(120, 30);
-    } catch {
-      // ignore
-    }
 
     termRef.current = term;
 
@@ -99,10 +135,33 @@ export default function TerminalPanel({ onClose }: { onClose: () => void }) {
       ws.send(data);
     });
 
-    connect();
+    // Defer open() until the container has layout dimensions to avoid
+    // "this._renderer.value is undefined" errors from xterm.
+    // Retry up to ~2s because CSS transitions may delay layout.
+    let retries = 0;
+    let rafId = 0;
+    const tryOpen = () => {
+      if (!aliveRef.current) return;
+      if (!el.offsetHeight && retries < 40) {
+        retries++;
+        rafId = requestAnimationFrame(tryOpen);
+        return;
+      }
+      term.open(el);
+      try {
+        const cols = Math.max(Math.floor(el.clientWidth / 7.2), 80);
+        const rows = Math.max(Math.floor(el.clientHeight / 17), 10);
+        term.resize(cols, rows);
+      } catch {
+        // ignore
+      }
+      connect();
+    };
+    rafId = requestAnimationFrame(tryOpen);
 
     return () => {
       aliveRef.current = false;
+      cancelAnimationFrame(rafId);
       try {
         onDataDispose.dispose();
       } catch {

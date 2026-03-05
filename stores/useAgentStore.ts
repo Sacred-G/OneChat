@@ -9,7 +9,7 @@ export interface CustomAgent {
   icon: string;
   color: string;
   model?: string;
-  preferredProvider?: "openai" | "apipie" | "none";
+  preferredProvider?: "openai" | "apipie" | "ollama" | "none";
   temperature?: number;
   webSearchEnabled?: boolean;
   codeInterpreterEnabled?: boolean;

@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "engines": {
-    "node": ">=20 <23"
+    "node": ">=20"
   },
   "scripts": {
-    "dev": "concurrently --names next,agent --prefix-colors blue,green \"next dev --turbopack\" \"tsx local-agent/server.ts\"",
+    "dev": "concurrently --names next,agent --prefix-colors blue,green \"next dev --turbopack\" \"set -a && source .env && set +a && tsx local-agent/server.ts\"",
     "dev:next": "next dev --turbopack",
     "dev:webpack": "next dev",
     "build": "next build",
@@ -74,7 +74,7 @@
     "mongodb": "^7.0.0",
     "next": "^15.5.9",
     "next-auth": "^4.24.13",
-    "node-pty": "^1.1.0",
+    "node-pty": "^1.2.0-beta.11",
     "nodemailer": "^7.0.13",
     "openai": "^4.87.3",
     "openid-client": "^6.6.4",

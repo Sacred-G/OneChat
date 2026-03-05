@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Moon, PanelLeft, Plus, Settings, Star, Sun, X } from "lucide-react";
+import { ChevronDown, Columns2, MessageSquare, Monitor, Moon, PanelLeft, Plus, Settings, Star, Sun, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
 
 import Assistant from "@/components/assistant";
@@ -47,6 +47,7 @@ export default function MainClient() {
   const splitContainerRef = useRef<HTMLDivElement | null>(null);
   const [splitRatio, setSplitRatio] = useState(0.5);
   const splitRatioRef = useRef(0.5);
+  const [splitMode, setSplitMode] = useState<"split" | "chat" | "artifact">("artifact");
   const {
     voiceModeEnabled,
     selectedProjectId,
@@ -63,12 +64,21 @@ export default function MainClient() {
     toggleApipieFavoriteModel,
     apipieFavoriteImageModels,
     toggleApipieFavoriteImageModel,
+    ollamaModel,
+    setOllamaModel,
+    ollamaBaseUrl,
+    setOllamaBaseUrl,
+    ollamaFavoriteModels,
+    toggleOllamaFavoriteModel,
   } = useToolsStore();
   const [showVoiceAgent, setShowVoiceAgent] = useState(false);
   const [apipieModels, setApipieModels] = useState<string[]>([]);
   const [isLoadingApipieModels, setIsLoadingApipieModels] = useState(false);
   const [apipieImageModels, setApipieImageModels] = useState<string[]>([]);
   const [isLoadingApipieImageModels, setIsLoadingApipieImageModels] = useState(false);
+  const [ollamaModels, setOllamaModels] = useState<string[]>([]);
+  const [isLoadingOllamaModels, setIsLoadingOllamaModels] = useState(false);
+  const [ollamaError, setOllamaError] = useState<string | null>(null);
   const [projects, setProjects] = useState<
     Array<{ id: string; name: string; vectorStoreId?: string; vectorStoreName?: string }>
   >([]);
@@ -406,6 +416,46 @@ export default function MainClient() {
     };
   }, [provider, apipieImageModel, setApipieImageModel]);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (provider !== "ollama") return;
+
+    let cancelled = false;
+    const loadModels = async () => {
+      setIsLoadingOllamaModels(true);
+      setOllamaError(null);
+      try {
+        const params = new URLSearchParams();
+        if (ollamaBaseUrl) params.set("baseUrl", ollamaBaseUrl);
+        const res = await fetch(`/api/ollama/models?${params}`);
+        const data = await res.json().catch(() => null);
+
+        if (!res.ok) {
+          if (!cancelled) setOllamaError(data?.error || "Failed to fetch models");
+          return;
+        }
+
+        const models = Array.isArray(data?.data)
+          ? data.data.map((m: any) => m.name || m.id).filter(Boolean)
+          : [];
+
+        if (!cancelled) {
+          setOllamaModels(models);
+          if (models.length > 0 && (!ollamaModel || !models.includes(ollamaModel))) {
+            setOllamaModel(models[0]);
+          }
+        }
+      } catch {
+        if (!cancelled) setOllamaError("Cannot connect to Ollama");
+      } finally {
+        if (!cancelled) setIsLoadingOllamaModels(false);
+      }
+    };
+
+    loadModels();
+    return () => { cancelled = true; };
+  }, [provider, ollamaBaseUrl, ollamaModel, setOllamaModel]);
+
   const saveCurrentWorkspaceState = async (wsId: string | null) => {
     if (!wsId) return;
     try {
@@ -464,6 +514,8 @@ export default function MainClient() {
         if (ws.toolSettings.provider) setProvider(ws.toolSettings.provider);
         if (ws.toolSettings.apipieModel) setApipieModel(ws.toolSettings.apipieModel);
         if (ws.toolSettings.apipieImageModel) setApipieImageModel(ws.toolSettings.apipieImageModel);
+        if (ws.toolSettings.ollamaModel) setOllamaModel(ws.toolSettings.ollamaModel);
+        if (ws.toolSettings.ollamaBaseUrl) setOllamaBaseUrl(ws.toolSettings.ollamaBaseUrl);
       }
     } catch {
       // ignore
@@ -690,7 +742,13 @@ return (
     <div ref={splitContainerRef} className="flex-1 flex min-h-0 bg-background">
       <div
         className="flex flex-col min-h-0 overflow-hidden transition-all bg-background"
-        style={{ flex: currentArtifact ? splitRatio : 1, minWidth: 0 }}
+        style={{
+          flex: currentArtifact
+            ? splitMode === "chat" ? 1 : splitMode === "artifact" ? 0 : splitRatio
+            : 1,
+          minWidth: 0,
+          display: currentArtifact && splitMode === "artifact" ? "none" : undefined,
+        }}
       >
         <div
           className={`shrink-0 z-30 flex items-center justify-between gap-3 px-4 py-3 border-b ${
@@ -760,6 +818,7 @@ return (
             >
               <option value="openai">OpenAI</option>
               <option value="apipie">apipie.ai</option>
+              <option value="ollama">Ollama</option>
             </select>
 
             {provider === "apipie" && (
@@ -863,6 +922,76 @@ return (
                 </button>
               </div>
             )}
+
+            {provider === "ollama" && (
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={ollamaBaseUrl}
+                  onChange={(e) => setOllamaBaseUrl(e.target.value)}
+                  placeholder="http://localhost:11434"
+                  className={`h-8 w-28 sm:w-36 rounded-md border px-1 text-xs outline-none sm:px-2 sm:text-sm ${
+                    theme === "dark"
+                      ? "bg-transparent border-white/10 text-white placeholder-gray-500"
+                      : "bg-white border-black/10 text-gray-900 placeholder-gray-400"
+                  }`}
+                  title="Ollama base URL"
+                />
+                <select
+                  value={ollamaModel}
+                  onChange={(e) => setOllamaModel(e.target.value)}
+                  className={`h-8 max-w-[120px] sm:max-w-[160px] rounded-md border px-1 text-xs outline-none sm:px-2 sm:text-sm ${
+                    theme === "dark"
+                      ? "bg-transparent border-white/10 text-white"
+                      : "bg-white border-black/10 text-gray-900"
+                  }`}
+                  title="Model"
+                  disabled={isLoadingOllamaModels || ollamaModels.length === 0}
+                >
+                  {isLoadingOllamaModels ? (
+                    <option value={ollamaModel}>Loading…</option>
+                  ) : ollamaError ? (
+                    <option value="">Error</option>
+                  ) : ollamaModels.length === 0 ? (
+                    <option value="">No models</option>
+                  ) : (
+                    <>
+                      {(ollamaFavoriteModels || []).filter((m) => ollamaModels.includes(m)).length > 0 && (
+                        <optgroup label="Favorites">
+                          {(ollamaFavoriteModels || []).filter((m) => ollamaModels.includes(m)).map((m) => (
+                            <option key={m} value={m}>{m}</option>
+                          ))}
+                        </optgroup>
+                      )}
+                      <optgroup label="All models">
+                        {ollamaModels.filter((m) => !(ollamaFavoriteModels || []).includes(m)).map((m) => (
+                          <option key={m} value={m}>{m}</option>
+                        ))}
+                      </optgroup>
+                    </>
+                  )}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => ollamaModel && toggleOllamaFavoriteModel(ollamaModel)}
+                  className={`h-8 w-8 inline-flex items-center justify-center rounded-md border transition-colors ${
+                    theme === "dark" ? "border-white/10 hover:bg-white/10" : "border-black/10 hover:bg-black/5"
+                  }`}
+                  title={(ollamaFavoriteModels || []).includes(ollamaModel) ? "Unfavorite" : "Favorite"}
+                >
+                  <Star
+                    size={14}
+                    fill={(ollamaFavoriteModels || []).includes(ollamaModel) ? "currentColor" : "none"}
+                    className={(ollamaFavoriteModels || []).includes(ollamaModel) ? "text-yellow-400" : theme === "dark" ? "text-gray-400" : "text-gray-600"}
+                  />
+                </button>
+                {ollamaError && (
+                  <span className="text-xs text-red-400 truncate max-w-[120px]" title={ollamaError}>
+                    {ollamaError}
+                  </span>
+                )}
+              </div>
+            )}
           </div>
 
           {/* Right: settings + more menu + theme */}
@@ -963,6 +1092,19 @@ return (
             >
               {theme === "dark" ? <Sun size={18} className="text-gray-400" /> : <Moon size={18} className="text-gray-600" />}
             </button>
+
+            {currentArtifact && splitMode === "chat" && (
+              <button
+                onClick={() => setSplitMode("artifact")}
+                className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                  theme === "dark" ? "bg-blue-600 hover:bg-blue-500 text-white" : "bg-blue-500 hover:bg-blue-600 text-white"
+                }`}
+                title="Show preview"
+              >
+                <Monitor size={14} />
+                Preview
+              </button>
+            )}
           </div>
         </div>
         <div className="flex-1 min-h-0 h-full">
@@ -976,20 +1118,69 @@ return (
 
       {currentArtifact && (
         <>
+          {splitMode === "split" && (
+            <div
+              className={`hidden md:block w-1.5 cursor-col-resize ${
+                theme === "dark" ? "bg-white/10 hover:bg-white/20" : "bg-black/10 hover:bg-black/20"
+              }`}
+              onMouseDown={beginResize}
+              title="Drag to resize"
+            />
+          )}
           <div
-            className={`hidden md:block w-1.5 cursor-col-resize ${
-              theme === "dark" ? "bg-white/10 hover:bg-white/20" : "bg-black/10 hover:bg-black/20"
-            }`}
-            onMouseDown={beginResize}
-            title="Drag to resize"
-          />
-          <div
-            className={`hidden md:block min-h-0 border-l ${
+            className={`hidden md:flex flex-col min-h-0 ${splitMode !== "chat" ? "border-l" : ""} ${
               theme === "dark" ? "border-white/10" : "border-stone-200"
             }`}
-            style={{ flex: 1 - splitRatio, minWidth: 0 }}
+            style={{
+              flex: splitMode === "artifact" ? 1 : splitMode === "chat" ? 0 : 1 - splitRatio,
+              minWidth: 0,
+              display: splitMode === "chat" ? "none" : undefined,
+            }}
           >
-            <ArtifactViewer artifact={currentArtifact} onClose={() => setCurrentArtifact(null)} />
+            {/* Split mode toggle bar */}
+            <div className={`shrink-0 flex items-center gap-1 px-2 py-1.5 border-b ${
+              theme === "dark" ? "border-white/10 bg-[#1b1b1b]" : "border-stone-200 bg-stone-50"
+            }`}>
+              <button
+                onClick={() => setSplitMode("chat")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                  splitMode === "chat"
+                    ? theme === "dark" ? "bg-white/10 text-white" : "bg-stone-200 text-stone-900"
+                    : theme === "dark" ? "text-stone-400 hover:text-stone-200 hover:bg-white/5" : "text-stone-500 hover:text-stone-700 hover:bg-stone-100"
+                }`}
+                title="Show chat only"
+              >
+                <MessageSquare size={13} />
+                Chat
+              </button>
+              <button
+                onClick={() => setSplitMode("split")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                  splitMode === "split"
+                    ? theme === "dark" ? "bg-white/10 text-white" : "bg-stone-200 text-stone-900"
+                    : theme === "dark" ? "text-stone-400 hover:text-stone-200 hover:bg-white/5" : "text-stone-500 hover:text-stone-700 hover:bg-stone-100"
+                }`}
+                title="Show both side by side"
+              >
+                <Columns2 size={13} />
+                Split
+              </button>
+              <button
+                onClick={() => setSplitMode("artifact")}
+                className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-xs font-medium transition-colors ${
+                  splitMode === "artifact"
+                    ? theme === "dark" ? "bg-white/10 text-white" : "bg-stone-200 text-stone-900"
+                    : theme === "dark" ? "text-stone-400 hover:text-stone-200 hover:bg-white/5" : "text-stone-500 hover:text-stone-700 hover:bg-stone-100"
+                }`}
+                title="Show artifact only"
+              >
+                <Monitor size={13} />
+                Preview
+              </button>
+            </div>
+            <div className="flex-1 min-h-0">
+              <ArtifactViewer artifact={currentArtifact} onClose={() => { setCurrentArtifact(null); setSplitMode("artifact"); }} />
+            </div>
           </div>
         </>
       )}

@@ -102,7 +102,7 @@ export const handleTurn = async (
 ) => {
   try {
     const storeState = useToolsStore.getState() as any;
-    const { googleIntegrationEnabled, provider: chatProvider, apipieModel } = storeState;
+    const { googleIntegrationEnabled, provider: chatProvider, apipieModel, ollamaModel, ollamaBaseUrl } = storeState;
     const { selectedSkill } = useConversationStore.getState();
     const selectedAgent = useAgentStore.getState().getSelectedAgent();
     const agentPref = selectedAgent?.preferredProvider;
@@ -142,7 +142,7 @@ export const handleTurn = async (
       if (currentArtifact.type === "ts_app") {
         const raw = typeof currentArtifact.code === "string" ? currentArtifact.code : "";
         const spec = raw && raw.trim() ? raw.trim() : "";
-        const text = `A TypeScript app (ts_app) is currently open in the editor.\n\nIf the user requests changes to the app (pages/components/styles/dependencies), you MUST apply them by calling the function tool update_ts_app.\n\nCurrent ts_app spec JSON (files + dependencies):\n${spec || "<empty>"}`;
+        const text = `A TypeScript app (ts_app) is currently open in the editor.\n\nIf the user requests CHANGES to this existing app (pages/components/styles/dependencies), use update_ts_app to apply them.\nIf the user asks to create a COMPLETELY NEW/DIFFERENT app, use create_ts_app instead (it will replace the current one).\n\nCurrent ts_app spec JSON (files + dependencies):\n${spec || "<empty>"}`;
         return {
           type: "message",
           role: "system",
@@ -217,6 +217,8 @@ export const handleTurn = async (
           selectedSkill,
           provider,
           apipieModel,
+          ollamaModel,
+          ollamaBaseUrl,
           agentPrompt: selectedAgent?.prompt ?? null,
           agentName: selectedAgent?.name ?? null,
           agentTemperature: selectedAgent?.temperature ?? null,
@@ -636,10 +638,19 @@ export const processMessages = async () => {
             // Handle tool call (execute function)
             toolCallMessage.status = "in_progress";
             flushChatMessagesNow();
-            const toolResult = await handleTool(
-              toolCallMessage.name as keyof typeof functionsMap,
-              toolCallMessage.parsedArguments
-            );
+            let toolResult: any;
+            try {
+              toolResult = await handleTool(
+                toolCallMessage.name as keyof typeof functionsMap,
+                toolCallMessage.parsedArguments
+              );
+            } catch (toolError) {
+              console.error(`[tool] ${toolName} threw:`, toolError);
+              toolResult = {
+                ok: false,
+                error: toolError instanceof Error ? toolError.message : String(toolError),
+              };
+            }
 
             // Record tool output
             toolCallMessage.status = "completed";
