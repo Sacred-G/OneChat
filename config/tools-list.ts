@@ -26,13 +26,13 @@ export const toolsList = [
   {
     name: "create_ts_app",
     description:
-      "Create a new TypeScript app (ts_app) artifact. Use this when the user asks for a landing page, webpage, dashboard, or any React/interactive UI. IMPORTANT: Always include /src/index.tsx (the React bootstrap entry) and /src/App.tsx at minimum. The entry file must import and render the App component using createRoot. ALWAYS create reusable UI components in separate files under /src/components/ (e.g. /src/components/Button.tsx, /src/components/Card.tsx, /src/components/Header.tsx, /src/components/Footer.tsx). Break the UI into small, focused components rather than putting everything in App.tsx. Each component should be in its own file and exported as default. Use a /src/components/ directory structure for all UI pieces. For polished UIs, include Tailwind CSS via externalResources: [\"https://cdn.tailwindcss.com\"]. Popular deps like framer-motion, lucide-react, recharts, zustand, axios, date-fns, @tanstack/react-query are auto-detected from imports.",
+      "Create a new TypeScript app (ts_app) artifact. Use this when the user asks for a landing page, webpage, dashboard, game, simulation, canvas app, or any React/interactive UI. IMPORTANT: Always include /src/index.tsx (the React bootstrap entry) and /src/App.tsx at minimum. The entry file must import and render the App component using createRoot. ALWAYS create reusable UI components in separate files under /src/components/ (e.g. /src/components/Button.tsx, /src/components/Card.tsx, /src/components/Header.tsx, /src/components/Footer.tsx). Break the UI into small, focused components rather than putting everything in App.tsx. Each component should be in its own file and exported as default. For games and simulations, prefer a focused structure such as /src/game/Game.tsx, /src/game/useGameLoop.ts, /src/game/types.ts, and keep render/update logic isolated from UI chrome. For playable games, expose window.render_game_to_text() and window.advanceTime(ms), and implement a working restart/game-over flow rather than a static demo. Use a /src/components/ directory structure for UI pieces. For polished UIs, include Tailwind CSS via externalResources: [\"https://cdn.tailwindcss.com\"]. Popular deps like framer-motion, lucide-react, recharts, zustand, axios, date-fns, @tanstack/react-query are auto-detected from imports.",
     strict: false,
     parameters: {
       files: {
         type: "object",
         description:
-          'Map of file paths to full file contents. MUST include /src/index.tsx (entry bootstrap that imports App and calls createRoot), /src/App.tsx, and reusable UI components under /src/components/ (e.g. /src/components/Button.tsx, /src/components/Header.tsx). Break the UI into small, reusable component files — do NOT put all markup in App.tsx. Example entry: import React from "react"; import { createRoot } from "react-dom/client"; import App from "./App"; const root = document.getElementById("root"); if (root) { createRoot(root).render(<React.StrictMode><App /></React.StrictMode>); }',
+          'Map of file paths to full file contents. MUST include /src/index.tsx (entry bootstrap that imports App and calls createRoot), /src/App.tsx, and reusable UI components under /src/components/ (e.g. /src/components/Button.tsx, /src/components/Header.tsx). For games and simulations, organize gameplay code into dedicated files such as /src/game/Game.tsx, /src/game/useGameLoop.ts, /src/game/entities.ts, and keep App.tsx as the composition shell. Break the UI into small, reusable component files — do NOT put all markup in App.tsx. Example entry: import React from "react"; import { createRoot } from "react-dom/client"; import App from "./App"; const root = document.getElementById("root"); if (root) { createRoot(root).render(<React.StrictMode><App /></React.StrictMode>); }',
         additionalProperties: { type: "string" },
       },
       dependencies: {
@@ -72,7 +72,7 @@ export const toolsList = [
   {
     name: "update_ts_app",
     description:
-      "Update an ALREADY EXISTING TypeScript app (ts_app) that was previously created with create_ts_app. ONLY use this if a ts_app is currently open. If no ts_app exists yet, you MUST use create_ts_app instead — do NOT call update_ts_app first.",
+      "Update an ALREADY EXISTING TypeScript app (ts_app) that was previously created with create_ts_app. Use this for edits, repairs, and debugging of the current app. If the build is broken, blank, crashing, or not playable, fix the existing app with targeted file changes instead of recreating it. ONLY use this if a ts_app is currently open or available from the current conversation history. If no ts_app exists yet, you MUST use create_ts_app instead — do NOT call update_ts_app first.",
     strict: false,
     parameters: {
       files: {

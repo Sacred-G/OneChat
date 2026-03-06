@@ -1,4 +1,5 @@
 import { getMongoDb } from "@/lib/mongodb";
+import { getCurrentActorId } from "@/lib/current-user";
 
 import { randomUUID } from "crypto";
 
@@ -32,10 +33,13 @@ type ConversationState = {
   chatMessages: unknown[];
   conversationItems: unknown[];
   selectedSkill: string | null;
+  currentArtifact?: unknown | null;
+  artifactHistory?: unknown[];
 };
 
 type ConversationDoc = {
   _id: string;
+  userId: string;
   state: ConversationState;
   title?: string;
   workspaceId?: string;
@@ -62,6 +66,7 @@ function shouldList(request: Request) {
 
 export async function GET(request: Request) {
   try {
+    const userId = await getCurrentActorId();
     const db = await getDbOrNull();
     if (!db) {
       if (isHosted) throw new Error("MongoDB unavailable");
@@ -71,6 +76,7 @@ export async function GET(request: Request) {
         const workspaceId = getWorkspaceIdFromRequest(request);
         const docs = Array.from(store.values())
           .filter((d) => {
+            if (d.userId !== userId) return false;
             if (!workspaceId) return !d.workspaceId;
             return d.workspaceId === workspaceId;
           })
@@ -95,7 +101,7 @@ export async function GET(request: Request) {
 
       const id = getIdFromRequest(request) ?? DEFAULT_ID;
       const doc = store.get(id);
-      return new Response(JSON.stringify({ ok: true, state: doc ? doc.state : null }), {
+      return new Response(JSON.stringify({ ok: true, state: doc?.userId === userId ? doc.state : null }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
@@ -104,8 +110,8 @@ export async function GET(request: Request) {
     if (shouldList(request)) {
       const workspaceId = getWorkspaceIdFromRequest(request);
       const filter: Record<string, any> = workspaceId
-        ? { workspaceId }
-        : { $or: [{ workspaceId: { $exists: false } }, { workspaceId: null }, { workspaceId: "" }] };
+        ? { userId, workspaceId }
+        : { userId, $or: [{ workspaceId: { $exists: false } }, { workspaceId: null }, { workspaceId: "" }] };
       const docs = await db
         .collection<ConversationDoc>(COLLECTION)
         .find(filter, { projection: { _id: 1, title: 1, updatedAt: 1, createdAt: 1 } })
@@ -131,7 +137,7 @@ export async function GET(request: Request) {
     }
 
     const id = getIdFromRequest(request) ?? DEFAULT_ID;
-    const doc = await db.collection<ConversationDoc>(COLLECTION).findOne({ _id: id });
+    const doc = await db.collection<ConversationDoc>(COLLECTION).findOne({ _id: id, userId });
 
     if (!doc) {
       return new Response(JSON.stringify({ ok: true, state: null }), {
@@ -192,11 +198,25 @@ export async function POST(request: Request) {
       headers: { "Content-Type": "application/json" },
     });
   }
+  if (!(typeof s.currentArtifact === "undefined" || s.currentArtifact === null || typeof s.currentArtifact === "object")) {
+    return new Response(JSON.stringify({ ok: false, error: "Invalid state" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+  if (!(typeof s.artifactHistory === "undefined" || Array.isArray(s.artifactHistory))) {
+    return new Response(JSON.stringify({ ok: false, error: "Invalid state" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   const conversationState: ConversationState = {
     chatMessages: s.chatMessages,
     conversationItems: s.conversationItems,
     selectedSkill: s.selectedSkill,
+    ...(typeof s.currentArtifact !== "undefined" ? { currentArtifact: s.currentArtifact } : {}),
+    ...(Array.isArray(s.artifactHistory) ? { artifactHistory: s.artifactHistory } : {}),
   };
 
   const conversationId =
@@ -205,6 +225,7 @@ export async function POST(request: Request) {
   const conversationTitle = typeof title === "string" ? title : undefined;
 
   try {
+    const userId = await getCurrentActorId();
     const db = await getDbOrNull();
     if (!db) {
       if (isHosted) throw new Error("MongoDB unavailable");
@@ -213,6 +234,7 @@ export async function POST(request: Request) {
       const createdAt = existing?.createdAt || new Date();
       store.set(conversationId, {
         _id: conversationId,
+        userId,
         state: conversationState,
         ...(conversationTitle ? { title: conversationTitle } : {}),
         ...(workspaceId ? { workspaceId } : existing?.workspaceId ? { workspaceId: existing.workspaceId } : {}),
@@ -225,9 +247,10 @@ export async function POST(request: Request) {
       });
     }
     await db.collection<ConversationDoc>(COLLECTION).updateOne(
-      { _id: conversationId },
+      { _id: conversationId, userId },
       {
         $set: {
+          userId,
           state: conversationState,
           ...(conversationTitle ? { title: conversationTitle } : {}),
           ...(workspaceId ? { workspaceId } : {}),
@@ -257,6 +280,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const userId = await getCurrentActorId();
     const db = await getDbOrNull();
     if (!db) {
       if (isHosted) throw new Error("MongoDB unavailable");
@@ -264,13 +288,16 @@ export async function DELETE(request: Request) {
       const id = getIdFromRequest(request);
       const workspaceId = getWorkspaceIdFromRequest(request);
       if (id) {
-        store.delete(id);
+        const doc = store.get(id);
+        if (doc?.userId === userId) store.delete(id);
       } else if (workspaceId) {
         for (const [key, doc] of store.entries()) {
-          if (doc.workspaceId === workspaceId) store.delete(key);
+          if (doc.userId === userId && doc.workspaceId === workspaceId) store.delete(key);
         }
       } else {
-        store.clear();
+        for (const [key, doc] of store.entries()) {
+          if (doc.userId === userId) store.delete(key);
+        }
       }
       return new Response(JSON.stringify({ ok: true }), {
         status: 200,
@@ -281,11 +308,11 @@ export async function DELETE(request: Request) {
     const id = getIdFromRequest(request);
     const workspaceId = getWorkspaceIdFromRequest(request);
     if (id) {
-      await db.collection<ConversationDoc>(COLLECTION).deleteOne({ _id: id });
+      await db.collection<ConversationDoc>(COLLECTION).deleteOne({ _id: id, userId });
     } else if (workspaceId) {
-      await db.collection<ConversationDoc>(COLLECTION).deleteMany({ workspaceId });
+      await db.collection<ConversationDoc>(COLLECTION).deleteMany({ userId, workspaceId });
     } else {
-      await db.collection<ConversationDoc>(COLLECTION).deleteMany({});
+      await db.collection<ConversationDoc>(COLLECTION).deleteMany({ userId });
     }
 
     return new Response(JSON.stringify({ ok: true }), {

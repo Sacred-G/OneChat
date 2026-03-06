@@ -5,6 +5,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Columns2, MessageSquare, Monitor, Moon, PanelLeft, Plus, Settings, Star, Sun, X } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "./ui/popover";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
 
 import Assistant from "@/components/assistant";
 import ConversationHistory from "@/components/conversation-history";
@@ -42,7 +45,7 @@ export default function MainClient() {
     setActiveConversationId,
     trimHistory,
   } = useConversationStore();
-  const { currentArtifact, setCurrentArtifact } = useArtifactStore();
+  const { currentArtifact, setCurrentArtifact, setArtifacts, clearArtifacts } = useArtifactStore();
   const { theme, toggleTheme } = useThemeStore();
   const splitContainerRef = useRef<HTMLDivElement | null>(null);
   const [splitRatio, setSplitRatio] = useState(0.5);
@@ -83,6 +86,10 @@ export default function MainClient() {
     Array<{ id: string; name: string; vectorStoreId?: string; vectorStoreName?: string }>
   >([]);
   const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+  const [projectError, setProjectError] = useState<string | null>(null);
+  const [isCreateProjectOpen, setIsCreateProjectOpen] = useState(false);
+  const [newProjectName, setNewProjectName] = useState("");
+  const [isCreatingProject, setIsCreatingProject] = useState(false);
 
   useEffect(() => {
     if (typeof document === "undefined") return;
@@ -121,9 +128,13 @@ export default function MainClient() {
     let cancelled = false;
     const load = async () => {
       setIsLoadingProjects(true);
+      setProjectError(null);
       try {
         const res = await fetch("/api/projects?list=1");
-        if (!res.ok) return;
+        if (!res.ok) {
+          const message = await res.text().catch(() => "");
+          throw new Error(message || "Failed to load projects");
+        }
         const data = await res.json().catch(() => null);
         const list = Array.isArray(data?.projects) ? data.projects : [];
         if (!cancelled) {
@@ -138,8 +149,14 @@ export default function MainClient() {
               }))
           );
         }
-      } catch {
-        // ignore
+      } catch (error) {
+        if (!cancelled) {
+          setProjectError(
+            error instanceof Error && error.message.trim().length > 0
+              ? error.message
+              : "Failed to load projects"
+          );
+        }
       } finally {
         if (!cancelled) setIsLoadingProjects(false);
       }
@@ -187,8 +204,15 @@ export default function MainClient() {
       return;
     }
     let cancelled = false;
+    setProjectError(null);
     fetch(`/api/projects?id=${encodeURIComponent(selectedProjectId)}`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        const data = await r.json().catch(() => null);
+        if (!r.ok) {
+          throw new Error(typeof data?.error === "string" ? data.error : "Failed to load the selected project");
+        }
+        return data;
+      })
       .then((d) => {
         if (cancelled) return;
         const p = d?.project;
@@ -200,43 +224,66 @@ export default function MainClient() {
           setVectorStore({ id: "", name: "" } as any);
         }
       })
-      .catch(() => {});
+      .catch((error) => {
+        if (!cancelled) {
+          setProjectError(
+            error instanceof Error && error.message.trim().length > 0
+              ? error.message
+              : "Failed to load the selected project"
+          );
+        }
+      });
     return () => {
       cancelled = true;
     };
   }, [selectedProjectId, setVectorStore]);
 
   const handleCreateProject = async () => {
-    if (typeof window === "undefined") return;
-    const name = window.prompt("Project name?");
-    if (!name || !name.trim()) return;
+    const trimmedName = newProjectName.trim();
+    if (!trimmedName) {
+      setProjectError("Project name is required.");
+      return;
+    }
+    setIsCreatingProject(true);
+    setProjectError(null);
     try {
       const res = await fetch("/api/projects", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name.trim() }),
+        body: JSON.stringify({ name: trimmedName }),
       });
-      if (!res.ok) return;
       const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(typeof data?.error === "string" ? data.error : "Failed to create project");
+      }
       const id = typeof data?.id === "string" ? data.id : "";
       const listRes = await fetch("/api/projects?list=1");
-      if (listRes.ok) {
-        const listData = await listRes.json().catch(() => null);
-        const list = Array.isArray(listData?.projects) ? listData.projects : [];
-        setProjects(
-          list
-            .filter((p: any) => typeof p?.id === "string" && typeof p?.name === "string")
-            .map((p: any) => ({
-              id: String(p.id),
-              name: String(p.name),
-              vectorStoreId: typeof p?.vectorStoreId === "string" ? p.vectorStoreId : "",
-              vectorStoreName: typeof p?.vectorStoreName === "string" ? p.vectorStoreName : "",
-            }))
-        );
+      const listData = await listRes.json().catch(() => null);
+      if (!listRes.ok) {
+        throw new Error(typeof listData?.error === "string" ? listData.error : "Project created, but the project list could not be refreshed");
       }
+      const list = Array.isArray(listData?.projects) ? listData.projects : [];
+      setProjects(
+        list
+          .filter((p: any) => typeof p?.id === "string" && typeof p?.name === "string")
+          .map((p: any) => ({
+            id: String(p.id),
+            name: String(p.name),
+            vectorStoreId: typeof p?.vectorStoreId === "string" ? p.vectorStoreId : "",
+            vectorStoreName: typeof p?.vectorStoreName === "string" ? p.vectorStoreName : "",
+          }))
+      );
       if (id) setSelectedProjectId(id);
-    } catch {
-      // ignore
+      setNewProjectName("");
+      setIsCreateProjectOpen(false);
+    } catch (error) {
+      setProjectError(
+        error instanceof Error && error.message.trim().length > 0
+          ? error.message
+          : "Failed to create project"
+      );
+    } finally {
+      setIsCreatingProject(false);
     }
   };
 
@@ -307,6 +354,13 @@ export default function MainClient() {
         if (typeof state.selectedSkill === "string" || state.selectedSkill === null) {
           setSelectedSkill(state.selectedSkill);
         }
+        setArtifacts({
+          currentArtifact:
+            state.currentArtifact && typeof state.currentArtifact === "object"
+              ? state.currentArtifact
+              : null,
+          artifactHistory: Array.isArray(state.artifactHistory) ? state.artifactHistory : [],
+        });
         setAssistantLoading(false);
       } catch {
         // ignore load failures
@@ -314,7 +368,7 @@ export default function MainClient() {
     };
 
     load();
-  }, [setAssistantLoading, setChatMessages, setConversationItems, setSelectedSkill, setActiveConversationId]);
+  }, [setAssistantLoading, setArtifacts, setChatMessages, setConversationItems, setSelectedSkill, setActiveConversationId]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -529,6 +583,8 @@ export default function MainClient() {
         useConversationStore.getState();
       const currentWsId = useWorkspaceStore.getState().activeWorkspaceId;
 
+      const { currentArtifact, artifactHistory } = useArtifactStore.getState();
+
       if (activeConversationId) {
         const firstUserMessage = chatMessages.find(
           (m: any) => m?.type === "message" && m?.role === "user" && m?.content?.[0]?.text
@@ -545,7 +601,7 @@ export default function MainClient() {
             id: activeConversationId,
             title,
             ...(currentWsId ? { workspaceId: currentWsId } : {}),
-            state: { chatMessages, conversationItems, selectedSkill },
+            state: { chatMessages, conversationItems, selectedSkill, currentArtifact, artifactHistory },
           }),
         }).catch(() => {});
       }
@@ -593,6 +649,7 @@ export default function MainClient() {
     setActiveConversationId(null);
     try { localStorage.removeItem("activeConversationId"); } catch {}
     resetConversation();
+    clearArtifacts();
 
     // 4. Load new workspace state
     await loadWorkspaceState(newWorkspaceId);
@@ -613,6 +670,7 @@ export default function MainClient() {
       const { chatMessages, conversationItems, selectedSkill, activeConversationId } =
         useConversationStore.getState();
       const wsId = useWorkspaceStore.getState().activeWorkspaceId;
+      const { currentArtifact, artifactHistory } = useArtifactStore.getState();
 
       const firstUserMessage = chatMessages.find(
         (m: any) => m?.type === "message" && m?.role === "user" && m?.content?.[0]?.text
@@ -633,6 +691,8 @@ export default function MainClient() {
             chatMessages,
             conversationItems,
             selectedSkill,
+            currentArtifact,
+            artifactHistory,
           },
         }),
       }).catch(() => {});
@@ -680,11 +740,13 @@ export default function MainClient() {
       // ignore storage failures
     }
     resetConversation();
+    clearArtifacts();
     setShowTools(false);
   };
 
-return (
-  <div className="flex h-[100dvh] w-full overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
+	return (
+	  <>
+	  <div className="flex h-[100dvh] w-full overflow-hidden bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950">
     <div
       onMouseLeave={() => setSidebarCollapsed(true)}
       className={`hidden shrink-0 md:flex md:flex-col transition-[width] duration-200 ${
@@ -750,13 +812,13 @@ return (
           display: currentArtifact && splitMode === "artifact" ? "none" : undefined,
         }}
       >
-        <div
-          className={`shrink-0 z-30 flex items-center justify-between gap-3 px-4 py-3 border-b ${
-            theme === "dark"
-              ? "border-white/10 bg-[#0a0a0a]/80"
-              : "border-black/10 bg-white/80"
-          }`}
-        >
+	        <div
+	          className={`shrink-0 z-30 flex items-center justify-between gap-3 px-4 py-3 border-b ${
+	            theme === "dark"
+	              ? "border-white/10 bg-[#0a0a0a]/80"
+	              : "border-black/10 bg-white/80"
+	          }`}
+	        >
           {/* Left: sidebar toggle + title */}
           <div className="flex items-center gap-2">
             <button
@@ -773,9 +835,21 @@ return (
             </h1>
           </div>
 
-          {/* Center: provider + model selectors */}
-          <div className="flex items-center gap-2">
-            <div className="flex min-w-0 items-center gap-1">
+	          {/* Center: provider + model selectors */}
+	          <div className="flex items-center gap-2">
+              {projectError && (
+                <div
+                  className={`hidden max-w-56 truncate rounded-md border px-2 py-1 text-[11px] lg:block ${
+                    theme === "dark"
+                      ? "border-red-500/30 bg-red-500/10 text-red-200"
+                      : "border-red-200 bg-red-50 text-red-700"
+                  }`}
+                  title={projectError}
+                >
+                  {projectError}
+                </div>
+              )}
+	            <div className="flex min-w-0 items-center gap-1">
               <select
                 value={selectedProjectId}
                 onChange={(e) => setSelectedProjectId(e.target.value)}
@@ -791,12 +865,15 @@ return (
                   <option key={p.id} value={p.id}>{p.name}</option>
                 ))}
               </select>
-              <button
-                type="button"
-                onClick={handleCreateProject}
-                className={`h-8 px-1.5 rounded-md border text-xs ${
-                  theme === "dark"
-                    ? "bg-transparent border-white/10 text-white hover:bg-white/5"
+	              <button
+	                type="button"
+	                onClick={() => {
+                    setProjectError(null);
+                    setIsCreateProjectOpen(true);
+                  }}
+	                className={`h-8 px-1.5 rounded-md border text-xs ${
+	                  theme === "dark"
+	                    ? "bg-transparent border-white/10 text-white hover:bg-white/5"
                     : "bg-white border-black/10 text-gray-900 hover:bg-gray-50"
                 }`}
                 title="Create project"
@@ -1304,6 +1381,63 @@ return (
           </div>
         </div>
       )}
-    </div>
-  );
+	  </div>
+      <Dialog
+        open={isCreateProjectOpen}
+        onOpenChange={(open) => {
+          setIsCreateProjectOpen(open);
+          if (!open) {
+            setNewProjectName("");
+            setProjectError(null);
+          }
+        }}
+      >
+        <DialogContent className={theme === "dark" ? "border-white/10 bg-[#111111] text-white" : ""}>
+          <DialogHeader>
+            <DialogTitle>Create project</DialogTitle>
+            <DialogDescription>
+              Projects group a vector store and related work so users can stay oriented.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            <Input
+              value={newProjectName}
+              onChange={(event) => setNewProjectName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "Enter" && !isCreatingProject) {
+                  event.preventDefault();
+                  void handleCreateProject();
+                }
+              }}
+              placeholder="Marketing site refresh"
+              autoFocus
+            />
+            {projectError && (
+              <div
+                className={`rounded-md border px-3 py-2 text-sm ${
+                  theme === "dark"
+                    ? "border-red-500/30 bg-red-500/10 text-red-200"
+                    : "border-red-200 bg-red-50 text-red-700"
+                }`}
+              >
+                {projectError}
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsCreateProjectOpen(false)}
+              disabled={isCreatingProject}
+            >
+              Cancel
+            </Button>
+            <Button onClick={() => void handleCreateProject()} disabled={isCreatingProject}>
+              {isCreatingProject ? "Creating..." : "Create project"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      </>
+	);
 }

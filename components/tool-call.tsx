@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 
 import { ToolCallItem } from "@/lib/assistant";
@@ -92,6 +92,14 @@ function formatInline(value: any) {
   }
 }
 
+const autoOpenedCodeArtifacts = new Set<string>();
+
+function getTerminalPanelClass(theme: string) {
+  return theme === "dark"
+    ? "rounded-xl border border-white/10 bg-black/35 shadow-inner shadow-black/20"
+    : "rounded-xl border border-black/10 bg-white shadow-inner shadow-black/5";
+}
+
 function getToolSummary(toolCall: ToolCallItem) {
   const name = toolCall.name || "";
   const args = toolCall.parsedArguments || {};
@@ -113,7 +121,7 @@ function getToolSummary(toolCall: ToolCallItem) {
   if (toolCall.tool_type === "web_search_call") return toolCall.status === "completed" ? "Searched the web" : "Searching the web";
   if (toolCall.tool_type === "code_interpreter_call") return toolCall.status === "completed" ? "Running code" : "Running code";
 
-  if (name) return toolCall.status === "completed" ? `Called ${name}` : `Calling ${name}`;
+  if (name) return name;
   return toolCall.status === "completed" ? "Tool call" : "Calling tool";
 }
 
@@ -194,38 +202,40 @@ function ToolCard({
   const openByDefault = toolCall.status !== "completed";
 
   return (
-    <div className="flex justify-start pt-2">
+    <div className="flex justify-start pt-1.5">
       <div className="w-full max-w-3xl">
         <details
-          className={`group rounded-xl border ${
-            theme === "dark" ? "border-white/10 bg-white/[0.04]" : "border-black/10 bg-black/[0.02]"
+          className={`group rounded-2xl border shadow-sm transition-colors ${
+            theme === "dark"
+              ? "border-white/10 bg-[#1a1a1a]/80 hover:border-white/20"
+              : "border-black/10 bg-white hover:border-black/20"
           }`}
           open={openByDefault}
         >
           <summary
-            className={`flex cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 ${
+            className={`flex cursor-pointer list-none items-center justify-between gap-3 px-3.5 py-2.5 ${
               theme === "dark" ? "text-stone-200" : "text-stone-800"
             }`}
           >
             <div className="flex min-w-0 items-center gap-3">
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-md ${
-                  theme === "dark" ? "bg-white/10" : "bg-black/5"
+                className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${
+                  theme === "dark" ? "bg-white/10 text-stone-200" : "bg-black/5 text-stone-800"
                 }`}
               >
                 {icon}
               </div>
               <div className="min-w-0">
-                <div className="truncate text-sm font-medium">{summary}</div>
+                <div className="truncate text-sm font-semibold leading-5">{summary}</div>
                 <div
-                  className={`text-xs ${
+                  className={`truncate font-mono text-[11px] ${
                     theme === "dark" ? "text-stone-400" : "text-stone-500"
                   }`}
                 >
                   {toolCall.tool_type === "mcp_call" && toolCall.name
-                    ? `MCP tool: ${toolCall.name}`
+                    ? `mcp:${toolCall.name}`
                     : toolCall.name
-                      ? `Tool: ${toolCall.name}`
+                      ? `tool:${toolCall.name}`
                       : ""}
                 </div>
               </div>
@@ -234,18 +244,20 @@ function ToolCard({
             <div className="flex items-center gap-2">
               {toolCall.status === "completed" ? (
                 <span
-                  className={`rounded-full px-2 py-0.5 text-xs ${
-                    theme === "dark" ? "bg-white/10 text-stone-300" : "bg-black/5 text-stone-600"
+                  className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
+                    theme === "dark"
+                      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                      : "border-emerald-500/30 bg-emerald-500/10 text-emerald-700"
                   }`}
                 >
                   Done
                 </span>
               ) : toolCall.status === "pending_approval" ? (
                 <span
-                  className={`rounded-full px-2 py-0.5 text-xs ${
+                  className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
                     theme === "dark"
-                      ? "bg-amber-500/20 text-amber-200"
-                      : "bg-amber-500/10 text-amber-700"
+                      ? "border-amber-500/30 bg-amber-500/20 text-amber-200"
+                      : "border-amber-500/30 bg-amber-500/10 text-amber-700"
                   }`}
                 >
                   Pending
@@ -253,14 +265,14 @@ function ToolCard({
               ) : (
                 <span className="inline-flex items-center gap-2">
                   <Loader2
-                    size={14}
+                    size={13}
                     className={
                       "animate-spin " +
                       (theme === "dark" ? "text-blue-200" : "text-blue-700")
                     }
                   />
                   <span
-                    className={`rounded-full px-2 py-0.5 text-xs ${
+                    className={`rounded-full border px-2 py-0.5 text-[11px] font-medium ${
                       theme === "dark" ? "bg-blue-500/20 text-blue-200" : "bg-blue-500/10 text-blue-700"
                     }`}
                   >
@@ -269,15 +281,15 @@ function ToolCard({
                 </span>
               )}
               <ChevronDown
-                size={16}
-                className={`transition-transform group-open:rotate-180 ${
-                  theme === "dark" ? "text-stone-400" : "text-stone-500"
+                size={15}
+                className={`rounded-md p-0.5 transition-transform group-open:rotate-180 ${
+                  theme === "dark" ? "bg-white/5 text-stone-400" : "bg-black/5 text-stone-500"
                 }`}
               />
             </div>
           </summary>
 
-          <div className="px-4 pb-4">{children}</div>
+          <div className="px-3.5 pb-3.5">{children}</div>
         </details>
       </div>
     </div>
@@ -286,7 +298,7 @@ function ToolCard({
 
 function ApiCallCell({ toolCall }: ToolCallProps) {
   const { theme } = useThemeStore();
-  const { addArtifact, setCurrentArtifact } = useArtifactStore();
+  const { addArtifact, setCurrentArtifact, currentArtifact, artifactHistory } = useArtifactStore();
   const syntaxStyle = theme === "dark" ? vscDarkPlus : coy;
 
   const parsedOutput = useMemo(() => {
@@ -331,6 +343,27 @@ function ApiCallCell({ toolCall }: ToolCallProps) {
   const [editing, setEditing] = useState(false);
   const [editError, setEditError] = useState("");
   const [editResults, setEditResults] = useState<string[]>([]);
+
+  const tsAppResult = useMemo(() => {
+    if (!parsedOutput) return null;
+    if (toolCall.name !== "create_ts_app" && toolCall.name !== "update_ts_app") return null;
+    const artifactId = typeof (parsedOutput as any)?.artifactId === "string" ? (parsedOutput as any).artifactId : "";
+    const matchingArtifact =
+      (artifactId && currentArtifact?.id === artifactId ? currentArtifact : null) ||
+      (artifactId ? artifactHistory.find((artifact) => artifact.id === artifactId) : null) ||
+      [...artifactHistory].reverse().find((artifact) => artifact.type === "ts_app") ||
+      null;
+    return {
+      artifactId,
+      filesCreated: Array.isArray((parsedOutput as any)?.filesCreated) ? (parsedOutput as any).filesCreated : [],
+      updatedFiles: Array.isArray((parsedOutput as any)?.updatedFiles) ? (parsedOutput as any).updatedFiles : [],
+      templateUsed: typeof (parsedOutput as any)?.templateUsed === "string" ? (parsedOutput as any).templateUsed : "",
+      dependenciesAdded: Array.isArray((parsedOutput as any)?.dependenciesAdded) ? (parsedOutput as any).dependenciesAdded : [],
+      fallbackUsed: Boolean((parsedOutput as any)?.fallbackUsed),
+      gameContract: (parsedOutput as any)?.gameContract || null,
+      previewStatus: (matchingArtifact as any)?.meta?.previewStatus || null,
+    };
+  }, [artifactHistory, currentArtifact, parsedOutput, toolCall.name]);
 
   return (
     <ToolCard 
@@ -624,15 +657,60 @@ function ApiCallCell({ toolCall }: ToolCallProps) {
           </div>
         )}
 
+        {tsAppResult && (
+          <div className={`rounded-xl border p-3 ${theme === "dark" ? "border-white/10 bg-white/[0.03]" : "border-black/10 bg-black/[0.02]"}`}>
+            <div className={`mb-2 text-xs font-medium ${theme === "dark" ? "text-stone-300" : "text-stone-700"}`}>
+              Build summary
+            </div>
+            <div className={`grid gap-2 text-xs ${theme === "dark" ? "text-stone-400" : "text-stone-600"}`}>
+              <div>Template: <span className={theme === "dark" ? "text-stone-200" : "text-stone-900"}>{tsAppResult.templateUsed || "unknown"}</span></div>
+              <div>Files: <span className={theme === "dark" ? "text-stone-200" : "text-stone-900"}>{(tsAppResult.filesCreated.length || tsAppResult.updatedFiles.length)}</span></div>
+              <div>Dependencies: <span className={theme === "dark" ? "text-stone-200" : "text-stone-900"}>{tsAppResult.dependenciesAdded.length}</span></div>
+              <div>Fallback scaffolding: <span className={theme === "dark" ? "text-stone-200" : "text-stone-900"}>{tsAppResult.fallbackUsed ? "used" : "not used"}</span></div>
+              <div>Preview: <span className={theme === "dark" ? "text-stone-200" : "text-stone-900"}>{tsAppResult.previewStatus?.label || "pending"}</span></div>
+              {tsAppResult.gameContract?.isGame && (
+                <div>Game contract: <span className={theme === "dark" ? "text-stone-200" : "text-stone-900"}>{tsAppResult.gameContract.status}</span></div>
+              )}
+            </div>
+            {(tsAppResult.filesCreated.length > 0 || tsAppResult.updatedFiles.length > 0) && (
+              <div className="mt-3">
+                <div className={`mb-1 text-[11px] ${theme === "dark" ? "text-stone-500" : "text-stone-500"}`}>
+                  {tsAppResult.filesCreated.length > 0 ? "Files created" : "Files updated"}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {(tsAppResult.filesCreated.length > 0 ? tsAppResult.filesCreated : tsAppResult.updatedFiles).slice(0, 8).map((path: string) => (
+                    <span
+                      key={path}
+                      className={`rounded-full border px-2 py-0.5 font-mono text-[11px] ${
+                        theme === "dark" ? "border-white/10 bg-white/[0.04] text-stone-300" : "border-black/10 bg-black/[0.03] text-stone-700"
+                      }`}
+                    >
+                      {path}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {Array.isArray(tsAppResult.gameContract?.missing) && tsAppResult.gameContract.missing.length > 0 && (
+              <div className={`mt-3 rounded-lg border px-2.5 py-2 text-xs ${
+                theme === "dark" ? "border-amber-500/20 bg-amber-500/10 text-amber-200" : "border-amber-500/20 bg-amber-500/10 text-amber-700"
+              }`}>
+                Missing game requirements: {tsAppResult.gameContract.missing.join(", ")}
+              </div>
+            )}
+          </div>
+        )}
+
         <div>
           <div className={`text-xs mb-1 ${theme === "dark" ? "text-stone-400" : "text-stone-500"}`}>Request</div>
-          <div className={`rounded-lg border ${theme === "dark" ? "border-white/10 bg-white/[0.03]" : "border-black/10 bg-black/[0.02]"}`}>
+          <div className={getTerminalPanelClass(theme)}>
             <SyntaxHighlighter
               customStyle={{
                 backgroundColor: "transparent",
-                padding: "12px",
+                padding: "10px 12px",
                 margin: 0,
                 fontSize: "12px",
+                lineHeight: "1.45",
               }}
               language="json"
               style={syntaxStyle}
@@ -644,14 +722,15 @@ function ApiCallCell({ toolCall }: ToolCallProps) {
 
         <div>
           <div className={`text-xs mb-1 ${theme === "dark" ? "text-stone-400" : "text-stone-500"}`}>Response</div>
-          <div className={`rounded-lg border ${theme === "dark" ? "border-white/10 bg-white/[0.03]" : "border-black/10 bg-black/[0.02]"}`}>
+          <div className={getTerminalPanelClass(theme)}>
             {toolCall.output ? (
               <SyntaxHighlighter
                 customStyle={{
                   backgroundColor: "transparent",
-                  padding: "12px",
+                  padding: "10px 12px",
                   margin: 0,
                   fontSize: "12px",
+                  lineHeight: "1.45",
                 }}
                 language="json"
                 style={syntaxStyle}
@@ -688,7 +767,7 @@ function FileSearchCell({ toolCall }: ToolCallProps) {
       <div className="space-y-3">
         <div>
           <div className={`text-xs mb-1 ${theme === "dark" ? "text-stone-400" : "text-stone-500"}`}>Response</div>
-          <div className={`rounded-lg border ${theme === "dark" ? "border-white/10 bg-white/[0.03]" : "border-black/10 bg-black/[0.02]"}`}>
+          <div className={getTerminalPanelClass(theme)}>
             {toolCall.output ? (
               <pre className={`whitespace-pre-wrap px-3 py-2 text-xs ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`}>
                 {formatInline(toolCall.output)}
@@ -717,7 +796,7 @@ function WebSearchCell({ toolCall }: ToolCallProps) {
       <div className="space-y-3">
         <div>
           <div className={`text-xs mb-1 ${theme === "dark" ? "text-stone-400" : "text-stone-500"}`}>Response</div>
-          <div className={`rounded-lg border ${theme === "dark" ? "border-white/10 bg-white/[0.03]" : "border-black/10 bg-black/[0.02]"}`}>
+          <div className={getTerminalPanelClass(theme)}>
             {toolCall.output ? (
               <pre className={`whitespace-pre-wrap px-3 py-2 text-xs ${theme === "dark" ? "text-stone-200" : "text-stone-800"}`}>
                 {formatInline(toolCall.output)}
@@ -744,13 +823,14 @@ function McpCallCell({ toolCall }: ToolCallProps) {
       <div className="space-y-3">
         <div>
           <div className={`text-xs mb-1 ${theme === "dark" ? "text-stone-400" : "text-stone-500"}`}>Request</div>
-          <div className={`rounded-lg border ${theme === "dark" ? "border-white/10 bg-white/[0.03]" : "border-black/10 bg-black/[0.02]"}`}>
+          <div className={getTerminalPanelClass(theme)}>
             <SyntaxHighlighter
               customStyle={{
                 backgroundColor: "transparent",
-                padding: "12px",
+                padding: "10px 12px",
                 margin: 0,
                 fontSize: "12px",
+                lineHeight: "1.45",
               }}
               language="json"
               style={syntaxStyle}
@@ -762,14 +842,15 @@ function McpCallCell({ toolCall }: ToolCallProps) {
 
         <div>
           <div className={`text-xs mb-1 ${theme === "dark" ? "text-stone-400" : "text-stone-500"}`}>Response</div>
-          <div className={`rounded-lg border ${theme === "dark" ? "border-white/10 bg-white/[0.03]" : "border-black/10 bg-black/[0.02]"}`}>
+          <div className={getTerminalPanelClass(theme)}>
             {toolCall.output ? (
               <SyntaxHighlighter
                 customStyle={{
                   backgroundColor: "transparent",
-                  padding: "12px",
+                  padding: "10px 12px",
                   margin: 0,
                   fontSize: "12px",
+                  lineHeight: "1.45",
                 }}
                 language="json"
                 style={syntaxStyle}
@@ -798,8 +879,28 @@ function McpCallCell({ toolCall }: ToolCallProps) {
 
 function CodeInterpreterCell({ toolCall }: ToolCallProps) {
   const { theme } = useThemeStore();
-  const { addArtifact, setCurrentArtifact } = useArtifactStore();
+  const { setCurrentArtifact, upsertArtifact } = useArtifactStore();
   const syntaxStyle = theme === "dark" ? vscDarkPlus : coy;
+  const artifactId = `code-interpreter-${toolCall.id}`;
+  const openCodeArtifact = useCallback((title: string) => {
+    const artifact: any = {
+      id: artifactId,
+      type: "code",
+      title,
+      code: toolCall.code || "",
+      language: "python",
+    };
+    if (typeof upsertArtifact === "function") upsertArtifact(artifact);
+    if (typeof setCurrentArtifact === "function") setCurrentArtifact(artifact);
+  }, [artifactId, setCurrentArtifact, toolCall.code, upsertArtifact]);
+
+  useEffect(() => {
+    const isFinished = toolCall.status === "completed" && Boolean((toolCall.code || "").trim());
+    if (!isFinished) return;
+    if (autoOpenedCodeArtifacts.has(artifactId)) return;
+    autoOpenedCodeArtifacts.add(artifactId);
+    openCodeArtifact("Finished code");
+  }, [artifactId, openCodeArtifact, toolCall.code, toolCall.status]);
 
   return (
     <ToolCard toolCall={toolCall} icon={<Code2 size={16} className={theme === "dark" ? "text-stone-200" : "text-stone-800"} />}>
@@ -809,31 +910,21 @@ function CodeInterpreterCell({ toolCall }: ToolCallProps) {
             <div className={`text-xs ${theme === "dark" ? "text-stone-400" : "text-stone-500"}`}>Command</div>
             <button
               type="button"
-              onClick={() => {
-                const artifact: any = {
-                  id: `code-interpreter-${toolCall.id}`,
-                  type: "code",
-                  title: "Code interpreter",
-                  code: toolCall.code || "",
-                  language: "python",
-                };
-                addArtifact(artifact);
-                setCurrentArtifact(artifact);
-              }}
+              onClick={() => openCodeArtifact(toolCall.status === "completed" ? "Finished code" : "Streaming code")}
               className={`text-xs rounded-md border px-2 py-1 transition-colors ${
                 theme === "dark"
                   ? "border-white/10 bg-white/[0.04] text-stone-200 hover:bg-white/10"
                   : "border-black/10 bg-black/[0.02] text-stone-700 hover:bg-black/5"
               }`}
             >
-              Open streaming code
+              {toolCall.status === "completed" ? "Open finished code" : "Open streaming code"}
             </button>
           </div>
-          <div className={`rounded-lg border ${theme === "dark" ? "border-white/10 bg-white/[0.03]" : "border-black/10 bg-black/[0.02]"}`}>
+          <div className={getTerminalPanelClass(theme)}>
             <SyntaxHighlighter
               customStyle={{
                 backgroundColor: "transparent",
-                padding: "12px",
+                padding: "10px 12px",
                 margin: 0,
                 fontSize: "12px",
                 lineHeight: "1.5",

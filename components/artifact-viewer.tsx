@@ -2,10 +2,11 @@
 
 import Image from "next/image";
 
-import React, { useEffect, useMemo, useRef, useState, lazy } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState, lazy } from "react";
 import { BookmarkPlus, X, Code2, Eye, Download, Maximize2, Minimize2, FileText } from "lucide-react";
 import useThemeStore from "@/stores/useThemeStore";
 import useArtifactStore from "@/stores/useArtifactStore";
+import useConversationStore from "@/stores/useConversationStore";
 import type { AnyArtifact, FileArtifact } from "@/stores/useArtifactStore";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/cjs/styles/prism";
@@ -24,7 +25,7 @@ const FileTabs = lazy(() => import("@codesandbox/sandpack-react").then(mod => ({
 const Editor = lazy(() => import("@monaco-editor/react"));
 
 // Import hooks normally (they can't be lazy loaded)
-import { useActiveCode, useSandpack } from "@codesandbox/sandpack-react";
+import { useActiveCode, useSandpack, useSandpackClient, useSandpackConsole, useSandpackPreviewProgress } from "@codesandbox/sandpack-react";
 
 type TsAppSpec = {
   files: Record<string, string>;
@@ -34,6 +35,159 @@ type TsAppSpec = {
   template?: string;
   entry?: string;
 };
+
+type TsAppValidation = {
+  phase: "idle" | "building" | "preview_ready" | "runtime_error" | "needs_repair" | "playable";
+  label: string;
+  message: string;
+  gameHooks: {
+    renderGameToText: boolean;
+    advanceTime: boolean;
+  };
+};
+
+const autoRepairRequested = new Set<string>();
+
+function toSandpackPath(path: string) {
+  if (!path) return "/src/index.tsx";
+  const trimmed = path.trim();
+  if (!trimmed) return "/src/index.tsx";
+  return trimmed.startsWith("/") ? trimmed : `/${trimmed}`;
+}
+
+function resolveTsAppTemplate(spec: TsAppSpec | null) {
+  const entry = toSandpackPath(spec?.entry || "/src/index.tsx");
+  const hasSrcTree = Object.keys(spec?.files || {}).some((path) => toSandpackPath(path).startsWith("/src/"));
+  if ((spec?.template || "").trim()) return spec?.template as string;
+  if (hasSrcTree || entry.startsWith("/src/")) return "vite-react-ts";
+  return "react-ts";
+}
+
+function TsAppHealthMonitor({
+  enabled,
+  spec,
+  artifactMeta,
+  onStatus,
+}: {
+  enabled: boolean;
+  spec: TsAppSpec | null;
+  artifactMeta?: Record<string, any>;
+  onStatus: (status: TsAppValidation) => void;
+}) {
+  const { clientId, iframe } = useSandpackClient();
+  const progress = useSandpackPreviewProgress({ clientId, timeout: 12000 });
+  const { logs } = useSandpackConsole({
+    clientId,
+    resetOnPreviewRestart: true,
+    showSyntaxError: true,
+    maxMessageCount: 50,
+  });
+
+  useEffect(() => {
+    if (!enabled) return;
+
+    const hasErrorLog = Array.isArray(logs) && logs.some((entry: any) => {
+      const method = String(entry?.method || entry?.type || "").toLowerCase();
+      return method.includes("error") || method.includes("warn");
+    });
+
+    if (progress) {
+      onStatus({
+        phase: "building",
+        label: "Building",
+        message: String(progress),
+        gameHooks: {
+          renderGameToText: false,
+          advanceTime: false,
+        },
+      });
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      const win = iframe.current?.contentWindow as any;
+      const renderGameToText = typeof win?.render_game_to_text === "function";
+      const advanceTime = typeof win?.advanceTime === "function";
+      const looksLikeGame = Boolean(spec) && (
+        Object.keys(spec?.files || {}).some((path) => /game|enemy|player|canvas|arcade|contra/i.test(path)) ||
+        /game|arcade|contra|shooter|platform/i.test(JSON.stringify(spec?.files || {}).slice(0, 4000))
+      );
+
+      if (hasErrorLog) {
+        const firstError = (logs as any[]).find((entry: any) => {
+          const method = String(entry?.method || entry?.type || "").toLowerCase();
+          return method.includes("error") || method.includes("warn");
+        });
+        onStatus({
+          phase: "runtime_error",
+          label: "Runtime error",
+          message: String(firstError?.data?.[0] || firstError?.message || "Runtime error detected"),
+          gameHooks: {
+            renderGameToText,
+            advanceTime,
+          },
+        });
+        return;
+      }
+
+      const contract = artifactMeta?.build?.gameContract;
+      const missingContract = Array.isArray(contract?.missing) ? contract.missing : [];
+
+      if (missingContract.length > 0) {
+        onStatus({
+          phase: "needs_repair",
+          label: "Needs repair",
+          message: `Missing: ${missingContract.join(", ")}`,
+          gameHooks: {
+            renderGameToText,
+            advanceTime,
+          },
+        });
+        return;
+      }
+
+      if (looksLikeGame && (!renderGameToText || !advanceTime)) {
+        onStatus({
+          phase: "needs_repair",
+          label: "Needs repair",
+          message: "Preview loaded, but required game hooks are missing",
+          gameHooks: {
+            renderGameToText,
+            advanceTime,
+          },
+        });
+        return;
+      }
+
+      if (looksLikeGame) {
+        onStatus({
+          phase: "playable",
+          label: "Playable",
+          message: "Preview ready and game hooks detected",
+          gameHooks: {
+            renderGameToText,
+            advanceTime,
+          },
+        });
+        return;
+      }
+
+      onStatus({
+        phase: "preview_ready",
+        label: "Preview ready",
+        message: "Preview ready",
+        gameHooks: {
+          renderGameToText,
+          advanceTime,
+        },
+      });
+    }, 900);
+
+    return () => window.clearTimeout(timer);
+  }, [artifactMeta, clientId, enabled, iframe, logs, onStatus, progress, spec]);
+
+  return null;
+}
 
 const AUTO_DEPS: Record<string, string> = {
   "react-router-dom": "^6.30.0",
@@ -342,6 +496,7 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { theme } = useThemeStore();
   const { upsertArtifact } = useArtifactStore();
+  const { isAssistantLoading } = useConversationStore();
   const [isSaving, setIsSaving] = useState(false);
   const [fileText, setFileText] = useState<string>("");
   const [fileTextError, setFileTextError] = useState<string>("");
@@ -353,6 +508,15 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
   const [docxError, setDocxError] = useState<string>("");
   const [tsAppSpec, setTsAppSpec] = useState<TsAppSpec | null>(null);
   const [tsAppError, setTsAppError] = useState<string>("");
+  const [tsAppValidation, setTsAppValidation] = useState<TsAppValidation>({
+    phase: "idle",
+    label: "Waiting",
+    message: "",
+    gameHooks: {
+      renderGameToText: false,
+      advanceTime: false,
+    },
+  });
 
   const previewHtml = useMemo(() => {
     if (!artifact) return "";
@@ -387,27 +551,61 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
     []
   );
 
+  const artifactType = artifact?.type;
   useEffect(() => {
-    if (artifact?.type === "code") {
+    if (artifactType === "code") {
       setViewMode("code");
     } else {
       setViewMode("preview");
     }
-  }, [artifact]);
+  }, [artifactType]);
 
   const artifactDependency = artifact?.id;
   const artifactRevision = (artifact as any)?.revision;
+  const artifactCode = artifact?.type === "ts_app" ? (artifact as any).code : null;
+  const lastTsAppCodeRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!artifact || artifact.type !== "ts_app") {
       setTsAppSpec(null);
       setTsAppError("");
+      setTsAppValidation({
+        phase: "idle",
+        label: "Waiting",
+        message: "",
+        gameHooks: {
+          renderGameToText: false,
+          advanceTime: false,
+        },
+      });
+      lastTsAppCodeRef.current = null;
       return;
     }
-    const { spec, error } = parseTsAppSpec(artifact.code);
+    // Skip re-parsing if the code string hasn't actually changed
+    if (artifactCode === lastTsAppCodeRef.current) return;
+    lastTsAppCodeRef.current = artifactCode;
+    const { spec, error } = parseTsAppSpec(artifactCode || "");
     setTsAppSpec(spec);
     setTsAppError(error);
-  }, [artifactDependency, artifactRevision, artifact]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [artifactDependency, artifactRevision, artifactCode]);
+
+  // Memoize the onSpec callback to prevent TsAppSync from re-running its effect on every render
+  const handleTsAppSpecUpdate = useCallback((next: TsAppSpec) => {
+    setTsAppError("");
+    if (!artifact) return;
+    const nextCode = JSON.stringify(next, null, 2);
+    // Skip if the code is identical to prevent update loops
+    if (artifact.type === "ts_app" && (artifact as any).code === nextCode) return;
+    const nextArtifact: any = {
+      ...artifact,
+      type: "ts_app",
+      code: nextCode,
+      language: "ts_app",
+    };
+    upsertArtifact(nextArtifact);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [artifactDependency, upsertArtifact]);
 
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
@@ -467,6 +665,56 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
       setIsSaving(false);
     }
   };
+
+  const handleRepairBuild = useCallback(() => {
+    if (!artifact || artifact.type !== "ts_app") return;
+
+    const lines = [
+      `Repair the current ts_app build instead of creating a new one.`,
+      `The current artifact is "${artifact.title || "Untitled App"}".`,
+      `Latest validator status: ${tsAppValidation.label}.`,
+      tsAppValidation.message ? `Observed issue: ${tsAppValidation.message}` : "",
+      `render_game_to_text present: ${tsAppValidation.gameHooks.renderGameToText ? "yes" : "no"}.`,
+      `advanceTime present: ${tsAppValidation.gameHooks.advanceTime ? "yes" : "no"}.`,
+      `Use update_ts_app with targeted fixes to make the preview run correctly.`,
+    ].filter(Boolean);
+
+    window.dispatchEvent(
+      new CustomEvent("onechat-send-message", {
+        detail: {
+          message: lines.join("\n"),
+        },
+      })
+    );
+  }, [artifact, tsAppValidation]);
+
+  useEffect(() => {
+    if (!artifact || artifact.type !== "ts_app") return;
+    const nextMeta = {
+      ...((artifact as any).meta || {}),
+      previewStatus: tsAppValidation,
+    };
+    const prevSerialized = JSON.stringify(((artifact as any).meta || {}).previewStatus || null);
+    const nextSerialized = JSON.stringify(tsAppValidation);
+    if (prevSerialized === nextSerialized) return;
+    upsertArtifact({
+      ...(artifact as any),
+      meta: nextMeta,
+    });
+  }, [artifact, tsAppValidation, upsertArtifact]);
+
+  useEffect(() => {
+    if (!artifact || artifact.type !== "ts_app") return;
+    if (isAssistantLoading) return;
+    if (tsAppValidation.phase !== "needs_repair") return;
+    const key = `${artifact.id}:${String((artifact as any)?.revision || "0")}`;
+    if (autoRepairRequested.has(key)) return;
+    autoRepairRequested.add(key);
+    const timer = window.setTimeout(() => {
+      handleRepairBuild();
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [artifact, handleRepairBuild, isAssistantLoading, tsAppValidation.phase]);
 
   useEffect(() => {
     if (!artifact) return;
@@ -765,9 +1013,61 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
                 {tsAppError}
               </div>
             )}
+            {!tsAppError && (
+              <div
+                className={`flex items-center justify-between gap-3 border-b px-3 py-2 text-xs ${
+                  theme === "dark" ? "border-white/10 bg-white/[0.03]" : "border-black/10 bg-black/[0.02]"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  <span
+                    className={`inline-flex h-2.5 w-2.5 rounded-full ${
+                      tsAppValidation.phase === "playable" || tsAppValidation.phase === "preview_ready"
+                        ? "bg-emerald-500"
+                        : tsAppValidation.phase === "runtime_error"
+                          ? "bg-red-500"
+                          : tsAppValidation.phase === "building"
+                            ? "bg-amber-500"
+                            : tsAppValidation.phase === "needs_repair"
+                              ? "bg-orange-500"
+                            : "bg-stone-500"
+                    }`}
+                  />
+                  <span className={theme === "dark" ? "text-stone-300" : "text-stone-700"}>
+                    {tsAppValidation.label}
+                  </span>
+                </div>
+                <div className={`flex items-center gap-3 ${theme === "dark" ? "text-stone-500" : "text-stone-500"}`}>
+                  {!!(artifact as any)?.meta?.build && (
+                    <>
+                      <span>{((artifact as any).meta.build.filesCreated || []).length} files</span>
+                      <span>{(artifact as any).meta.build.templateUsed || "template?"}</span>
+                      <span>{((artifact as any).meta.build.dependenciesAdded || []).length} deps</span>
+                      {((artifact as any).meta.build.fallbackUsed) && <span>fallback scaffold</span>}
+                    </>
+                  )}
+                  <span>{tsAppValidation.gameHooks.renderGameToText ? "render_game_to_text" : "no render hook"}</span>
+                  <span>{tsAppValidation.gameHooks.advanceTime ? "advanceTime" : "no time hook"}</span>
+                  {(tsAppValidation.phase === "runtime_error" || tsAppValidation.phase === "needs_repair") && (
+                    <button
+                      type="button"
+                      disabled={isAssistantLoading}
+                      onClick={handleRepairBuild}
+                      className={`rounded-md border px-2 py-1 text-[11px] font-medium transition-colors disabled:opacity-50 ${
+                        theme === "dark"
+                          ? "border-red-500/30 bg-red-500/10 text-red-200 hover:bg-red-500/20"
+                          : "border-red-500/30 bg-red-500/10 text-red-700 hover:bg-red-500/15"
+                      }`}
+                    >
+                      Repair build
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
             <div className="h-full flex flex-col" style={{ minHeight: 0 }}>
               <SandpackProvider
-                template={(tsAppSpec?.template as any) || "react-ts"}
+                template={resolveTsAppTemplate(tsAppSpec) as any}
                 theme="dark"
                 style={{ height: "100%" }}
                 key={`${String((artifact as any)?.revision || "0")}:${JSON.stringify(tsAppSpec?.dependencies || {})}:${JSON.stringify(tsAppSpec?.externalResources || [])}`}
@@ -775,9 +1075,9 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
                   const spec = tsAppSpec || getDefaultTsAppSpec();
                   const files: Record<string, any> = {};
                   for (const [path, code] of Object.entries(spec.files || {})) {
-                    files[path] = { code };
+                    files[toSandpackPath(path)] = { code };
                   }
-                  const entry = spec.entry || "/src/index.tsx";
+                  const entry = toSandpackPath(spec.entry || "/src/index.tsx");
                   // Auto-generate entry bootstrap if the AI didn't provide one
                   if (!files[entry]) {
                     // Find the main App file
@@ -785,7 +1085,7 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
                       /\/App\.(tsx|jsx|ts|js)$/.test(p)
                     );
                     const appImport = appPath
-                      ? appPath.replace(/\.(tsx|jsx|ts|js)$/, "").replace(/^\/src/, ".")
+                      ? toSandpackPath(appPath).replace(/\.(tsx|jsx|ts|js)$/, "").replace(/^\/src/, ".")
                       : "./App";
                     files[entry] = {
                       code: `import React from "react";\nimport { createRoot } from "react-dom/client";\nimport App from "${appImport}";\n\nconst root = document.getElementById("root");\nif (root) {\n  createRoot(root).render(\n    <React.StrictMode>\n      <App />\n    </React.StrictMode>\n  );\n}\n`,
@@ -795,7 +1095,7 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
                   return files;
                 })()}
                 customSetup={{
-                  entry: (tsAppSpec?.entry || "/src/index.tsx"),
+                  entry: toSandpackPath(tsAppSpec?.entry || "/src/index.tsx"),
                   dependencies: tsAppSpec?.dependencies || {},
                   ...(tsAppSpec?.devDependencies && Object.keys(tsAppSpec.devDependencies).length > 0
                     ? { devDependencies: tsAppSpec.devDependencies }
@@ -828,17 +1128,13 @@ const ArtifactViewer: React.FC<ArtifactViewerProps> = ({ artifact, onClose }) =>
                 <TsAppSync
                   enabled={viewMode === "code"}
                   spec={tsAppSpec || getDefaultTsAppSpec()}
-                  onSpec={(next) => {
-                    setTsAppError("");
-                    if (!artifact) return;
-                    const nextArtifact: any = {
-                      ...artifact,
-                      type: "ts_app",
-                      code: JSON.stringify(next, null, 2),
-                      language: "ts_app",
-                    };
-                    upsertArtifact(nextArtifact);
-                  }}
+                  onSpec={handleTsAppSpecUpdate}
+                />
+                <TsAppHealthMonitor
+                  enabled={artifact.type === "ts_app"}
+                  spec={tsAppSpec}
+                  artifactMeta={(artifact as any)?.meta}
+                  onStatus={setTsAppValidation}
                 />
               </SandpackProvider>
             </div>

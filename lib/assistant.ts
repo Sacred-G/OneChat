@@ -135,20 +135,27 @@ export const handleTurn = async (
     // MCP configs are hydrated on startup but only used when mcpEnabled is true.
     // Do not auto-enable MCP just because configs exist.
 
-    const { currentArtifact } = useArtifactStore.getState() as any;
+    const { currentArtifact, artifactHistory } = useArtifactStore.getState() as any;
     const artifactContextMessage = await (async () => {
-      if (!currentArtifact) return null;
+      const currentTsApp =
+        currentArtifact?.type === "ts_app"
+          ? currentArtifact
+          : Array.isArray(artifactHistory)
+            ? [...artifactHistory].reverse().find((artifact: any) => artifact?.type === "ts_app") || null
+            : null;
 
-      if (currentArtifact.type === "ts_app") {
-        const raw = typeof currentArtifact.code === "string" ? currentArtifact.code : "";
+      if (currentTsApp) {
+        const raw = typeof currentTsApp.code === "string" ? currentTsApp.code : "";
         const spec = raw && raw.trim() ? raw.trim() : "";
-        const text = `A TypeScript app (ts_app) is currently open in the editor.\n\nIf the user requests CHANGES to this existing app (pages/components/styles/dependencies), use update_ts_app to apply them.\nIf the user asks to create a COMPLETELY NEW/DIFFERENT app, use create_ts_app instead (it will replace the current one).\n\nCurrent ts_app spec JSON (files + dependencies):\n${spec || "<empty>"}`;
+        const text = `A TypeScript app (ts_app) is currently available in the editor history.\n\nIf the user requests CHANGES or says the current build is broken, not working, has errors, or needs fixes, use update_ts_app to repair the existing app.\nIf the user asks to create a COMPLETELY NEW/DIFFERENT app, use create_ts_app instead (it will replace the current one).\nWhen repairing a broken ts_app, make targeted fixes to the files that are actually causing the problem instead of rebuilding the whole app unless necessary.\n\nCurrent ts_app spec JSON (files + dependencies):\n${spec || "<empty>"}`;
         return {
           type: "message",
           role: "system",
           content: [{ type: "input_text", text }],
         };
       }
+
+      if (!currentArtifact) return null;
 
       if (currentArtifact.type === "html" || currentArtifact.type === "react") {
         const code = typeof currentArtifact.code === "string" ? currentArtifact.code : "";
@@ -315,6 +322,13 @@ export const handleTurn = async (
   }
 };
 
+// Maximum number of recursive tool-call turns before we force-stop.
+// This prevents infinite loops when the model keeps calling tools like update_ts_app.
+const MAX_TOOL_TURNS = 10;
+let currentToolTurnDepth = 0;
+// Track recent function calls to detect repetition
+let recentFunctionCalls: { name: string; timestamp: number }[] = [];
+
 export const processMessages = async () => {
   const {
     chatMessages,
@@ -323,6 +337,15 @@ export const processMessages = async () => {
     setConversationItems,
     setAssistantLoading,
   } = useConversationStore.getState();
+
+  // Guard against infinite recursion
+  currentToolTurnDepth++;
+  if (currentToolTurnDepth > MAX_TOOL_TURNS) {
+    console.warn(`[processMessages] Reached max tool turn depth (${MAX_TOOL_TURNS}), stopping.`);
+    currentToolTurnDepth = 0;
+    recentFunctionCalls = [];
+    return;
+  }
 
   const toolsState = useToolsStore.getState() as ToolsState;
 
@@ -688,6 +711,19 @@ export const processMessages = async () => {
             });
             setConversationItems([...conversationItems]);
 
+            // Detect repeated calls to the same function (e.g. update_ts_app loop)
+            const now = Date.now();
+            recentFunctionCalls.push({ name: toolName, timestamp: now });
+            // Keep only calls from the last 30 seconds
+            recentFunctionCalls = recentFunctionCalls.filter((c) => now - c.timestamp < 30_000);
+            const sameNameCalls = recentFunctionCalls.filter((c) => c.name === toolName).length;
+            if (sameNameCalls >= 3) {
+              console.warn(`[processMessages] Function "${toolName}" called ${sameNameCalls} times in 30s — breaking loop.`);
+              currentToolTurnDepth = 0;
+              recentFunctionCalls = [];
+              break;
+            }
+
             // Create another turn after tool output has been added
             await processMessages();
           }
@@ -888,6 +924,9 @@ export const processMessages = async () => {
 
         case "response.completed": {
           console.log("response completed", data);
+          // Reset recursion guard on normal completion
+          currentToolTurnDepth = 0;
+          recentFunctionCalls = [];
           const { response } = data;
 
           // Handle MCP tools list (append all lists, not just the first)

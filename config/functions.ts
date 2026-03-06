@@ -317,6 +317,131 @@ const normalizeTsAppFiles = (files: unknown): Record<string, string> => {
   return next;
 };
 
+const pathToComponentName = (path: string) => {
+  const base = path.split("/").pop() || "";
+  const stem = base.replace(/\.[^.]+$/, "");
+  const normalized = stem.replace(/[^a-zA-Z0-9]+/g, " ").trim();
+  const words = normalized.split(/\s+/).filter(Boolean);
+  if (words.length === 0) return "Game";
+  return words
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join("")
+    .replace(/^[^A-Z]+/, "") || "Game";
+};
+
+const toRelativeImport = (fromPath: string, targetPath: string) => {
+  const fromParts = fromPath.split("/").filter(Boolean);
+  const targetParts = targetPath
+    .split("/")
+    .filter(Boolean)
+    .map((part, index, arr) => (index === arr.length - 1 ? part.replace(/\.[^.]+$/, "") : part));
+  fromParts.pop();
+  while (fromParts.length > 0 && targetParts.length > 0 && fromParts[0] === targetParts[0]) {
+    fromParts.shift();
+    targetParts.shift();
+  }
+  const up = fromParts.map(() => "..");
+  const down = targetParts;
+  const joined = [...up, ...down].join("/");
+  return joined.startsWith(".") ? joined : `./${joined}`;
+};
+
+const ensureRequiredTsAppFiles = (files: Record<string, string>): Record<string, string> => {
+  const next = { ...files };
+  const tsxPaths = Object.keys(next).filter(
+    (path) => path.endsWith(".tsx") && path !== "/src/index.tsx" && path !== "/src/App.tsx"
+  );
+  const preferredTargets = [
+    "/src/Game.tsx",
+    "/src/ContraGame.tsx",
+    "/src/Main.tsx",
+    "/src/Scene.tsx",
+    "/src/components/Game.tsx",
+    "/src/components/ContraGame.tsx",
+    "/src/components/Main.tsx",
+  ];
+  const targetPath =
+    preferredTargets.find((path) => typeof next[path] === "string") ||
+    tsxPaths[0] ||
+    "";
+  const targetComponent = targetPath ? pathToComponentName(targetPath) : "";
+  const targetImport = targetPath ? toRelativeImport("/src/App.tsx", targetPath) : "";
+
+  if (!next["/src/App.tsx"]) {
+    next["/src/App.tsx"] = targetPath
+      ? `import React from "react";
+import ${targetComponent} from "${targetImport}";
+
+export default function App() {
+  return <${targetComponent} />;
+}
+`
+      : `import React from "react";
+
+export default function App() {
+  return (
+    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 24, fontFamily: "system-ui, sans-serif" }}>
+      <div>
+        <h1 style={{ margin: 0, fontSize: 28 }}>App ready</h1>
+        <p style={{ marginTop: 12, opacity: 0.7 }}>Add your main game or UI component to /src/App.tsx.</p>
+      </div>
+    </main>
+  );
+}
+`;
+  }
+
+  if (!next["/src/index.tsx"]) {
+    next["/src/index.tsx"] = `import React from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./styles.css";
+
+const root = document.getElementById("root");
+if (root) {
+  createRoot(root).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}
+`;
+  }
+
+  if (!next["/src/styles.css"]) {
+    next["/src/styles.css"] = `:root {
+  color-scheme: dark;
+  font-family: Inter, system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  background: #050816;
+  color: #f8fafc;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+`;
+  }
+
+  return next;
+};
+
 const hasTsAppChange = ({
   files,
   deleteFiles,
@@ -343,7 +468,11 @@ const hasTsAppChange = ({
   return hasFiles || hasDelete || hasDeps || hasDevDeps || hasResources || hasEntry;
 };
 
-const getFallbackTsAppFiles = (): Record<string, string> => ({
+const isGameLikeTitle = (value?: string) =>
+  typeof value === "string" &&
+  /(game|contra|platform|platformer|shooter|arcade|run.?n.?gun|canvas|nintendo|boss|enemy)/i.test(value);
+
+const getFallbackBaseFiles = (): Record<string, string> => ({
   "/src/index.tsx": `import React from "react";
 import { createRoot } from "react-dom/client";
 import App from "./App";
@@ -359,330 +488,399 @@ if (root) {
 }
 `,
   "/src/App.tsx": `import React from "react";
-import Navbar from "./components/Navbar";
-import Hero from "./components/Hero";
-import Footer from "./components/Footer";
 
 export default function App() {
   return (
-    <div style={{ minHeight: "100vh", display: "flex", flexDirection: "column", fontFamily: "Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" }}>
-      <Navbar />
-      <main style={{ flex: 1 }}>
-        <Hero />
-      </main>
-      <Footer />
-    </div>
+    <main style={{ minHeight: "100vh", display: "grid", placeItems: "center", padding: 32 }}>
+      <div style={{ maxWidth: 720 }}>
+        <h1 style={{ margin: 0, fontSize: 32 }}>App scaffold ready</h1>
+        <p style={{ marginTop: 12, lineHeight: 1.6, opacity: 0.75 }}>
+          The model did not provide enough files to generate the requested app, so a minimal shell was created instead of the old generic marketing components.
+        </p>
+      </div>
+    </main>
   );
 }
 `,
   "/src/styles.css": `:root {
-  --color-primary: #2563eb;
-  --color-primary-hover: #1d4ed8;
-  --color-secondary: #64748b;
-  --color-bg: #ffffff;
-  --color-surface: #f8fafc;
-  --color-border: #e2e8f0;
-  --color-text: #0f172a;
-  --color-text-muted: #64748b;
-  --color-success: #22c55e;
-  --color-danger: #ef4444;
-  --color-warning: #f59e0b;
-  --radius-sm: 6px;
-  --radius-md: 8px;
-  --radius-lg: 12px;
-  --radius-full: 9999px;
-  --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-  --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -2px rgba(0,0,0,0.1);
-  --shadow-lg: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -4px rgba(0,0,0,0.1);
-  color-scheme: light;
+  color-scheme: dark;
+  font-family: Inter, system-ui, sans-serif;
 }
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  margin: 0;
+  min-height: 100%;
+}
 
 body {
+  background: #050816;
+  color: #f8fafc;
+}
+`,
+});
+
+const getFallbackGameFiles = (): Record<string, string> => ({
+  "/src/index.tsx": `import React from "react";
+import { createRoot } from "react-dom/client";
+import App from "./App";
+import "./styles.css";
+
+const root = document.getElementById("root");
+if (root) {
+  createRoot(root).render(
+    <React.StrictMode>
+      <App />
+    </React.StrictMode>
+  );
+}
+`,
+  "/src/App.tsx": `import React from "react";
+import ArcadeGame from "./src-game/ArcadeGame";
+
+export default function App() {
+  return <ArcadeGame />;
+}
+`,
+  "/src/src-game/ArcadeGame.tsx": `import React, { useEffect, useRef, useState } from "react";
+
+type Bullet = { x: number; y: number; vx: number; vy: number };
+type Enemy = { x: number; y: number; vx: number; hp: number };
+type State = {
+  mode: "start" | "playing" | "won" | "lost";
+  player: { x: number; y: number; vx: number; vy: number; w: number; h: number; onGround: boolean; facing: 1 | -1; lives: number };
+  bullets: Bullet[];
+  enemies: Enemy[];
+  score: number;
+  cooldown: number;
+};
+
+const W = 960;
+const H = 540;
+const FLOOR = 462;
+const SPEED = 220;
+const JUMP = 420;
+const GRAVITY = 980;
+
+function makeInitialState(): State {
+  return {
+    mode: "start",
+    player: { x: 120, y: FLOOR - 56, vx: 0, vy: 0, w: 34, h: 56, onGround: true, facing: 1, lives: 3 },
+    bullets: [],
+    enemies: [
+      { x: 620, y: FLOOR - 48, vx: -55, hp: 2 },
+      { x: 820, y: FLOOR - 48, vx: -70, hp: 2 },
+    ],
+    score: 0,
+    cooldown: 0,
+  };
+}
+
+export default function ArcadeGame() {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const keysRef = useRef<Record<string, boolean>>({});
+  const stateRef = useRef<State>(makeInitialState());
+  const [, forceRender] = useState(0);
+
+  const draw = () => {
+    const canvas = canvasRef.current;
+    const s = stateRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    ctx.fillStyle = "#081120";
+    ctx.fillRect(0, 0, W, H);
+    ctx.fillStyle = "#11243f";
+    ctx.fillRect(0, 0, W, 84);
+    ctx.fillStyle = "#1c3a66";
+    for (let i = 0; i < 16; i++) {
+      ctx.fillRect(i * 64, FLOOR + 18 + (i % 2) * 5, 42, 18);
+    }
+    ctx.fillStyle = "#263238";
+    ctx.fillRect(0, FLOOR, W, H - FLOOR);
+
+    ctx.fillStyle = "#ffe082";
+    ctx.font = "16px monospace";
+    ctx.fillText("Move: A/D or arrows  Jump: W/Up  Fire: Space  Restart: R", 24, 34);
+    ctx.fillText("Lives: " + s.player.lives + "  Score: " + s.score, 24, 58);
+
+    if (s.mode === "start") {
+      ctx.fillStyle = "#f8fafc";
+      ctx.font = "bold 38px monospace";
+      ctx.fillText("ARCADE ASSAULT", 310, 210);
+      ctx.font = "18px monospace";
+      ctx.fillText("Press Enter to start", 366, 252);
+    }
+
+    ctx.fillStyle = "#80cbc4";
+    ctx.fillRect(s.player.x, s.player.y, s.player.w, s.player.h);
+    ctx.fillStyle = "#102027";
+    ctx.fillRect(s.player.x + (s.player.facing === 1 ? 24 : -6), s.player.y + 18, 16, 6);
+
+    ctx.fillStyle = "#ffca28";
+    s.bullets.forEach((b) => ctx.fillRect(b.x, b.y, 10, 4));
+
+    ctx.fillStyle = "#ef5350";
+    s.enemies.forEach((e) => {
+      ctx.fillRect(e.x, e.y, 32, 48);
+      ctx.fillStyle = "#fff59d";
+      ctx.fillRect(e.x + 6, e.y - 10, 20 * (e.hp / 2), 4);
+      ctx.fillStyle = "#ef5350";
+    });
+
+    if (s.mode === "won" || s.mode === "lost") {
+      ctx.fillStyle = "rgba(0,0,0,0.55)";
+      ctx.fillRect(0, 0, W, H);
+      ctx.fillStyle = "#f8fafc";
+      ctx.font = "bold 42px monospace";
+      ctx.fillText(s.mode === "won" ? "AREA CLEAR" : "MISSION FAILED", 290, 220);
+      ctx.font = "18px monospace";
+      ctx.fillText("Press R to restart", 384, 260);
+    }
+  };
+
+  const update = (dt: number) => {
+    const s = stateRef.current;
+    const keys = keysRef.current;
+    if (s.mode === "start") return;
+    if (s.mode === "won" || s.mode === "lost") return;
+
+    const move = (keys.ArrowLeft || keys.a ? -1 : 0) + (keys.ArrowRight || keys.d ? 1 : 0);
+    s.player.vx = move * SPEED;
+    if (move !== 0) s.player.facing = move > 0 ? 1 : -1;
+    if ((keys.ArrowUp || keys.w) && s.player.onGround) {
+      s.player.vy = -JUMP;
+      s.player.onGround = false;
+    }
+
+    s.player.vy += GRAVITY * dt;
+    s.player.x = Math.max(0, Math.min(W - s.player.w, s.player.x + s.player.vx * dt));
+    s.player.y += s.player.vy * dt;
+    if (s.player.y + s.player.h >= FLOOR) {
+      s.player.y = FLOOR - s.player.h;
+      s.player.vy = 0;
+      s.player.onGround = true;
+    }
+
+    s.cooldown = Math.max(0, s.cooldown - dt);
+    if (keys[" "] && s.cooldown === 0) {
+      s.cooldown = 0.22;
+      s.bullets.push({ x: s.player.x + (s.player.facing === 1 ? 28 : -4), y: s.player.y + 24, vx: s.player.facing * 420, vy: 0 });
+    }
+
+    s.bullets = s.bullets
+      .map((b) => ({ ...b, x: b.x + b.vx * dt }))
+      .filter((b) => b.x > -20 && b.x < W + 20);
+
+    s.enemies = s.enemies
+      .map((e) => {
+        const nx = e.x + e.vx * dt;
+        return { ...e, x: nx < 420 ? 420 : nx > 860 ? 860 : nx, vx: nx < 420 || nx > 860 ? -e.vx : e.vx };
+      })
+      .filter((e) => e.hp > 0);
+
+    for (const bullet of s.bullets) {
+      for (const enemy of s.enemies) {
+        if (bullet.x < enemy.x + 32 && bullet.x + 10 > enemy.x && bullet.y < enemy.y + 48 && bullet.y + 4 > enemy.y) {
+          bullet.x = 2000;
+          enemy.hp -= 1;
+          if (enemy.hp <= 0) s.score += 100;
+        }
+      }
+    }
+    s.bullets = s.bullets.filter((b) => b.x < W + 40);
+
+    for (const enemy of s.enemies) {
+      const hit =
+        s.player.x < enemy.x + 32 &&
+        s.player.x + s.player.w > enemy.x &&
+        s.player.y < enemy.y + 48 &&
+        s.player.y + s.player.h > enemy.y;
+      if (hit) {
+        s.player.lives -= 1;
+        s.player.x = 120;
+        s.player.y = FLOOR - s.player.h;
+        s.player.vx = 0;
+        s.player.vy = 0;
+        if (s.player.lives <= 0) s.mode = "lost";
+        break;
+      }
+    }
+
+    if (s.enemies.length === 0) s.mode = "won";
+  };
+
+  useEffect(() => {
+    const tick = (time: number) => {
+      const last = (tick as any).last ?? time;
+      const dt = Math.min(0.033, (time - last) / 1000);
+      (tick as any).last = time;
+      update(dt);
+      draw();
+      requestAnimationFrame(tick);
+    };
+
+    const down = (e: KeyboardEvent) => {
+      keysRef.current[e.key] = true;
+      if (e.key === "Enter" && stateRef.current.mode === "start") stateRef.current.mode = "playing";
+      if ((e.key === "r" || e.key === "R") && stateRef.current.mode !== "playing") stateRef.current = makeInitialState();
+    };
+    const up = (e: KeyboardEvent) => {
+      keysRef.current[e.key] = false;
+    };
+
+    const renderGameToText = () =>
+      JSON.stringify({
+        coordinateSystem: { origin: "top-left", xDirection: "right", yDirection: "down" },
+        mode: stateRef.current.mode,
+        player: stateRef.current.player,
+        enemies: stateRef.current.enemies,
+        bullets: stateRef.current.bullets,
+        score: stateRef.current.score,
+      });
+
+    (window as any).render_game_to_text = renderGameToText;
+    (window as any).advanceTime = (ms: number) => {
+      const steps = Math.max(1, Math.round(ms / (1000 / 60)));
+      for (let i = 0; i < steps; i++) update(1 / 60);
+      draw();
+      forceRender((v) => v + 1);
+    };
+
+    window.addEventListener("keydown", down);
+    window.addEventListener("keyup", up);
+    draw();
+    requestAnimationFrame(tick);
+
+    return () => {
+      window.removeEventListener("keydown", down);
+      window.removeEventListener("keyup", up);
+      delete (window as any).render_game_to_text;
+      delete (window as any).advanceTime;
+    };
+  }, []);
+
+  return <canvas ref={canvasRef} width={W} height={H} style={{ width: "min(100vw, 960px)", height: "auto", border: "1px solid rgba(255,255,255,0.18)", imageRendering: "pixelated" }} />;
+}
+`,
+  "/src/styles.css": `:root {
+  color-scheme: dark;
+  font-family: "Press Start 2P", "Courier New", monospace;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
   margin: 0;
-  color: var(--color-text);
-  background: var(--color-bg);
+  min-height: 100%;
 }
 
-a { color: var(--color-primary); text-decoration: none; }
-a:hover { text-decoration: underline; }
-`,
-  "/src/components/Button.tsx": `import React from "react";
-
-interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: "primary" | "secondary" | "outline" | "ghost" | "danger";
-  size?: "sm" | "md" | "lg";
-}
-
-export default function Button({ variant = "primary", size = "md", style, children, ...props }: ButtonProps) {
-  const base: React.CSSProperties = {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    border: "none",
-    borderRadius: "var(--radius-md)",
-    fontWeight: 600,
-    cursor: "pointer",
-    transition: "all 0.15s ease",
-    fontFamily: "inherit",
-  };
-
-  const sizes: Record<string, React.CSSProperties> = {
-    sm: { padding: "6px 12px", fontSize: 13 },
-    md: { padding: "10px 20px", fontSize: 14 },
-    lg: { padding: "14px 28px", fontSize: 16 },
-  };
-
-  const variants: Record<string, React.CSSProperties> = {
-    primary: { background: "var(--color-primary)", color: "#fff" },
-    secondary: { background: "var(--color-secondary)", color: "#fff" },
-    outline: { background: "transparent", color: "var(--color-primary)", border: "1.5px solid var(--color-primary)" },
-    ghost: { background: "transparent", color: "var(--color-text)" },
-    danger: { background: "var(--color-danger)", color: "#fff" },
-  };
-
-  return (
-    <button style={{ ...base, ...sizes[size], ...variants[variant], ...style }} {...props}>
-      {children}
-    </button>
-  );
+body {
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at top, #14233f, #050816 60%);
+  color: #f8fafc;
 }
 `,
-  "/src/components/Card.tsx": `import React from "react";
+});
 
-interface CardProps {
-  children: React.ReactNode;
-  padding?: number | string;
-  style?: React.CSSProperties;
-  onClick?: () => void;
-}
+const getFallbackTsAppFiles = (title?: string): Record<string, string> =>
+  isGameLikeTitle(title) ? getFallbackGameFiles() : getFallbackBaseFiles();
 
-export default function Card({ children, padding = 24, style, onClick }: CardProps) {
-  return (
-    <div
-      onClick={onClick}
-      style={{
-        background: "var(--color-bg)",
-        border: "1px solid var(--color-border)",
-        borderRadius: "var(--radius-lg)",
-        padding,
-        boxShadow: "var(--shadow-sm)",
-        transition: "box-shadow 0.15s ease",
-        cursor: onClick ? "pointer" : undefined,
-        ...style,
-      }}
-    >
-      {children}
-    </div>
-  );
-}
-`,
-  "/src/components/Container.tsx": `import React from "react";
+const resolveTsAppTemplate = (template: string | undefined, files: Record<string, string>, entry: string | undefined) => {
+  if (typeof template === "string" && template.trim()) return template.trim();
+  const normalizedEntry = typeof entry === "string" && entry.trim() ? entry.trim() : "/src/index.tsx";
+  const hasSrcTree = Object.keys(files).some((path) => path.startsWith("/src/"));
+  return hasSrcTree || normalizedEntry.startsWith("/src/") ? "vite-react-ts" : "react-ts";
+};
 
-interface ContainerProps {
-  children: React.ReactNode;
-  maxWidth?: number;
-  style?: React.CSSProperties;
-}
-
-export default function Container({ children, maxWidth = 1200, style }: ContainerProps) {
-  return (
-    <div style={{ maxWidth, margin: "0 auto", padding: "0 24px", width: "100%", ...style }}>
-      {children}
-    </div>
-  );
-}
-`,
-  "/src/components/Navbar.tsx": `import React from "react";
-import Container from "./Container";
-
-interface NavbarProps {
-  brand?: string;
-  links?: { label: string; href: string }[];
-  style?: React.CSSProperties;
-}
-
-export default function Navbar({ brand = "App", links = [], style }: NavbarProps) {
-  return (
-    <nav style={{ borderBottom: "1px solid var(--color-border)", padding: "14px 0", background: "var(--color-bg)", ...style }}>
-      <Container style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <strong style={{ fontSize: 18 }}>{brand}</strong>
-        {links.length > 0 && (
-          <div style={{ display: "flex", gap: 24 }}>
-            {links.map((l) => (
-              <a key={l.href} href={l.href} style={{ color: "var(--color-text-muted)", fontSize: 14, fontWeight: 500 }}>
-                {l.label}
-              </a>
-            ))}
-          </div>
-        )}
-      </Container>
-    </nav>
-  );
-}
-`,
-  "/src/components/Hero.tsx": `import React from "react";
-import Container from "./Container";
-import Button from "./Button";
-
-interface HeroProps {
+const analyzeGameContract = ({
+  title,
+  files,
+}: {
   title?: string;
-  subtitle?: string;
-  ctaLabel?: string;
-  onCtaClick?: () => void;
-  style?: React.CSSProperties;
-}
+  files: Record<string, string>;
+}) => {
+  const joined = Object.entries(files)
+    .map(([path, code]) => `${path}\n${code}`)
+    .join("\n");
+  const lower = joined.toLowerCase();
+  const isGame =
+    isGameLikeTitle(title) ||
+    /render_game_to_text|advancetime|requestanimationframe|canvas|getcontext\(["']2d["']\)|game loop/.test(lower);
 
-export default function Hero({
-  title = "Build Something Amazing",
-  subtitle = "A modern React app with reusable components ready to customize.",
-  ctaLabel = "Get Started",
-  onCtaClick,
-  style,
-}: HeroProps) {
-  return (
-    <section style={{ padding: "80px 0", textAlign: "center", ...style }}>
-      <Container maxWidth={800}>
-        <h1 style={{ fontSize: 48, fontWeight: 800, margin: "0 0 16px", lineHeight: 1.1 }}>{title}</h1>
-        <p style={{ fontSize: 18, color: "var(--color-text-muted)", margin: "0 0 32px", lineHeight: 1.6 }}>{subtitle}</p>
-        <Button size="lg" onClick={onCtaClick}>{ctaLabel}</Button>
-      </Container>
-    </section>
-  );
-}
-`,
-  "/src/components/Footer.tsx": `import React from "react";
-import Container from "./Container";
+  if (!isGame) {
+    return {
+      isGame: false,
+      status: "not_game" as const,
+      missing: [] as string[],
+    };
+  }
 
-interface FooterProps {
-  text?: string;
-  style?: React.CSSProperties;
-}
+  const hasGameplayFile =
+    Object.keys(files).some((path) => /game|player|enemy|level|scene|world|arcade|contra|canvas/i.test(path)) ||
+    /canvas|getcontext\(["']2d["']\)|requestanimationframe/.test(lower);
+  const hasControls =
+    /keydown|keyup|key ===|keycode|wasd|arrowleft|arrowright|arrowup|space/.test(lower);
+  const hasRestart =
+    /restart|reset|play again|press r|game over/.test(lower);
+  const hasHooks =
+    /render_game_to_text/.test(lower) && /advancetime/.test(lower);
+  const hasPlayableState =
+    /score|lives|health|hp|win|lose|won|lost|enemy/.test(lower);
 
-export default function Footer({ text, style }: FooterProps) {
-  return (
-    <footer style={{ borderTop: "1px solid var(--color-border)", padding: "24px 0", ...style }}>
-      <Container style={{ textAlign: "center" }}>
-        <p style={{ margin: 0, fontSize: 13, color: "var(--color-text-muted)" }}>
-          {text || \`© \${new Date().getFullYear()} App. All rights reserved.\`}
-        </p>
-      </Container>
-    </footer>
-  );
-}
-`,
-  "/src/components/Input.tsx": `import React from "react";
+  const missing = [
+    ...(hasGameplayFile ? [] : ["required gameplay files"]),
+    ...(hasControls ? [] : ["required controls"]),
+    ...(hasRestart ? [] : ["required restart loop"]),
+    ...(hasHooks ? [] : ["required test hooks"]),
+    ...(hasPlayableState ? [] : ["required playable state"]),
+  ];
 
-interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  label?: string;
-  error?: string;
-}
-
-export default function Input({ label, error, style, ...props }: InputProps) {
-  return (
-    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
-      {label && <label style={{ fontSize: 13, fontWeight: 600, color: "var(--color-text)" }}>{label}</label>}
-      <input
-        style={{
-          padding: "10px 14px",
-          border: \`1.5px solid \${error ? "var(--color-danger)" : "var(--color-border)"}\`,
-          borderRadius: "var(--radius-md)",
-          fontSize: 14,
-          outline: "none",
-          transition: "border-color 0.15s ease",
-          fontFamily: "inherit",
-          ...style,
-        }}
-        {...props}
-      />
-      {error && <span style={{ fontSize: 12, color: "var(--color-danger)" }}>{error}</span>}
-    </div>
-  );
-}
-`,
-  "/src/components/Badge.tsx": `import React from "react";
-
-interface BadgeProps {
-  children: React.ReactNode;
-  variant?: "default" | "success" | "danger" | "warning";
-  style?: React.CSSProperties;
-}
-
-export default function Badge({ children, variant = "default", style }: BadgeProps) {
-  const colors: Record<string, { bg: string; color: string }> = {
-    default: { bg: "var(--color-surface)", color: "var(--color-text-muted)" },
-    success: { bg: "#dcfce7", color: "#166534" },
-    danger: { bg: "#fee2e2", color: "#991b1b" },
-    warning: { bg: "#fef3c7", color: "#92400e" },
+  return {
+    isGame: true,
+    status: missing.length === 0 ? ("complete" as const) : ("incomplete" as const),
+    missing,
+    checks: {
+      gameplayFiles: hasGameplayFile,
+      controls: hasControls,
+      restartLoop: hasRestart,
+      testHooks: hasHooks,
+      playableState: hasPlayableState,
+    },
   };
-  const c = colors[variant] || colors.default;
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        padding: "3px 10px",
-        borderRadius: "var(--radius-full)",
-        fontSize: 12,
-        fontWeight: 600,
-        background: c.bg,
-        color: c.color,
-        ...style,
-      }}
-    >
-      {children}
-    </span>
-  );
-}
-`,
-  "/src/components/Modal.tsx": `import React from "react";
-import Button from "./Button";
+};
 
-interface ModalProps {
-  open: boolean;
-  onClose: () => void;
+const makeTsAppBuildMeta = ({
+  title,
+  files,
+  dependencies,
+  entry,
+  template,
+  fallbackUsed,
+}: {
   title?: string;
-  children: React.ReactNode;
-}
-
-export default function Modal({ open, onClose, title, children }: ModalProps) {
-  if (!open) return null;
-  return (
-    <div
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,0.4)",
-        display: "grid",
-        placeItems: "center",
-        zIndex: 1000,
-        padding: 24,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          background: "var(--color-bg)",
-          borderRadius: "var(--radius-lg)",
-          padding: 32,
-          maxWidth: 520,
-          width: "100%",
-          boxShadow: "var(--shadow-lg)",
-        }}
-      >
-        {title && <h2 style={{ margin: "0 0 16px", fontSize: 20, fontWeight: 700 }}>{title}</h2>}
-        <div>{children}</div>
-        <div style={{ marginTop: 24, textAlign: "right" }}>
-          <Button variant="ghost" onClick={onClose}>Close</Button>
-        </div>
-      </div>
-    </div>
-  );
-}
-`,
+  files: Record<string, string>;
+  dependencies: Record<string, string>;
+  entry?: string;
+  template?: string;
+  fallbackUsed: boolean;
+}) => ({
+  templateUsed: resolveTsAppTemplate(template, files, entry),
+  filesCreated: Object.keys(files).sort(),
+  dependenciesAdded: Object.keys(dependencies || {}).sort(),
+  fallbackUsed,
+  gameContract: analyzeGameContract({ title, files }),
 });
 
 export const deploy_streamlit_app = async ({ code }: { code: string }) => {
@@ -713,10 +911,11 @@ export const create_ts_app = async ({
 }) => {
   console.log("[create_ts_app] called with", Object.keys(files || {}));
   const incomingFiles = normalizeTsAppFiles(files);
+  const fallbackUsed = Object.keys(incomingFiles).length === 0;
   const normalizedFiles =
-    Object.keys(incomingFiles).length === 0
-      ? getFallbackTsAppFiles()
-      : { ...getFallbackTsAppFiles(), ...incomingFiles };
+    fallbackUsed
+      ? getFallbackTsAppFiles(title)
+      : ensureRequiredTsAppFiles(incomingFiles);
 
   console.log("[create_ts_app] normalized files:", Object.keys(normalizedFiles));
 
@@ -729,7 +928,7 @@ export const create_ts_app = async ({
 
   const spec: any = {
     entry: typeof entry === "string" && entry.trim() ? entry.trim() : "/src/index.tsx",
-    ...(typeof template === "string" && template.trim() ? { template: template.trim() } : {}),
+    template: resolveTsAppTemplate(template, normalizedFiles, entry),
     dependencies: {
       ...inferTsAppDependencies(normalizedFiles),
       ...(dependencies && typeof dependencies === "object" ? dependencies : {}),
@@ -740,6 +939,14 @@ export const create_ts_app = async ({
     ...(validResources.length > 0 ? { externalResources: validResources } : {}),
     files: normalizedFiles,
   };
+  const buildMeta = makeTsAppBuildMeta({
+    title,
+    files: normalizedFiles,
+    dependencies: spec.dependencies,
+    entry: spec.entry,
+    template: spec.template,
+    fallbackUsed,
+  });
 
   const artifact = {
     id: `ts_app_${Date.now()}`,
@@ -748,6 +955,9 @@ export const create_ts_app = async ({
     language: "ts_app",
     code: JSON.stringify(spec, null, 2),
     revision: Date.now(),
+    meta: {
+      build: buildMeta,
+    },
   };
 
   // Use addArtifact to both add to history AND set as current in one call
@@ -759,7 +969,16 @@ export const create_ts_app = async ({
   }
 
   console.log("[create_ts_app] artifact created:", artifact.id);
-  return { ok: true, artifactId: artifact.id };
+  return {
+    ok: true,
+    artifactId: artifact.id,
+    filesCreated: buildMeta.filesCreated,
+    templateUsed: buildMeta.templateUsed,
+    dependenciesAdded: buildMeta.dependenciesAdded,
+    fallbackUsed: buildMeta.fallbackUsed,
+    gameContract: buildMeta.gameContract,
+    message: "App created successfully. The preview is now loading. Do NOT call create_ts_app or update_ts_app again unless the user explicitly asks for changes.",
+  };
 };
 
 export const update_ts_app = async ({
@@ -811,12 +1030,16 @@ export const update_ts_app = async ({
     }
   })();
   const normalizedFiles = normalizeTsAppFiles(files);
+  const preparedFiles =
+    mode === "replace" && Object.keys(normalizedFiles).length > 0
+      ? ensureRequiredTsAppFiles(normalizedFiles)
+      : normalizedFiles;
 
-  if (!hasTsAppChange({ files: normalizedFiles, deleteFiles, dependencies, devDependencies, externalResources, entry })) {
+  if (!hasTsAppChange({ files: preparedFiles, deleteFiles, dependencies, devDependencies, externalResources, entry })) {
     return { ok: true, message: "No changes detected — the app is already up to date." };
   }
 
-  if (mode === "replace" && Object.keys(normalizedFiles).length === 0) {
+  if (mode === "replace" && Object.keys(preparedFiles).length === 0) {
     return { ok: false, error: "update_ts_app (replace mode) requires a non-empty files object." };
   }
 
@@ -846,14 +1069,14 @@ export const update_ts_app = async ({
           entry: typeof entry === "string" && entry.trim() ? entry.trim() : "/src/index.tsx",
           ...(base?.template ? { template: base.template } : {}),
           dependencies: {
-            ...inferTsAppDependencies(normalizedFiles),
+            ...inferTsAppDependencies(preparedFiles),
             ...(dependencies && typeof dependencies === "object" ? dependencies : {}),
           },
           ...(devDependencies && typeof devDependencies === "object" && Object.keys(devDependencies).length > 0
             ? { devDependencies }
             : {}),
           ...(validResources.length > 0 ? { externalResources: validResources } : {}),
-          files: normalizedFiles,
+          files: preparedFiles,
         }
       : {
           entry:
@@ -865,7 +1088,7 @@ export const update_ts_app = async ({
           ...(base?.template ? { template: base.template } : {}),
           dependencies: {
             ...((base?.dependencies && typeof base.dependencies === "object") ? base.dependencies : {}),
-            ...inferTsAppDependencies({ ...(base?.files || {}), ...normalizedFiles }),
+            ...inferTsAppDependencies({ ...(base?.files || {}), ...preparedFiles }),
             ...((dependencies && typeof dependencies === "object") ? dependencies : {}),
           },
           ...(mergedDevDeps(base?.devDependencies, devDependencies)
@@ -876,7 +1099,7 @@ export const update_ts_app = async ({
             : {}),
           files: {
             ...((base?.files && typeof base.files === "object") ? base.files : {}),
-            ...normalizedFiles,
+            ...preparedFiles,
           },
         };
 
@@ -898,13 +1121,33 @@ export const update_ts_app = async ({
     language: "ts_app",
     code: JSON.stringify(nextSpec, null, 2),
     revision: Date.now(),
+    meta: {
+      ...((tsAppArtifact as any)?.meta || {}),
+      build: makeTsAppBuildMeta({
+        title: (tsAppArtifact as any)?.title,
+        files: nextSpec.files,
+        dependencies: nextSpec.dependencies || {},
+        entry: nextSpec.entry,
+        template: nextSpec.template,
+        fallbackUsed: false,
+      }),
+    },
   };
 
   if (typeof upsertArtifact === "function") upsertArtifact(nextArtifact);
   if (typeof setCurrentArtifact === "function") setCurrentArtifact(nextArtifact);
 
   console.log("[update_ts_app] updated artifact:", nextArtifact.id, "files:", Object.keys(nextSpec.files));
-  return { ok: true };
+  return {
+    ok: true,
+    artifactId: nextArtifact.id,
+    message: "App updated successfully. The preview is now refreshing. Do NOT call update_ts_app again unless the user explicitly asks for further changes.",
+    updatedFiles: Object.keys(nextSpec.files),
+    templateUsed: nextArtifact.meta.build.templateUsed,
+    dependenciesAdded: nextArtifact.meta.build.dependenciesAdded,
+    fallbackUsed: nextArtifact.meta.build.fallbackUsed,
+    gameContract: nextArtifact.meta.build.gameContract,
+  };
 };
 
 export const functionsMap: Record<string, (params: any) => Promise<any>> = {

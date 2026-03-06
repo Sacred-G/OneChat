@@ -2,7 +2,23 @@ import OpenAI from "openai";
 const openai = new OpenAI();
 
 export async function POST(request: Request) {
-  const { fileObject } = await request.json();
+  let fileObject: { name?: string; content?: string } | null = null;
+  try {
+    const body = await request.json();
+    fileObject = body?.fileObject ?? null;
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
+
+  if (!fileObject?.name || !fileObject?.content) {
+    return new Response(JSON.stringify({ error: "Missing file data" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
+  }
 
   try {
     const fileBuffer = Buffer.from(fileObject.content, "base64");
@@ -15,9 +31,16 @@ export async function POST(request: Request) {
       purpose: "assistants",
     });
 
-    return new Response(JSON.stringify(file), { status: 200 });
+    return new Response(JSON.stringify(file), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (error) {
     console.error("Error uploading file:", error);
-    return new Response("Error uploading file", { status: 500 });
+    const message = error instanceof Error ? error.message : "Error uploading file";
+    return new Response(JSON.stringify({ error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

@@ -21,6 +21,25 @@ import { Plus, Paperclip, Mic, FileText, Loader2, X } from "lucide-react";
 import AgentSelector from "./agent-selector";
 import useAgentStore from "@/stores/useAgentStore";
 
+const MAX_UPLOAD_SIZE_BYTES = 20 * 1024 * 1024;
+
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      const base64 = result.includes(",") ? result.split(",")[1] || "" : result;
+      if (!base64) {
+        reject(new Error("Could not read the selected file."));
+        return;
+      }
+      resolve(base64);
+    };
+    reader.onerror = () => reject(new Error("Could not read the selected file."));
+    reader.readAsDataURL(file);
+  });
+}
+
 interface ChatProps {
   items: Item[];
   onSendMessage: (message: string, imageData?: string) => void;
@@ -53,6 +72,7 @@ const Chat: React.FC<ChatProps> = ({
   const [isComposing, setIsComposing] = useState(false);
   const [uploadedDocName, setUploadedDocName] = useState<string | null>(null);
   const [isUploadingDoc, setIsUploadingDoc] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<{ type: "error" | "success"; message: string } | null>(null);
   const [skillsPopoverOpen, setSkillsPopoverOpen] = useState(false);
   const { isAssistantLoading, selectedSkill, setSelectedSkill } = useConversationStore();
   const { theme } = useThemeStore();
@@ -66,6 +86,7 @@ const Chat: React.FC<ChatProps> = ({
   };
 
   const handleUploadClick = () => {
+    setUploadStatus(null);
     fileInputRef.current?.click();
   };
 
@@ -75,6 +96,7 @@ const Chat: React.FC<ChatProps> = ({
     const isImage = file.type.startsWith("image/") || imageExts.includes(ext);
 
     if (isImage) {
+      setUploadStatus(null);
       const reader = new FileReader();
       reader.onload = () => {
         const result = typeof reader.result === "string" ? reader.result : null;
@@ -90,18 +112,23 @@ const Chat: React.FC<ChatProps> = ({
     }
 
     // Document upload → vector store
+    if (file.size > MAX_UPLOAD_SIZE_BYTES) {
+      setUploadStatus({
+        type: "error",
+        message: "This file is too large. Please upload a document smaller than 20 MB.",
+      });
+      return;
+    }
+
     const selectedAgent = useAgentStore.getState().getSelectedAgent();
     const globalVs = useToolsStore.getState().vectorStore;
     let targetVsId = selectedAgent?.vectorStoreId || globalVs?.id || "";
     let targetVsName = selectedAgent?.vectorStoreName || globalVs?.name || "";
 
     setIsUploadingDoc(true);
+    setUploadStatus(null);
     try {
-      const arrayBuffer = await file.arrayBuffer();
-      const bytes = new Uint8Array(arrayBuffer);
-      let binary = "";
-      for (let i = 0; i < bytes.byteLength; i++) binary += String.fromCharCode(bytes[i]);
-      const base64Content = btoa(binary);
+      const base64Content = await fileToBase64(file);
 
       // Upload file to OpenAI
       const uploadRes = await fetch("/api/vector_stores/upload_file", {
@@ -109,8 +136,10 @@ const Chat: React.FC<ChatProps> = ({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileObject: { name: file.name, content: base64Content } }),
       });
-      if (!uploadRes.ok) throw new Error("Upload failed");
-      const uploadData = await uploadRes.json();
+      const uploadData = await uploadRes.json().catch(() => null);
+      if (!uploadRes.ok) {
+        throw new Error(typeof uploadData?.error === "string" ? uploadData.error : "Upload failed");
+      }
       const fileId = uploadData.id;
       if (!fileId) throw new Error("No file ID");
 
@@ -122,8 +151,10 @@ const Chat: React.FC<ChatProps> = ({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ name: storeName }),
         });
-        if (!createRes.ok) throw new Error("Failed to create store");
-        const createData = await createRes.json();
+        const createData = await createRes.json().catch(() => null);
+        if (!createRes.ok) {
+          throw new Error(typeof createData?.error === "string" ? createData.error : "Failed to create store");
+        }
         targetVsId = createData.id;
         targetVsName = storeName;
 
@@ -141,13 +172,21 @@ const Chat: React.FC<ChatProps> = ({
       }
 
       // Add file to vector store
-      await fetch("/api/vector_stores/add_file", {
+      const addFileRes = await fetch("/api/vector_stores/add_file", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ fileId, vectorStoreId: targetVsId }),
       });
+      const addFileData = await addFileRes.json().catch(() => null);
+      if (!addFileRes.ok) {
+        throw new Error(typeof addFileData?.error === "string" ? addFileData.error : "Failed to add file to the knowledge base");
+      }
 
       setUploadedDocName(file.name);
+      setUploadStatus({
+        type: "success",
+        message: `"${file.name}" was added to the knowledge base.`,
+      });
       if (!inputMessageText) {
         setinputMessageText(`I just uploaded "${file.name}" to the knowledge base. Please use it to help me.`);
       }
@@ -155,7 +194,13 @@ const Chat: React.FC<ChatProps> = ({
       setTimeout(() => setUploadedDocName(null), 5000);
     } catch (err) {
       console.error("Document upload error:", err);
-      alert("Failed to upload document. Please try again.");
+      setUploadStatus({
+        type: "error",
+        message:
+          err instanceof Error && err.message.trim().length > 0
+            ? err.message
+            : "Failed to upload document. Please try again.",
+      });
     } finally {
       setIsUploadingDoc(false);
     }
@@ -300,6 +345,21 @@ const Chat: React.FC<ChatProps> = ({
       {/* Input area - sticky at bottom */}
       <div className="sticky bottom-0 bg-background border-t border-border pb-6">
         <div className="mx-auto w-full max-w-3xl px-4 py-4">
+        {uploadStatus && (
+          <div
+            className={`mb-4 rounded-xl border px-4 py-3 text-sm ${
+              uploadStatus.type === "error"
+                ? theme === "dark"
+                  ? "border-red-500/30 bg-red-500/10 text-red-200"
+                  : "border-red-200 bg-red-50 text-red-700"
+                : theme === "dark"
+                  ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-200"
+                  : "border-emerald-200 bg-emerald-50 text-emerald-700"
+            }`}
+          >
+            {uploadStatus.message}
+          </div>
+        )}
         {(isUploadingDoc || uploadedDocName) && (
           <div className={`mb-4 flex items-center gap-3 rounded-xl border px-4 py-3 text-sm shadow-sm backdrop-blur-sm ${
             theme === "dark" 
@@ -345,27 +405,27 @@ const Chat: React.FC<ChatProps> = ({
         )}
         
         <div
-          className={`flex w-full flex-col gap-2 rounded-3xl p-2 transition-all duration-300 border shadow-lg backdrop-blur-sm focus-within:shadow-xl focus-within:scale-[1.01] min-h-[80px] ${
+          className={`flex w-full flex-col gap-1.5 rounded-2xl p-1.5 transition-all duration-200 border backdrop-blur-sm focus-within:shadow-md min-h-[62px] ${
             theme === "dark"
-              ? "bg-gradient-to-br from-[#1a1a1a]/90 to-[#2d2d2d]/90 border-white/15 focus-within:border-white/25 shadow-black/30"
-              : "bg-gradient-to-br from-white/95 to-gray-50/95 border-black/10 focus-within:border-black/20 shadow-gray-300/40"
+              ? "bg-[#1f1f1f]/95 border-white/10 focus-within:border-white/20 shadow-black/20"
+              : "bg-white/95 border-black/10 focus-within:border-black/20 shadow-gray-200/30"
           }`}
         >
           {/* Toolbar */}
-          <div className="flex items-center gap-1.5 px-4 pt-3">
+          <div className="flex items-center gap-1.5 px-3 pt-1.5">
             <AgentSelector />
             {availableSkills.length > 0 && (
               <Popover open={skillsPopoverOpen} onOpenChange={setSkillsPopoverOpen}>
                 <PopoverTrigger asChild>
                   <button
-                    className={`p-2 rounded-lg transition-colors ${
+                    className={`p-1.5 rounded-md transition-colors ${
                       selectedSkill
                         ? theme === "dark" ? "bg-blue-600/20 text-blue-400" : "bg-blue-50 text-blue-600"
                         : theme === "dark" ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-500"
                     }`}
                     title={selectedSkill ? `Skill: ${selectedSkill}` : "Skills"}
                   >
-                    <Plus size={16} />
+                    <Plus size={14} />
                   </button>
                 </PopoverTrigger>
                 <PopoverContent side="top" align="start" className="w-56 p-1">
@@ -401,12 +461,12 @@ const Chat: React.FC<ChatProps> = ({
             <button
               type="button"
               onClick={handleUploadClick}
-              className={`p-2 rounded-lg transition-colors ${
+              className={`p-1.5 rounded-md transition-colors ${
                 theme === "dark" ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-500"
               }`}
               title="Attach file"
             >
-              <Paperclip size={16} />
+              <Paperclip size={14} />
             </button>
             <input
               ref={fileInputRef}
@@ -421,17 +481,17 @@ const Chat: React.FC<ChatProps> = ({
             {!voiceModeEnabled && (
               <button
                 onClick={() => setShowVoiceAgent?.(true)}
-                className={`p-2 rounded-lg transition-colors ${
+                className={`p-1.5 rounded-md transition-colors ${
                   theme === "dark" ? "hover:bg-white/10 text-gray-400" : "hover:bg-gray-100 text-gray-500"
                 }`}
                 title="Voice Mode"
               >
-                <Mic size={16} />
+                <Mic size={14} />
               </button>
             )}
           </div>
           
-          <div className="flex items-end gap-3 px-4 pb-3">
+          <div className="flex items-end gap-2 px-3 pb-1.5">
             <div className="flex min-w-0 flex-1 flex-col">
               <textarea
                 id="prompt-textarea"
@@ -439,7 +499,7 @@ const Chat: React.FC<ChatProps> = ({
                 dir="auto"
                 rows={1}
                 placeholder="Message OneChatAI..."
-                className={`max-h-56 resize-none border-0 focus:outline-none text-sm leading-6 bg-transparent px-0 pt-3 font-medium transition-all duration-200 h-10 ${
+                className={`max-h-44 resize-none border-0 focus:outline-none text-sm leading-5 bg-transparent px-0 py-2 font-medium transition-all duration-200 h-9 ${
                   theme === 'dark' 
                     ? 'text-white placeholder:text-gray-400' 
                     : 'text-gray-900 placeholder:text-gray-500'
@@ -454,17 +514,17 @@ const Chat: React.FC<ChatProps> = ({
             <button
               disabled={!inputMessageText.trim() && !capturedImage}
               data-testid="send-button"
-              className={`flex size-10 items-center justify-center rounded-full transition-all duration-200 hover:scale-105 focus-visible:outline-none disabled:hover:scale-100 disabled:opacity-50 shadow-lg ${
+              className={`flex size-9 items-center justify-center rounded-full transition-all duration-200 hover:scale-105 focus-visible:outline-none disabled:hover:scale-100 disabled:opacity-50 shadow-md ${
                 theme === 'dark' 
                   ? 'bg-gradient-to-r from-white to-gray-200 text-black disabled:from-gray-700 disabled:to-gray-600 disabled:text-gray-400 shadow-black/20 hover:shadow-black/30' 
-                  : 'bg-gradient-to-r from-black to-gray-800 text-white disabled:from-gray-200 disabled:to-gray-300 disabled:text-gray-400 shadow-gray-400/30 hover:shadow-gray-500/40'
+                  : 'bg-gradient-to-r from-black to-gray-800 text-white disabled:from-gray-200 disabled:to-gray-300 disabled:text-gray-400 shadow-gray-300/30 hover:shadow-gray-400/40'
               }`}
               onClick={handleSendWithImage}
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
-                width="20"
-                height="20"
+                width="18"
+                height="18"
                 fill="none"
                 viewBox="0 0 32 32"
                 className="icon-2xl"

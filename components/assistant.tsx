@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect } from "react";
 import Chat from "./chat";
 import useConversationStore from "@/stores/useConversationStore";
 import {
@@ -10,6 +10,7 @@ import {
 } from "@/lib/assistant";
 import useToolsStore from "@/stores/useToolsStore";
 import useWorkspaceStore from "@/stores/useWorkspaceStore";
+import useArtifactStore from "@/stores/useArtifactStore";
 
 let memoryFetchInFlight: Promise<void> | null = null;
 let memorySaveInFlight: Promise<void> | null = null;
@@ -34,6 +35,7 @@ export default function Assistant({
     setMemoryContext,
     setMemoriesFetched,
   } = useConversationStore();
+  const externalSendHandlerRef = React.useRef<(message: string, imageData?: string) => Promise<void>>();
 
   // Fetch user memories from previous conversations and inject into context
   const fetchAndSetMemories = async () => {
@@ -133,6 +135,7 @@ export default function Assistant({
     try {
       const { chatMessages, conversationItems, selectedSkill, activeConversationId } =
         useConversationStore.getState();
+      const { currentArtifact, artifactHistory } = useArtifactStore.getState();
 
       const firstUserMessage = chatMessages.find(
         (m: any) => m?.type === "message" && m?.role === "user" && m?.content?.[0]?.text
@@ -154,6 +157,8 @@ export default function Assistant({
             chatMessages,
             conversationItems,
             selectedSkill,
+            currentArtifact,
+            artifactHistory,
           },
         }),
       });
@@ -364,6 +369,19 @@ export default function Assistant({
       scheduleMemoryExtraction();
     } catch (error) {
       console.error("Error processing message:", error);
+      const errorMessage =
+        error instanceof Error && error.message.trim().length > 0
+          ? error.message
+          : "Something went wrong while processing your message. Please try again.";
+      const assistantItem: Item = {
+        type: "message",
+        role: "assistant",
+        content: [{ type: "output_text", text: errorMessage } as any],
+      };
+      addConversationItem(assistantItem);
+      addChatMessage(assistantItem);
+      setAssistantLoading(false);
+      await persistConversation();
     }
   };
 
@@ -382,8 +400,27 @@ export default function Assistant({
       await processMessages();
     } catch (error) {
       console.error("Error sending approval response:", error);
+      setAssistantLoading(false);
     }
   };
+  externalSendHandlerRef.current = handleSendMessage;
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const onExternalSend = (event: Event) => {
+      const customEvent = event as CustomEvent<{ message?: string; imageData?: string }>;
+      const message = typeof customEvent.detail?.message === "string" ? customEvent.detail.message : "";
+      const imageData = typeof customEvent.detail?.imageData === "string" ? customEvent.detail.imageData : undefined;
+      if (!message.trim() && !imageData) return;
+      void externalSendHandlerRef.current?.(message, imageData);
+    };
+
+    window.addEventListener("onechat-send-message", onExternalSend as EventListener);
+    return () => {
+      window.removeEventListener("onechat-send-message", onExternalSend as EventListener);
+    };
+  }, []);
 
   return (
     <div className="h-full w-full">

@@ -4,6 +4,7 @@ import { MessageSquare, Plus, Trash2 } from "lucide-react";
 import useConversationStore from "@/stores/useConversationStore";
 import useThemeStore from "@/stores/useThemeStore";
 import useWorkspaceStore from "@/stores/useWorkspaceStore";
+import useArtifactStore from "@/stores/useArtifactStore";
 
 interface ConversationHistoryProps {
   onNewConversation: () => void;
@@ -22,6 +23,7 @@ export default function ConversationHistory({ onNewConversation }: ConversationH
   } = useConversationStore();
   const { theme } = useThemeStore();
   const { activeWorkspaceId } = useWorkspaceStore();
+  const { setArtifacts } = useArtifactStore();
   const [isClient, setIsClient] = useState(false);
   const [conversations, setConversations] = useState<
     Array<{ id: string; title: string | null; updatedAt?: string; createdAt?: string }>
@@ -118,6 +120,13 @@ export default function ConversationHistory({ onNewConversation }: ConversationH
       if (typeof state.selectedSkill === "string" || state.selectedSkill === null) {
         setSelectedSkill(state.selectedSkill);
       }
+      setArtifacts({
+        currentArtifact:
+          state.currentArtifact && typeof state.currentArtifact === "object"
+            ? state.currentArtifact
+            : null,
+        artifactHistory: Array.isArray(state.artifactHistory) ? state.artifactHistory : [],
+      });
 
       setAssistantLoading(false);
       setActiveConversationId(id);

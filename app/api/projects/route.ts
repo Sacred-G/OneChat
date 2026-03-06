@@ -1,4 +1,5 @@
 import { getMongoDb } from "@/lib/mongodb";
+import { getCurrentActorId } from "@/lib/current-user";
 import { randomUUID } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +8,7 @@ const COLLECTION = "projects";
 
 type ProjectDoc = {
   _id: string;
+  userId: string;
   name: string;
   vectorStoreId?: string;
   vectorStoreName?: string;
@@ -27,12 +29,16 @@ function shouldList(request: Request) {
 
 export async function GET(request: Request) {
   try {
+    const userId = await getCurrentActorId();
     const db = await getMongoDb();
 
     if (shouldList(request)) {
       const docs = await db
         .collection<ProjectDoc>(COLLECTION)
-        .find({}, { projection: { _id: 1, name: 1, vectorStoreId: 1, vectorStoreName: 1, updatedAt: 1, createdAt: 1 } })
+        .find(
+          { userId },
+          { projection: { _id: 1, name: 1, vectorStoreId: 1, vectorStoreName: 1, updatedAt: 1, createdAt: 1 } }
+        )
         .sort({ updatedAt: -1 })
         .limit(200)
         .toArray();
@@ -61,7 +67,7 @@ export async function GET(request: Request) {
       });
     }
 
-    const doc = await db.collection<ProjectDoc>(COLLECTION).findOne({ _id: id });
+    const doc = await db.collection<ProjectDoc>(COLLECTION).findOne({ _id: id, userId });
     if (!doc) {
       return new Response(JSON.stringify({ ok: true, project: null }), {
         status: 200,
@@ -85,7 +91,11 @@ export async function GET(request: Request) {
     );
   } catch (error) {
     console.error("[projects] GET failed", error);
-    return new Response("Failed to load projects", { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to load projects";
+    return new Response(JSON.stringify({ ok: false, error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
 
@@ -94,7 +104,10 @@ export async function POST(request: Request) {
   try {
     body = await request.json();
   } catch {
-    return new Response("Invalid JSON", { status: 400 });
+    return new Response(JSON.stringify({ ok: false, error: "Invalid JSON" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   const id = typeof body?.id === "string" && body.id.trim().length > 0 ? body.id.trim() : randomUUID();
@@ -103,16 +116,21 @@ export async function POST(request: Request) {
   const vectorStoreName = typeof body?.vectorStoreName === "string" ? body.vectorStoreName.trim() : "";
 
   if (!name) {
-    return new Response("Missing name", { status: 400 });
+    return new Response(JSON.stringify({ ok: false, error: "Missing name" }), {
+      status: 400,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   try {
+    const userId = await getCurrentActorId();
     const db = await getMongoDb();
 
     await db.collection<ProjectDoc>(COLLECTION).updateOne(
-      { _id: id },
+      { _id: id, userId },
       {
         $set: {
+          userId,
           name,
           ...(vectorStoreId ? { vectorStoreId } : { vectorStoreId: "" }),
           ...(vectorStoreName ? { vectorStoreName } : { vectorStoreName: "" }),
@@ -131,20 +149,28 @@ export async function POST(request: Request) {
     });
   } catch (error) {
     console.error("[projects] POST failed", error);
-    return new Response("Failed to save project", { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to save project";
+    return new Response(JSON.stringify({ ok: false, error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }
 
 export async function DELETE(request: Request) {
   try {
+    const userId = await getCurrentActorId();
     const db = await getMongoDb();
     const id = getIdFromRequest(request);
 
     if (!id) {
-      return new Response("Missing id", { status: 400 });
+      return new Response(JSON.stringify({ ok: false, error: "Missing id" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json" },
+      });
     }
 
-    await db.collection<ProjectDoc>(COLLECTION).deleteOne({ _id: id });
+    await db.collection<ProjectDoc>(COLLECTION).deleteOne({ _id: id, userId });
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
@@ -152,6 +178,10 @@ export async function DELETE(request: Request) {
     });
   } catch (error) {
     console.error("[projects] DELETE failed", error);
-    return new Response("Failed to delete project", { status: 500 });
+    const message = error instanceof Error ? error.message : "Failed to delete project";
+    return new Response(JSON.stringify({ ok: false, error: message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 }

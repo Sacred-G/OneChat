@@ -7,6 +7,7 @@ export interface Artifact {
   code: string;
   language?: string;
   revision?: number;
+  meta?: Record<string, any>;
 }
 
  export interface UrlArtifact {
@@ -33,6 +34,10 @@ interface ArtifactStore {
   currentArtifact: AnyArtifact | null;
   artifactHistory: AnyArtifact[];
   setCurrentArtifact: (artifact: AnyArtifact | null) => void;
+  setArtifacts: (payload: {
+    currentArtifact: AnyArtifact | null;
+    artifactHistory: AnyArtifact[];
+  }) => void;
   addArtifact: (artifact: AnyArtifact) => void;
   upsertArtifact: (
     artifact: AnyArtifact,
@@ -45,6 +50,11 @@ const useArtifactStore = create<ArtifactStore>((set) => ({
   currentArtifact: null,
   artifactHistory: [],
   setCurrentArtifact: (artifact) => set({ currentArtifact: artifact }),
+  setArtifacts: ({ currentArtifact, artifactHistory }) =>
+    set({
+      currentArtifact,
+      artifactHistory: Array.isArray(artifactHistory) ? artifactHistory : [],
+    }),
   addArtifact: (artifact) =>
     set((state) => ({
       currentArtifact: artifact,
