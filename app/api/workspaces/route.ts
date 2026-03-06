@@ -1,4 +1,5 @@
 import { getMongoDb } from "@/lib/mongodb";
+import { getCurrentActorId } from "@/lib/current-user";
 import { randomUUID } from "crypto";
 
 export const dynamic = "force-dynamic";
@@ -7,6 +8,7 @@ const COLLECTION = "workspaces";
 
 type WorkspaceDoc = {
   _id: string;
+  userId: string;
   name: string;
   icon: string;
   color: string;
@@ -53,6 +55,7 @@ function shouldList(request: Request) {
 
 export async function GET(request: Request) {
   try {
+    const userId = await getCurrentActorId();
     const db = await getDbOrNull();
     if (!db) {
       if (isHosted) throw new Error("MongoDB unavailable");
@@ -60,6 +63,7 @@ export async function GET(request: Request) {
 
       if (shouldList(request)) {
         const docs = Array.from(store.values())
+          .filter((d) => d.userId === userId)
           .sort((a, b) => (b.updatedAt?.getTime?.() || 0) - (a.updatedAt?.getTime?.() || 0));
         return Response.json({
           ok: true,
@@ -83,7 +87,7 @@ export async function GET(request: Request) {
         return Response.json({ ok: true, workspace: null });
       }
       const doc = store.get(id);
-      if (!doc) {
+      if (!doc || doc.userId !== userId) {
         return Response.json({ ok: true, workspace: null });
       }
       return Response.json({
@@ -106,7 +110,7 @@ export async function GET(request: Request) {
     if (shouldList(request)) {
       const docs = await db
         .collection<WorkspaceDoc>(COLLECTION)
-        .find({})
+        .find({ userId })
         .sort({ updatedAt: -1 })
         .limit(100)
         .toArray();
@@ -133,7 +137,7 @@ export async function GET(request: Request) {
       return Response.json({ ok: true, workspace: null });
     }
 
-    const doc = await db.collection<WorkspaceDoc>(COLLECTION).findOne({ _id: id });
+    const doc = await db.collection<WorkspaceDoc>(COLLECTION).findOne({ _id: id, userId });
     if (!doc) {
       return Response.json({ ok: true, workspace: null });
     }
@@ -192,6 +196,7 @@ export async function POST(request: Request) {
   if (toolSettings !== undefined) $set.toolSettings = toolSettings;
 
   try {
+    const userId = await getCurrentActorId();
     const db = await getDbOrNull();
     if (!db) {
       if (isHosted) throw new Error("MongoDB unavailable");
@@ -199,6 +204,7 @@ export async function POST(request: Request) {
       const existing = store.get(id);
       store.set(id, {
         _id: id,
+        userId,
         name,
         icon,
         color,
@@ -213,10 +219,11 @@ export async function POST(request: Request) {
     }
 
     await db.collection<WorkspaceDoc>(COLLECTION).updateOne(
-      { _id: id },
+      { _id: id, userId },
       {
         $set,
         $setOnInsert: {
+          userId,
           createdAt: new Date(),
           ...(agents === undefined ? { agents: [] } : {}),
           ...(selectedAgentId === undefined ? { selectedAgentId: null } : {}),
@@ -236,6 +243,7 @@ export async function POST(request: Request) {
 
 export async function DELETE(request: Request) {
   try {
+    const userId = await getCurrentActorId();
     const id = getIdFromRequest(request);
     if (!id) {
       return Response.json({ ok: false, error: "Missing id" }, { status: 400 });
@@ -245,15 +253,16 @@ export async function DELETE(request: Request) {
     if (!db) {
       if (isHosted) throw new Error("MongoDB unavailable");
       const store = getMemoryStore();
-      store.delete(id);
+      const doc = store.get(id);
+      if (doc?.userId === userId) store.delete(id);
       return Response.json({ ok: true });
     }
 
-    await db.collection<WorkspaceDoc>(COLLECTION).deleteOne({ _id: id });
+    await db.collection<WorkspaceDoc>(COLLECTION).deleteOne({ _id: id, userId });
 
     // Also clean up conversations belonging to this workspace
     try {
-      await db.collection("conversations").deleteMany({ workspaceId: id });
+      await db.collection("conversations").deleteMany({ userId, workspaceId: id });
     } catch {
       // ignore cleanup failures
     }
